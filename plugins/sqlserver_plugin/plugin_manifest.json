@@ -1,0 +1,22 @@
+{
+  "id": "sqlserver_prod",
+  "name": "SQL Server Enterprise Gateway",
+  "version": "1.0.0",
+  "driver": "pyodbc/mssql",
+  "entrypoint": "python plugins/sqlserver_plugin/adapter.py",
+  "dry_run_command": "SET SHOWPLAN_XML ON",
+  "abort_command": "KILL {spid}",
+  "default_config": {
+    "server": "localhost",
+    "port": 1433,
+    "database": "EnterpriseSales",
+    "username": "sa",
+    "use_simulation": true
+  },
+  "supported_rules": [
+    "FORBID_JOIN",
+    "FORBID_TABLE_SCAN",
+    "MAX_EXECUTION_TIME"
+  ]
+}
+
