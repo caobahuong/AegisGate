@@ -8,6 +8,7 @@ Strictly adheres to python_clean_code.md:
 
 from datetime import datetime, timezone
 from typing import Generator, Optional
+from sqlalchemy import text
 from sqlmodel import Field, SQLModel, Session, create_engine, select
 from core.config import settings
 
@@ -29,6 +30,8 @@ class PluginProfile(SQLModel, table=True):
     dry_run_command: str = Field(default="SET SHOWPLAN_XML ON", description="Target dry run inspection directive")
     abort_command: str = Field(default="KILL {spid}", description="Emergency abort/kill command")
     config_json: str = Field(default="{}", description="Connection profile parameters in JSON format")
+    ui_schema_json: str = Field(default="[]", description="Dynamic UI form schema in JSON format")
+    custom_card_json: str = Field(default="{}", description="Plugin-specific custom card in JSON format")
     status: str = Field(default="active", description="Status: active | inactive | error")
     latency_ms: float = Field(default=0.0, description="Average response latency in ms")
     active_sessions_count: int = Field(default=0, description="Current number of active sessions/SPIDs")
@@ -88,25 +91,24 @@ class ExecutionLog(SQLModel, table=True):
     execution_time_ms: Optional[float] = Field(default=None, description="Actual execution duration in ms")
     auto_approved: bool = Field(default=False, description="Whether auto-approved without manual review")
     approved_by: Optional[str] = Field(default=None, description="User or system entity that approved")
-    result_summary: Optional[str] = Field(default=None, description="JSON summary of result data or error details")
-    error_message: Optional[str] = Field(default=None, description="Error details if failed")
-    spid: Optional[int] = Field(default=None, description="Database connection session SPID")
-    created_at: datetime = Field(default_factory=utc_now, index=True)
+    result_summary: Optional[str] = Field(default=None, description="Serialized sample data or affected rows")
+    error_message: Optional[str] = Field(default=None, description="Error message if failed or rejected")
+    spid: Optional[int] = Field(default=None, description="Database SPID assigned during execution")
+    created_at: datetime = Field(default_factory=utc_now)
     finished_at: Optional[datetime] = Field(default=None)
 
 
 class SystemSetting(SQLModel, table=True):
-    """Global system configuration settings persisted in DB."""
+    """System-wide configuration settings stored in DB."""
 
     __tablename__ = "system_settings"
 
-    key: str = Field(primary_key=True, description="Configuration key e.g. auto_approval_mode")
-    value: str = Field(description="String serialized value e.g. 'true' or 'false'")
-    description: Optional[str] = Field(default=None)
+    key: str = Field(primary_key=True, index=True)
+    value: str
+    description: Optional[str] = None
     updated_at: datetime = Field(default_factory=utc_now)
 
 
-# Create engine
 engine = create_engine(
     settings.DATABASE_URL,
     echo=settings.DEBUG,
@@ -119,6 +121,18 @@ def init_db() -> None:
     settings.DATA_DIR.mkdir(parents=True, exist_ok=True)
     settings.KNOWLEDGE_DOCS_DIR.mkdir(parents=True, exist_ok=True)
     SQLModel.metadata.create_all(engine)
+
+    # Ensure schema migrations for dynamic ui columns in existing sqlite database
+    with engine.connect() as conn:
+        for col_name, col_type, col_default in [
+            ("ui_schema_json", "TEXT", "'[]'"),
+            ("custom_card_json", "TEXT", "'{}'"),
+        ]:
+            try:
+                conn.execute(text(f"ALTER TABLE plugin_profiles ADD COLUMN {col_name} {col_type} DEFAULT {col_default}"))
+                conn.commit()
+            except Exception:
+                pass
 
     with Session(engine) as session:
         # 1. Initialize default auto_approval_mode setting if not present

@@ -60,6 +60,18 @@ class RegisterPluginRequest(BaseModel):
     dry_run_command: str = Field(default="SET SHOWPLAN_XML ON")
     abort_command: str = Field(default="KILL {spid}")
     config: dict[str, Any] = Field(default_factory=dict)
+    ui_schema: Optional[list[dict[str, Any]]] = None
+    custom_card: Optional[dict[str, Any]] = None
+
+
+class UpdatePluginConfigRequest(BaseModel):
+    """Payload for updating a plugin's configuration via Edit Modal."""
+    name: Optional[str] = None
+    config: dict[str, Any] = Field(description="Updated connection configuration")
+    driver: Optional[str] = None
+    entrypoint: Optional[str] = None
+    dry_run_command: Optional[str] = None
+    abort_command: Optional[str] = None
 
 
 class PluginProfileResponse(BaseModel):
@@ -71,11 +83,23 @@ class PluginProfileResponse(BaseModel):
     dry_run_command: str
     abort_command: str
     config: dict[str, Any]
+    ui_schema: list[dict[str, Any]] = Field(default_factory=list)
+    custom_card: Optional[dict[str, Any]] = None
     status: str
     latency_ms: float
     active_sessions_count: int
     created_at: str
     updated_at: str
+
+
+class PluginSchemaResponse(BaseModel):
+    """Response containing plugin dynamic UI schema and current config."""
+    plugin_id: str
+    name: str
+    driver: str
+    ui_schema: list[dict[str, Any]] = Field(default_factory=list)
+    current_config: dict[str, Any] = Field(default_factory=dict)
+    custom_card: Optional[dict[str, Any]] = None
 
 
 # --- Knowledge Schemas ---
@@ -147,3 +171,28 @@ class AutoModeResponse(BaseModel):
 class SetAutoModeRequest(BaseModel):
     """Payload to toggle auto approval mode."""
     enabled: bool
+
+
+# --- MCP Configuration Schemas ---
+
+class McpServerDefinition(BaseModel):
+    """Single MCP server command and environment definition."""
+    command: str = "python"
+    args: list[str] = Field(default_factory=list)
+    env: dict[str, str] = Field(default_factory=dict)
+
+
+class McpConfigResponse(BaseModel):
+    """Response containing standard MCP JSON configuration for AI clients."""
+    server_name: str
+    plugin_id: Optional[str] = None
+    command: str = "python"
+    args: list[str] = Field(default_factory=list)
+    env: dict[str, str] = Field(default_factory=dict)
+    mcpServers: dict[str, Any] = Field(
+        description="Standard JSON snippet ready for claude_desktop_config.json, .cursor/mcp.json, or cline"
+    )
+    client_configs: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Target-specific JSON snippets formatted for Claude, Cursor, and Cline"
+    )

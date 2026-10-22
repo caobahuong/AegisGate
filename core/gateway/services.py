@@ -7,9 +7,11 @@ Adheres strictly to python_clean_code.md:
 """
 
 import json
+import logging
 from typing import Any, Optional
 from sqlmodel import Session
-from core.database import ExecutionLog, PluginProfile, Rule
+from core.database import ExecutionLog, PluginProfile, Rule, utc_now
+from core.engine.plugin_client import terminate_all_subprocesses
 from core.engine.plugin_registry import PluginRegistry
 from core.engine.state_machine import ExecutionStateMachine
 from core.exceptions import PluginExecutionError, PluginNotFoundError
@@ -18,19 +20,24 @@ from core.gateway.schemas import (
     CreateRuleRequest,
     ExecutionResponse,
     KnowledgeChunkResponse,
+    McpConfigResponse,
     PluginProfileResponse,
+    PluginSchemaResponse,
     RegisterPluginRequest,
     RejectExecutionRequest,
     RuleResponse,
     SubmitExecutionRequest,
     UpdateDocsRequest,
+    UpdatePluginConfigRequest,
     UpdateRuleRequest,
 )
 from core.storage.knowledge_store import KnowledgeStore
 from core.storage.log_store import LogStore
 from core.storage.rule_store import RuleStore
 from core.storage.setting_store import SettingStore
-from plugins.plugin_contract import SyncKnowledgeParams
+from plugins.plugin_contract import ReinitParams, SyncKnowledgeParams
+
+logger = logging.getLogger(__name__)
 
 
 def format_execution_response(log: ExecutionLog) -> ExecutionResponse:
@@ -42,12 +49,12 @@ def format_execution_response(log: ExecutionLog) -> ExecutionResponse:
         except Exception:
             plan_data = log.explain_plan_json
 
-    violations_data: list[str] = []
+    violations = []
     if log.violations_json:
         try:
-            violations_data = json.loads(log.violations_json)
+            violations = json.loads(log.violations_json)
         except Exception:
-            violations_data = []
+            violations = []
 
     res_summary = None
     if log.result_summary:
@@ -64,7 +71,7 @@ def format_execution_response(log: ExecutionLog) -> ExecutionResponse:
         reasoning=log.reasoning,
         status=log.status,
         explain_plan=plan_data,
-        violations=violations_data,
+        violations=violations,
         execution_time_ms=log.execution_time_ms,
         auto_approved=log.auto_approved,
         approved_by=log.approved_by,
@@ -77,7 +84,7 @@ def format_execution_response(log: ExecutionLog) -> ExecutionResponse:
 
 
 class GatewayService:
-    """Consolidated application service for REST endpoints."""
+    """Unified service orchestrating state machine, knowledge store, and plugins."""
 
     def __init__(self, session: Session) -> None:
         self.session: Session = session
@@ -117,27 +124,40 @@ class GatewayService:
         return format_execution_response(log)
 
     async def abort_execution(self, execution_id: str) -> ExecutionResponse:
-        """Abort/kill an in-flight or paused execution."""
+        """Emergency stop and abort an execution."""
         log = await self.state_machine.abort_execution(execution_id=execution_id)
         return format_execution_response(log)
 
+    async def stop_execution(self, execution_id: str) -> ExecutionResponse:
+        """Alias for abort_execution."""
+        return await self.abort_execution(execution_id)
+
     def get_execution(self, execution_id: str) -> Optional[ExecutionResponse]:
-        """Get detail of a specific execution."""
+        """Fetch execution state by ID."""
         log = self.log_store.get_log(execution_id)
-        return format_execution_response(log) if log else None
+        if not log:
+            return None
+        return format_execution_response(log)
 
     def list_executions(
-        self, limit: int = 50, target_id: Optional[str] = None, status: Optional[str] = None
+        self,
+        target_id: Optional[str] = None,
+        status: Optional[str] = None,
+        limit: int = 50,
     ) -> list[ExecutionResponse]:
-        """List execution logs."""
-        logs = self.log_store.list_logs(limit=limit, target_id=target_id, status=status)
+        """List execution audit logs."""
+        logs = self.log_store.list_logs(
+            target_id=target_id,
+            status=status,
+            limit=limit,
+        )
         return [format_execution_response(log) for log in logs]
 
     # --- Plugin Management Services ---
 
-    def list_plugins(self) -> list[PluginProfileResponse]:
+    def list_plugins(self, include_disabled: bool = False) -> list[PluginProfileResponse]:
         """List all registered plugins."""
-        profiles = self.plugin_registry.list_profiles()
+        profiles = self.plugin_registry.list_profiles(include_disabled=include_disabled)
         res: list[PluginProfileResponse] = []
         for p in profiles:
             cfg = {}
@@ -145,6 +165,20 @@ class GatewayService:
                 cfg = json.loads(p.config_json)
             except Exception:
                 cfg = {}
+
+            ui_schema = []
+            try:
+                ui_schema = json.loads(p.ui_schema_json)
+            except Exception:
+                ui_schema = []
+
+            custom_card = None
+            try:
+                if p.custom_card_json and p.custom_card_json != "{}":
+                    custom_card = json.loads(p.custom_card_json)
+            except Exception:
+                custom_card = None
+
             res.append(
                 PluginProfileResponse(
                     id=p.id,
@@ -154,6 +188,8 @@ class GatewayService:
                     dry_run_command=p.dry_run_command,
                     abort_command=p.abort_command,
                     config=cfg,
+                    ui_schema=ui_schema,
+                    custom_card=custom_card,
                     status=p.status,
                     latency_ms=p.latency_ms,
                     active_sessions_count=p.active_sessions_count,
@@ -163,8 +199,41 @@ class GatewayService:
             )
         return res
 
+    def get_plugin_schema(self, plugin_id: str) -> PluginSchemaResponse:
+        """Retrieve dynamic UI schema and current config for a plugin."""
+        p = self.plugin_registry.get_profile(plugin_id)
+        cfg = {}
+        try:
+            cfg = json.loads(p.config_json)
+        except Exception:
+            cfg = {}
+
+        ui_schema = []
+        try:
+            ui_schema = json.loads(p.ui_schema_json)
+        except Exception:
+            ui_schema = []
+
+        custom_card = None
+        try:
+            if p.custom_card_json and p.custom_card_json != "{}":
+                custom_card = json.loads(p.custom_card_json)
+        except Exception:
+            custom_card = None
+
+        return PluginSchemaResponse(
+            plugin_id=p.id,
+            name=p.name,
+            driver=p.driver,
+            ui_schema=ui_schema,
+            current_config=cfg,
+            custom_card=custom_card,
+        )
+
     def register_plugin(self, req: RegisterPluginRequest) -> PluginProfileResponse:
         """Register or update a plugin profile."""
+        ui_schema_str = json.dumps(req.ui_schema or [])
+        custom_card_str = json.dumps(req.custom_card or {})
         profile = PluginProfile(
             id=req.id,
             name=req.name,
@@ -173,6 +242,8 @@ class GatewayService:
             dry_run_command=req.dry_run_command,
             abort_command=req.abort_command,
             config_json=json.dumps(req.config),
+            ui_schema_json=ui_schema_str,
+            custom_card_json=custom_card_str,
             status="active",
         )
         saved = self.plugin_registry.register_profile(profile)
@@ -184,12 +255,103 @@ class GatewayService:
             dry_run_command=saved.dry_run_command,
             abort_command=saved.abort_command,
             config=req.config,
+            ui_schema=req.ui_schema or [],
+            custom_card=req.custom_card,
             status=saved.status,
             latency_ms=saved.latency_ms,
             active_sessions_count=saved.active_sessions_count,
             created_at=saved.created_at.isoformat(),
             updated_at=saved.updated_at.isoformat(),
         )
+
+    async def update_plugin_config(
+        self,
+        plugin_id: str,
+        req: UpdatePluginConfigRequest,
+    ) -> PluginProfileResponse:
+        """Update plugin configuration in DB and trigger reinit down to subprocess."""
+        p = self.plugin_registry.get_profile(plugin_id)
+        p.config_json = json.dumps(req.config)
+        if req.name:
+            p.name = req.name
+        if req.driver:
+            p.driver = req.driver
+        if req.entrypoint:
+            p.entrypoint = req.entrypoint
+        if req.dry_run_command:
+            p.dry_run_command = req.dry_run_command
+        if req.abort_command:
+            p.abort_command = req.abort_command
+
+        p.updated_at = utc_now()
+        self.session.add(p)
+        self.session.commit()
+        self.session.refresh(p)
+
+        # Dispatch re-init to plugin subprocess
+        try:
+            client = self.plugin_registry.get_client(plugin_id)
+            await client.reinit(ReinitParams(config=req.config))
+            logger.info("Dispatched reinit signal to plugin %s successfully", plugin_id)
+        except Exception as exc:
+            logger.warning("Plugin '%s' reinit command note: %s", plugin_id, exc)
+
+        ui_schema = []
+        try:
+            ui_schema = json.loads(p.ui_schema_json)
+        except Exception:
+            pass
+
+        custom_card = None
+        try:
+            if p.custom_card_json and p.custom_card_json != "{}":
+                custom_card = json.loads(p.custom_card_json)
+        except Exception:
+            pass
+
+        return PluginProfileResponse(
+            id=p.id,
+            name=p.name,
+            driver=p.driver,
+            entrypoint=p.entrypoint,
+            dry_run_command=p.dry_run_command,
+            abort_command=p.abort_command,
+            config=req.config,
+            ui_schema=ui_schema,
+            custom_card=custom_card,
+            status=p.status,
+            latency_ms=p.latency_ms,
+            active_sessions_count=p.active_sessions_count,
+            created_at=p.created_at.isoformat(),
+            updated_at=p.updated_at.isoformat(),
+        )
+
+    async def delete_plugin(self, plugin_id: str, hard_delete: bool = False) -> dict[str, Any]:
+        """Uninstall or disable a plugin, disconnect active subprocesses, and abort running tasks."""
+        # Check if profile exists (raises PluginNotFoundError if not found)
+        p = self.plugin_registry.get_profile(plugin_id)
+
+        # 1. Terminate any running plugin subprocesses
+        await terminate_all_subprocesses()
+
+        # 2. Abort any paused/in-flight executions for this plugin
+        paused_logs = self.log_store.list_logs(target_id=plugin_id, status="PAUSED_FOR_REVIEW")
+        for log in paused_logs:
+            try:
+                await self.state_machine.abort_execution(log.id)
+            except Exception as exc:
+                logger.warning("Could not abort pending log %s: %s", log.id, exc)
+
+        # 3. Unregister or soft-disable profile
+        self.plugin_registry.unregister_profile(plugin_id, hard_delete=hard_delete)
+
+        mode_str = "hard_delete" if hard_delete else "soft_disabled"
+        return {
+            "success": True,
+            "plugin_id": plugin_id,
+            "mode": mode_str,
+            "message": f"Plugin '{plugin_id}' successfully {'deleted from database' if hard_delete else 'disabled'}.",
+        }
 
     async def sync_plugin_catalog(self, plugin_id: str) -> list[dict[str, Any]]:
         """Trigger sync_knowledge on the plugin subprocess and ingest into KnowledgeStore."""
@@ -256,9 +418,13 @@ class GatewayService:
             skills_content=req.skills_content,
         )
 
-    def list_rules(self, target_id: Optional[str] = None) -> list[RuleResponse]:
-        """List governance rules."""
-        rules = self.rule_store.list_rules(target_id=target_id)
+    def list_rules(
+        self,
+        target_id: Optional[str] = None,
+        exact_target: bool = False,
+    ) -> list[RuleResponse]:
+        """List governance rules, optionally filtered by target plugin or global scope."""
+        rules = self.rule_store.list_rules(target_id=target_id, exact_target=exact_target)
         return [
             RuleResponse(
                 id=r.id,
@@ -273,6 +439,24 @@ class GatewayService:
             )
             for r in rules
         ]
+
+    def list_skills(self, target_id: Optional[str] = None) -> list[dict[str, Any]]:
+        """List query skills and templates, optionally filtered by target plugin."""
+        chunks = self.list_knowledge_chunks(target_id=target_id)
+        skills: list[dict[str, Any]] = []
+        for c in chunks:
+            skills.append(
+                {
+                    "id": f"{c.id}_skills",
+                    "chunk_id": c.id,
+                    "target_id": c.target_id,
+                    "partition_key": c.partition_key,
+                    "title": f"{c.title} Skills",
+                    "skills_file": c.skills_file,
+                    "skills_content": c.skills_content,
+                }
+            )
+        return skills
 
     def create_rule(self, req: CreateRuleRequest) -> RuleResponse:
         """Create a new governance rule."""
@@ -301,7 +485,15 @@ class GatewayService:
 
     def update_rule(self, rule_id: str, req: UpdateRuleRequest) -> Optional[RuleResponse]:
         """Update an existing rule."""
-        updates = {k: v for k, v in req.model_dump().items() if v is not None}
+        raw_dump = req.model_dump(exclude_unset=True)
+        updates = {}
+        for k, v in raw_dump.items():
+            if k == "target_id":
+                # Convert empty string or "global" to None for global scoping
+                updates[k] = None if v in (None, "", "global") else v
+            elif v is not None:
+                updates[k] = v
+
         updated = self.rule_store.update_rule(rule_id, updates)
         if not updated:
             return None
@@ -331,3 +523,70 @@ class GatewayService:
         """Set auto mode status."""
         return self.setting_store.set_auto_approval(enabled)
 
+    # --- MCP Configuration Services ---
+
+    def get_global_mcp_config(self) -> McpConfigResponse:
+        """Generate MCP client connection snippet for AegisGate Core and all active targets."""
+        server_key = "aegisgate"
+        args = ["-m", "core.gateway.mcp_server"]
+        env = {
+            "AEGISGATE_API_URL": "http://localhost:8000",
+        }
+        servers: dict[str, Any] = {
+            server_key: {
+                "command": "python",
+                "args": args,
+                "env": env,
+            }
+        }
+
+        # Include active plugins as individual servers if needed
+        for p in self.plugin_registry.list_profiles():
+            servers[f"aegisgate-{p.id}"] = {
+                "command": "python",
+                "args": ["-m", "core.gateway.mcp_server", "--plugin", p.id],
+                "env": env,
+            }
+
+        return McpConfigResponse(
+            server_name=server_key,
+            command="python",
+            args=args,
+            env=env,
+            mcpServers=servers,
+            client_configs={
+                "claude": {"mcpServers": servers},
+                "cursor": {"mcpServers": servers},
+                "cline": {"mcpServers": servers},
+            },
+        )
+
+    def get_plugin_mcp_config(self, plugin_id: str) -> McpConfigResponse:
+        """Generate MCP client connection snippet for a specific target plugin."""
+        profile = self.plugin_registry.get_profile(plugin_id)
+        server_key = f"aegisgate-{profile.id}"
+        args = ["-m", "core.gateway.mcp_server", "--plugin", profile.id]
+        env = {
+            "AEGISGATE_API_URL": "http://localhost:8000",
+        }
+        servers = {
+            server_key: {
+                "command": "python",
+                "args": args,
+                "env": env,
+            }
+        }
+
+        return McpConfigResponse(
+            server_name=server_key,
+            plugin_id=profile.id,
+            command="python",
+            args=args,
+            env=env,
+            mcpServers=servers,
+            client_configs={
+                "claude": {"mcpServers": servers},
+                "cursor": {"mcpServers": servers},
+                "cline": {"mcpServers": servers},
+            },
+        )

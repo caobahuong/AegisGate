@@ -36,7 +36,7 @@ class JsonRpcResponse(BaseModel):
     id: Optional[Union[int, str]] = None
 
 
-# --- Standard Domain Payloads for the 4 Contract Ports ---
+# --- Standard Domain Payloads for the Contract Ports ---
 
 # 1. Sync Knowledge Port
 class ColumnSchema(BaseModel):
@@ -128,10 +128,23 @@ class AbortResult(BaseModel):
     message: str
 
 
+# 5. Lifecycle Re-Init Port
+class ReinitParams(BaseModel):
+    """Parameters passed to reinitialize plugin connection with updated configuration."""
+    config: dict[str, Any] = Field(default_factory=dict)
+
+
+class ReinitResult(BaseModel):
+    """Payload returned by reinit."""
+    success: bool = True
+    message: str = "Connection reinitialized successfully."
+    status: str = "active"
+
+
 # --- Abstract Base Interface for Plugin Adapters ---
 
 class IPluginAdapter(ABC):
-    """Abstract interface defining the mandatory 4 ports every plugin must implement."""
+    """Abstract interface defining standard ports every plugin implements."""
 
     @abstractmethod
     def sync_knowledge(self, params: SyncKnowledgeParams) -> SyncKnowledgeResult:
@@ -153,3 +166,10 @@ class IPluginAdapter(ABC):
         """Port 4: Immediately kill session/SPID on target system."""
         pass
 
+    def reinit(self, params: ReinitParams) -> ReinitResult:
+        """Port 5 (Lifecycle): Reinitialize connection with updated configuration parameters."""
+        return ReinitResult(
+            success=True,
+            message="Connection parameters updated successfully.",
+            status="active",
+        )

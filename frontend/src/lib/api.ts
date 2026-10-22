@@ -8,9 +8,13 @@ import {
   CreateRuleRequest,
   ExecutionResponse,
   KnowledgeChunkResponse,
+  McpConfigResponse,
   PluginProfileResponse,
+  PluginSchemaResponse,
   RegisterPluginRequest,
   RuleResponse,
+  UpdatePluginConfigRequest,
+  UpdateRuleRequest,
 } from "@/types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
@@ -51,10 +55,7 @@ export async function approveExecution(executionId: string, approvedBy = "Admin"
   return res.json();
 }
 
-export async function rejectExecution(
-  executionId: string,
-  reason = "Rejected by reviewer"
-): Promise<ExecutionResponse> {
+export async function rejectExecution(executionId: string, reason = "Admin Rejected"): Promise<ExecutionResponse> {
   const res = await fetch(`${API_BASE}/monitor/executions/${executionId}/reject`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -85,6 +86,62 @@ export async function registerPlugin(data: RegisterPluginRequest): Promise<Plugi
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error("Failed to register plugin");
+  return res.json();
+}
+
+export async function fetchPluginSchema(pluginId: string): Promise<PluginSchemaResponse> {
+  const res = await fetch(`${API_BASE}/plugins/${encodeURIComponent(pluginId)}/schema`, {
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("Failed to fetch plugin schema");
+  return res.json();
+}
+
+export async function updatePluginConfig(
+  pluginId: string,
+  payload: UpdatePluginConfigRequest
+): Promise<PluginProfileResponse> {
+  const res = await fetch(`${API_BASE}/plugins/${encodeURIComponent(pluginId)}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Failed to update plugin config" }));
+    throw new Error(err.detail || "Failed to update plugin config");
+  }
+  return res.json();
+}
+
+export async function deletePlugin(
+  pluginId: string,
+  hardDelete: boolean = false
+): Promise<{ success: boolean; plugin_id: string; mode: string; message: string }> {
+  const res = await fetch(
+    `${API_BASE}/plugins/${encodeURIComponent(pluginId)}?hard_delete=${hardDelete}`,
+    {
+      method: "DELETE",
+    }
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Failed to uninstall plugin" }));
+    throw new Error(err.detail || "Failed to uninstall plugin");
+  }
+  return res.json();
+}
+
+export async function fetchGlobalMcpConfig(): Promise<McpConfigResponse> {
+  const res = await fetch(`${API_BASE}/mcp/config`, { cache: "no-store" });
+  if (!res.ok) throw new Error("Failed to fetch global MCP config");
+  return res.json();
+}
+
+export async function fetchPluginMcpConfig(pluginId: string): Promise<McpConfigResponse> {
+  const res = await fetch(
+    `${API_BASE}/plugins/${encodeURIComponent(pluginId)}/mcp-config`,
+    { cache: "no-store" }
+  );
+  if (!res.ok) throw new Error("Failed to fetch plugin MCP config");
   return res.json();
 }
 
@@ -125,12 +182,22 @@ export async function updateKnowledgeDocs(
   return res.json();
 }
 
-export async function fetchRules(targetId?: string): Promise<RuleResponse[]> {
-  const url = targetId
-    ? `${API_BASE}/rules?target_id=${encodeURIComponent(targetId)}`
-    : `${API_BASE}/rules`;
-  const res = await fetch(url, { cache: "no-store" });
+export async function fetchRules(targetId?: string, exact?: boolean): Promise<RuleResponse[]> {
+  const params = new URLSearchParams();
+  if (targetId) params.append("target_id", targetId);
+  if (exact) params.append("exact", "true");
+  const queryStr = params.toString() ? `?${params.toString()}` : "";
+  const res = await fetch(`${API_BASE}/rules${queryStr}`, { cache: "no-store" });
   if (!res.ok) throw new Error("Failed to fetch rules");
+  return res.json();
+}
+
+export async function fetchSkills(targetId?: string): Promise<Record<string, unknown>[]> {
+  const url = targetId
+    ? `${API_BASE}/skills?target_id=${encodeURIComponent(targetId)}`
+    : `${API_BASE}/skills`;
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error("Failed to fetch skills");
   return res.json();
 }
 
@@ -141,6 +208,22 @@ export async function createRule(rule: CreateRuleRequest): Promise<RuleResponse>
     body: JSON.stringify(rule),
   });
   if (!res.ok) throw new Error("Failed to create rule");
+  return res.json();
+}
+
+export async function updateRule(
+  ruleId: string,
+  payload: UpdateRuleRequest
+): Promise<RuleResponse> {
+  const res = await fetch(`${API_BASE}/rules/${encodeURIComponent(ruleId)}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Failed to update rule" }));
+    throw new Error(err.detail || "Failed to update rule");
+  }
   return res.json();
 }
 
@@ -169,4 +252,3 @@ export async function setAutoMode(enabled: boolean): Promise<boolean> {
   const data = await res.json();
   return Boolean(data.auto_approval_enabled);
 }
-

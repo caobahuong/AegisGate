@@ -1,22 +1,24 @@
 "use client";
 
 import React from "react";
-import { Shield, Zap, Server } from "lucide-react";
+import { Shield, Zap, Server, Terminal } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface HeaderProps {
   autoMode: boolean;
   onToggleAutoMode: () => void;
   mcpOnline?: boolean;
+  onOpenMcpModal?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   autoMode,
   onToggleAutoMode,
   mcpOnline = true,
+  onOpenMcpModal,
 }) => {
   return (
-    <header className="h-16 w-full bg-slate-900 border-b border-slate-800 px-6 flex items-center justify-between sticky top-0 z-50">
+    <header className="h-16 flex-shrink-0 w-full bg-slate-900 border-b border-slate-800 px-6 flex items-center justify-between sticky top-0 z-50">
       {/* Brand & Identity */}
       <div className="flex items-center space-x-3">
         <div className="h-9 w-9 rounded-lg bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-600/30">
@@ -36,11 +38,11 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Center / Status */}
-      <div className="flex items-center space-x-6">
-        {/* MCP Server Status Indicator */}
-        <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-slate-950/60 border border-slate-800">
+      <div className="flex items-center space-x-4 sm:space-x-6">
+        {/* MCP Server Status Indicator & Snippet Button */}
+        <div className="flex items-center space-x-2.5 px-3 py-1.5 rounded-full bg-slate-950/60 border border-slate-800">
           <Server className="h-3.5 w-3.5 text-slate-400" />
-          <span className="text-xs text-slate-300 font-medium">MCP Server:</span>
+          <span className="text-xs text-slate-300 font-medium hidden md:inline">MCP Server:</span>
           <div className="flex items-center space-x-1.5">
             <span
               className={cn(
@@ -48,10 +50,22 @@ export const Header: React.FC<HeaderProps> = ({
                 mcpOnline ? "bg-emerald-400 animate-pulse" : "bg-red-500"
               )}
             />
-            <span className="text-xs font-mono text-emerald-400">
-              {mcpOnline ? "Online (Port 8001)" : "Offline"}
+            <span className="text-xs font-mono text-emerald-400 font-medium">
+              {mcpOnline ? "Active" : "Offline"}
             </span>
           </div>
+
+          {onOpenMcpModal && (
+            <button
+              onClick={onOpenMcpModal}
+              data-testid="header-mcp-btn"
+              className="flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-indigo-600/20 hover:bg-indigo-600/35 text-indigo-400 hover:text-indigo-300 border border-indigo-500/30 text-[11px] font-semibold transition-all shadow-sm"
+              title="View and Copy MCP JSON for Claude, Cursor, and Cline"
+            >
+              <Terminal className="h-3 w-3" />
+              <span>MCP Config</span>
+            </button>
+          )}
         </div>
 
         {/* Auto Approval Mode Switch */}
@@ -75,4 +89,3 @@ export const Header: React.FC<HeaderProps> = ({
     </header>
   );
 };
-

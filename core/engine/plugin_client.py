@@ -23,11 +23,32 @@ from plugins.plugin_contract import (
     ExecuteResult,
     JsonRpcRequest,
     JsonRpcResponse,
+    ReinitParams,
+    ReinitResult,
     SyncKnowledgeParams,
     SyncKnowledgeResult,
 )
 
 logger = logging.getLogger(__name__)
+
+# Active background subprocess tracker across all plugin client executions
+_active_processes: set[asyncio.subprocess.Process] = set()
+
+
+async def terminate_all_subprocesses() -> int:
+    """Forcefully terminate and wait for any active plugin child processes."""
+    killed_count = 0
+    for proc in list(_active_processes):
+        if proc.returncode is None:
+            try:
+                proc.kill()
+                await asyncio.wait_for(proc.wait(), timeout=1.0)
+                killed_count += 1
+            except Exception as exc:
+                logger.warning("Error killing plugin subprocess: %s", exc)
+            finally:
+                _active_processes.discard(proc)
+    return killed_count
 
 
 class PluginSubprocessClient:
@@ -70,6 +91,7 @@ class PluginSubprocessClient:
                 cwd=self.working_dir or str(settings.BASE_DIR),
                 env=sub_env,
             )
+            _active_processes.add(proc)
 
             # Write request to stdin
             if proc.stdin is None or proc.stdout is None:
@@ -127,6 +149,8 @@ class PluginSubprocessClient:
             raise PluginProcessError(f"Plugin execution timed out after {timeout}s") from exc
 
         finally:
+            if proc is not None:
+                _active_processes.discard(proc)
             # Guarantee child process cleanup
             if proc is not None and proc.returncode is None:
                 try:
@@ -158,3 +182,8 @@ class PluginSubprocessClient:
         """Call plugin abort method."""
         raw = await self.send_rpc_command("abort", params.model_dump(), timeout=10.0)
         return AbortResult.model_validate(raw)
+
+    async def reinit(self, params: ReinitParams, timeout: Optional[float] = None) -> ReinitResult:
+        """Call plugin reinit method with updated configuration."""
+        raw = await self.send_rpc_command("reinit", params.model_dump(), timeout=timeout or 10.0)
+        return ReinitResult.model_validate(raw)

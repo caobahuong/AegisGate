@@ -39,6 +39,27 @@ export interface ExecutionResponse {
   finished_at: string | null;
 }
 
+export type UiFieldType = "text" | "password" | "number" | "select" | "boolean" | "textarea";
+
+export interface UiFieldSchema {
+  key: string;
+  label: string;
+  type: UiFieldType;
+  default?: unknown;
+  required?: boolean;
+  options?: string[];
+  placeholder?: string;
+  description?: string;
+}
+
+export interface CustomCardData {
+  type: string;
+  title: string;
+  badge?: string;
+  columns?: string[];
+  sample_data?: Record<string, unknown>[];
+}
+
 export interface PluginProfileResponse {
   id: string;
   name: string;
@@ -47,11 +68,31 @@ export interface PluginProfileResponse {
   dry_run_command: string;
   abort_command: string;
   config: Record<string, unknown>;
+  ui_schema?: UiFieldSchema[];
+  custom_card?: CustomCardData | null;
   status: "active" | "inactive" | "error";
   latency_ms: number;
   active_sessions_count: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface PluginSchemaResponse {
+  plugin_id: string;
+  name: string;
+  driver: string;
+  ui_schema: UiFieldSchema[];
+  current_config: Record<string, unknown>;
+  custom_card?: CustomCardData | null;
+}
+
+export interface UpdatePluginConfigRequest {
+  name?: string;
+  config: Record<string, unknown>;
+  driver?: string;
+  entrypoint?: string;
+  dry_run_command?: string;
+  abort_command?: string;
 }
 
 export interface ColumnSchema {
@@ -112,6 +153,16 @@ export interface CreateRuleRequest {
   is_active: boolean;
 }
 
+export interface UpdateRuleRequest {
+  name?: string;
+  target_id?: string | null;
+  rule_type?: RuleType;
+  expression?: string;
+  description?: string;
+  severity?: RuleSeverity;
+  is_active?: boolean;
+}
+
 export interface RegisterPluginRequest {
   id: string;
   name: string;
@@ -120,11 +171,29 @@ export interface RegisterPluginRequest {
   dry_run_command: string;
   abort_command: string;
   config: Record<string, unknown>;
+  ui_schema?: UiFieldSchema[];
+  custom_card?: CustomCardData | null;
 }
 
 export interface SSEMessagePayload {
   event: string;
   data: Record<string, unknown>;
+}
+
+export interface McpServerItem {
+  command: string;
+  args: string[];
+  env: Record<string, string>;
+}
+
+export interface McpConfigResponse {
+  server_name: string;
+  plugin_id?: string | null;
+  command: string;
+  args: string[];
+  env: Record<string, string>;
+  mcpServers: Record<string, McpServerItem>;
+  client_configs?: Record<string, { mcpServers: Record<string, McpServerItem> }>;
 }
 
 export type ActiveTab = "monitor" | "plugins" | "knowledge" | "rules" | "logs";

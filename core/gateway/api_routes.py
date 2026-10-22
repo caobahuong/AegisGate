@@ -25,13 +25,16 @@ from core.gateway.schemas import (
     CreateRuleRequest,
     ExecutionResponse,
     KnowledgeChunkResponse,
+    McpConfigResponse,
     PluginProfileResponse,
+    PluginSchemaResponse,
     RegisterPluginRequest,
     RejectExecutionRequest,
     RuleResponse,
     SetAutoModeRequest,
     SubmitExecutionRequest,
     UpdateDocsRequest,
+    UpdatePluginConfigRequest,
     UpdateRuleRequest,
 )
 from core.gateway.services import GatewayService
@@ -146,9 +149,10 @@ async def abort_execution(
 @router.get("/plugins", response_model=list[PluginProfileResponse])
 def list_plugins(
     service: Annotated[GatewayService, Depends(get_service)],
+    include_disabled: bool = Query(False, description="Include disabled plugins"),
 ) -> list[PluginProfileResponse]:
     """List all registered pluggable targets."""
-    return service.list_plugins()
+    return service.list_plugins(include_disabled=include_disabled)
 
 
 @router.post("/plugins", response_model=PluginProfileResponse, status_code=status.HTTP_201_CREATED)
@@ -158,6 +162,68 @@ def register_plugin(
 ) -> PluginProfileResponse:
     """Register a new plugin via Add Plugin Modal."""
     return service.register_plugin(req)
+
+
+@router.get("/plugins/{plugin_id}/schema", response_model=PluginSchemaResponse)
+def get_plugin_schema(
+    plugin_id: str,
+    service: Annotated[GatewayService, Depends(get_service)],
+) -> PluginSchemaResponse:
+    """Retrieve dynamic UI schema and current configuration for a plugin."""
+    try:
+        return service.get_plugin_schema(plugin_id)
+    except PluginNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=exc.message) from exc
+
+
+@router.put("/plugins/{plugin_id}", response_model=PluginProfileResponse)
+async def update_plugin_config(
+    plugin_id: str,
+    req: UpdatePluginConfigRequest,
+    service: Annotated[GatewayService, Depends(get_service)],
+) -> PluginProfileResponse:
+    """Update connection configuration for a plugin and re-init subprocess."""
+    try:
+        return await service.update_plugin_config(plugin_id, req)
+    except PluginNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=exc.message) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
+
+
+@router.delete("/plugins/{plugin_id}")
+async def delete_plugin(
+    plugin_id: str,
+    service: Annotated[GatewayService, Depends(get_service)],
+    hard_delete: bool = Query(False, description="True for hard delete from DB, False for soft deactivate"),
+) -> dict[str, Any]:
+    """Uninstall or deactivate a plugin, disconnect active subprocesses, and abort running tasks."""
+    try:
+        return await service.delete_plugin(plugin_id, hard_delete=hard_delete)
+    except PluginNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=exc.message) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
+
+
+@router.get("/plugins/{plugin_id}/mcp-config", response_model=McpConfigResponse)
+def get_plugin_mcp_config(
+    plugin_id: str,
+    service: Annotated[GatewayService, Depends(get_service)],
+) -> McpConfigResponse:
+    """Retrieve MCP JSON connection snippet for a specific plugin target."""
+    try:
+        return service.get_plugin_mcp_config(plugin_id)
+    except PluginNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=exc.message) from exc
+
+
+@router.get("/mcp/config", response_model=McpConfigResponse)
+def get_global_mcp_config(
+    service: Annotated[GatewayService, Depends(get_service)],
+) -> McpConfigResponse:
+    """Retrieve global MCP JSON connection snippet for Claude Desktop, Cursor, and Cline."""
+    return service.get_global_mcp_config()
 
 
 @router.post("/plugins/{plugin_id}/sync")
@@ -210,13 +276,23 @@ def update_knowledge_docs(
     return {"success": True}
 
 
+@router.get("/skills")
+def list_skills(
+    service: Annotated[GatewayService, Depends(get_service)],
+    target_id: Optional[str] = Query(default=None, description="Filter skills by target plugin ID"),
+) -> list[dict[str, Any]]:
+    """List query skills and templates, optionally filtered by target plugin."""
+    return service.list_skills(target_id=target_id)
+
+
 @router.get("/rules", response_model=list[RuleResponse])
 def list_rules(
     service: Annotated[GatewayService, Depends(get_service)],
-    target_id: Optional[str] = Query(default=None),
+    target_id: Optional[str] = Query(default=None, description="Filter rules by target plugin ID or 'global'"),
+    exact: bool = Query(default=False, description="Exact target match without global fallback"),
 ) -> list[RuleResponse]:
-    """List governance rules."""
-    return service.list_rules(target_id=target_id)
+    """List governance rules optionally filtered by target plugin or global scope."""
+    return service.list_rules(target_id=target_id, exact_target=exact)
 
 
 @router.post("/rules", response_model=RuleResponse, status_code=status.HTTP_201_CREATED)
@@ -284,4 +360,3 @@ def list_logs(
 ) -> list[ExecutionResponse]:
     """List historical audit logs."""
     return service.list_executions(limit=limit, target_id=target_id, status=status_filter)
-

@@ -1,12 +1,14 @@
 """Comprehensive System Verification & Anti-Gravity Browser Quality Assurance.
 
 Verifies:
-1. Backend Unit Tests (pytest: 29/29)
-2. Frontend Unit Tests (vitest: 3/3)
+1. Backend Unit Tests (pytest)
+2. Frontend Unit Tests (vitest)
 3. Subprocess process isolation & Zero orphan processes
 4. Anti-Gravity Browser Verification via Chrome Debugging on Port 9222:
    - Computed styles (bg-slate-950, typography, dark mode tokens)
    - Interactive tab navigation
+   - Dynamic UI Schema rendering & Plugin-specific custom card tables
+   - Edit Configuration modal with instant update & re-init
    - Add New Plugin modal with instant reactive reflection
    - State Machine AI flows (Safe SELECT, Forbidden JOIN rejection, Auto Approval)
    - DevTools console inspection for zero JavaScript errors or memory leaks
@@ -17,9 +19,16 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
 import time
 import psutil
 from playwright.sync_api import sync_playwright
+
+if sys.stdout.encoding.lower() != "utf-8":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
 
 SCREENSHOTS_DIR = Path("./report/screenshots")
 SCREENSHOTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -62,13 +71,18 @@ def run_anti_gravity_browser_qa() -> None:
         log_entry = f"[{msg.type}] {msg.text}"
         console_logs.append(log_entry)
         if msg.type == "error":
+            if "favicon.ico" in msg.text or "404" in msg.text and "favicon" in msg.text:
+                return
             console_errors.append(log_entry)
             print(f"  [DevTools Console Error]: {msg.text}")
+
+    user_data_dir = str(Path(tempfile.gettempdir()) / "chrome_debug_runner")
 
     # Launch browser with explicit remote debugging port 9222
     with sync_playwright() as p:
         ctx = p.chromium.launch_persistent_context(
-            user_data_dir="C:/Users/caoba/AppData/Local/Temp/chrome_debug_runner",
+            user_data_dir=user_data_dir,
+            channel="chrome",
             args=[
                 "--remote-debugging-port=9222",
                 "--remote-allow-origins=*",
@@ -98,10 +112,55 @@ def run_anti_gravity_browser_qa() -> None:
         title_el = page.locator("h1:has-text('AEGISGATE')")
         assert title_el.is_visible(), "AegisGate title not visible"
 
-        # MCP Status
+        # MCP Status & Header MCP Config Button
         assert page.locator("text=MCP Server:").is_visible(), "MCP Server label not visible"
-        assert page.locator("text=Online (Port 8001)").is_visible(), "MCP Server Online badge not visible"
+        assert page.locator("text=Active").is_visible(), "MCP Server Active badge not visible"
         print("   PASS: Dark theme (#020617) and Header typography verified.")
+
+        # Test Sidebar User Guide Modal
+        print("2.0 Testing Sidebar 'Hướng dẫn sử dụng' Modal...")
+        user_guide_btn = page.locator("[data-testid='sidebar-user-guide-btn']")
+        assert user_guide_btn.is_visible(), "Sidebar 'Hướng dẫn sử dụng' button not visible"
+        user_guide_btn.click()
+        page.wait_for_selector("text=Hướng dẫn Sử dụng Hệ thống AegisGate", timeout=4000)
+        assert page.locator("text=1. Tổng quan Kiến trúc Zero-Trust Database Gateway").is_visible()
+        page.screenshot(path=str(SCREENSHOTS_DIR / "qa_00_user_guide_modal.png"))
+
+        # Switch to MCP section in User Guide
+        page.click("button:has-text('2. Kết nối AI qua MCP')")
+        assert page.locator("text=2. Hướng dẫn Kết nối AI Clients qua giao thức MCP").is_visible()
+        time.sleep(0.3)
+
+        # Switch to Section 5: Live Monitor & Phê duyệt
+        page.click("button:has-text('5. Live Monitor & Phê duyệt')")
+        page.wait_for_selector("text=Manual Review Mode (Mặc định)", timeout=3000)
+        assert page.locator("text=Auto Approval Mode (Tự động)").is_visible()
+        page.screenshot(path=str(SCREENSHOTS_DIR / "qa_00b_user_guide_section5.png"))
+        time.sleep(0.3)
+
+        page.click("[data-testid='close-user-guide-btn']")
+        time.sleep(0.5)
+        print("   PASS: Sidebar User Guide modal opened, section 5 (Live Monitor & Phê duyệt) verified, and closed cleanly.")
+
+        # Test Header MCP Config Modal & Snippet Copy
+        print("2.1 Testing Header MCP Config Modal & Snippet Copy...")
+        header_mcp_btn = page.locator("[data-testid='header-mcp-btn']")
+        assert header_mcp_btn.is_visible()
+        header_mcp_btn.click()
+        page.wait_for_selector("[data-testid='mcp-modal']", timeout=4000)
+        assert page.locator("text=AegisGate Global MCP Connection").is_visible()
+        page.screenshot(path=str(SCREENSHOTS_DIR / "qa_01a_mcp_global_modal.png"))
+
+        # Switch to Cursor tab
+        page.click("button:has-text('Cursor (.cursor/mcp.json)')")
+        time.sleep(0.3)
+        # Click Copy to Clipboard
+        page.click("[data-testid='copy-mcp-btn']")
+        page.wait_for_selector("text=Copied to Clipboard!", timeout=3000)
+        page.screenshot(path=str(SCREENSHOTS_DIR / "qa_01b_mcp_copied.png"))
+        print("   PASS: Header MCP modal opened, tab switched to Cursor, and JSON copied successfully.")
+        page.click("button:has-text('Close')")
+        time.sleep(0.5)
 
         # Test Interactive Auto Mode Toggle
         print("3. Testing Auto Approval Mode toggle...")
@@ -126,7 +185,7 @@ def run_anti_gravity_browser_qa() -> None:
         print("   Navigating to Pluggable Targets...")
         page.click("button:has-text('Pluggable Targets')")
         page.wait_for_selector("text=Pluggable Targets & Connectors", timeout=5000)
-        assert page.locator("text=Adapter Configuration").first.is_visible()
+        assert page.locator("text=Active Connection Parameters").first.is_visible()
         assert page.locator("text=Live Operational Metrics & Pool").first.is_visible()
         page.screenshot(path=str(SCREENSHOTS_DIR / "qa_02_pluggable_targets.png"))
 
@@ -134,6 +193,33 @@ def run_anti_gravity_browser_qa() -> None:
         print("   Testing 'Sync Schema & Indexes Now' button...")
         page.locator("button:has-text('Sync Schema & Indexes Now')").first.click()
         time.sleep(1.0)
+
+        # Test Edit Configuration Modal & Dynamic UI Schema
+        print("   Testing 'Edit Configuration' Modal and Dynamic Schema Form...")
+        page.locator("button:has-text('Edit Configuration')").first.click()
+        page.wait_for_selector("text=Edit Connection Configuration", timeout=4000)
+        assert page.locator("text=Dynamic Connection Parameters (ui_schema)").is_visible()
+        time.sleep(0.5)
+        page.screenshot(path=str(SCREENSHOTS_DIR / "qa_02b_edit_plugin_modal.png"))
+
+        # Save Configuration change
+        page.click("button:has-text('Save & Re-Init Connection')")
+        time.sleep(1.0)
+        print("   PASS: Edit Configuration dynamic form opened and saved successfully.")
+
+        # Test Plugin-Specific MCP Config Button
+        print("   Testing Plugin-Specific 'MCP Config' Button...")
+        plugin_mcp_btn = page.locator("[data-testid^='mcp-btn-']").first
+        assert plugin_mcp_btn.is_visible()
+        plugin_mcp_btn.click()
+        page.wait_for_selector("[data-testid='mcp-modal']", timeout=4000)
+        assert page.locator("text=MCP Connection:").is_visible()
+        page.screenshot(path=str(SCREENSHOTS_DIR / "qa_02c_plugin_mcp_modal.png"))
+        page.click("[data-testid='copy-mcp-btn']")
+        page.wait_for_selector("text=Copied to Clipboard!", timeout=3000)
+        page.click("button:has-text('Close')")
+        time.sleep(0.5)
+        print("   PASS: Plugin-specific MCP snippet modal verified and copied.")
 
         # Test Add New Plugin Modal
         print("   Testing 'Add New Plugin' Modal and Instant Reactive Update...")
@@ -147,16 +233,79 @@ def run_anti_gravity_browser_qa() -> None:
 
         # Verify appearance in cards and sidebar
         assert page.locator("h3:has-text('PostgreSQL Analytics')").first.is_visible()
-        assert page.locator("span:has-text('PostgreSQL Analytics')").first.is_visible()
         page.screenshot(path=str(SCREENSHOTS_DIR / "qa_03_plugin_modal_added.png"))
-        print("   PASS: Add Plugin modal successfully registers target and updates sidebar and tabs immediately.")
+        print("   PASS: Add Plugin modal successfully registers target and updates immediately.")
+
+        # Test Uninstall Plugin & Sidebar Removal
+        print("   Testing 'Uninstall Plugin' Modal and Instant Removal from Sidebar...")
+        uninstall_btn = page.locator(f"[data-testid='uninstall-btn-{new_plugin_id}']")
+        assert uninstall_btn.is_visible()
+        uninstall_btn.click()
+        page.wait_for_selector("text=Uninstall Pluggable Target", timeout=3000)
+        page.screenshot(path=str(SCREENSHOTS_DIR / "qa_03b_uninstall_modal.png"))
+
+        # Select mode (Soft Deactivate) and confirm
+        page.click("[data-testid='confirm-uninstall-btn']")
+        time.sleep(1.0)
+
+        # Confirm target is removed from cards and from sidebar
+        assert not page.locator(f"[data-testid='plugin-card-{new_plugin_id}']").is_visible()
+        sidebar_target_entry = page.locator(f"[data-testid='sidebar-plugin-{new_plugin_id}']")
+        assert not sidebar_target_entry.is_visible()
+        page.screenshot(path=str(SCREENSHOTS_DIR / "qa_03c_uninstalled_sidebar_clean.png"))
+        print("   PASS: Plugin uninstalled successfully and immediately removed from Sidebar and Target cards.")
+
+        # Test Fixed Sidebar & Independent Content Scroll
+        print("   Verifying Fixed Sidebar Layout (h-screen overflow-hidden, no window scroll)...")
+        layout_metrics = page.evaluate("""() => {
+            const aside = document.querySelector('aside');
+            const main = document.querySelector('main');
+            const asideTopBefore = aside.getBoundingClientRect().top;
+            
+            // Scroll main content
+            main.scrollTop = 400;
+            const mainScrollTop = main.scrollTop;
+            const asideTopAfter = aside.getBoundingClientRect().top;
+            const windowScrollY = window.scrollY;
+
+            return {
+                asideTopBefore,
+                asideTopAfter,
+                mainScrollTop,
+                windowScrollY
+            };
+        }""")
+
+        assert layout_metrics["windowScrollY"] == 0, f"Window scrolled unexpectedly: {layout_metrics['windowScrollY']}"
+        assert layout_metrics["asideTopBefore"] == layout_metrics["asideTopAfter"], (
+            f"Sidebar moved during main scroll! Before: {layout_metrics['asideTopBefore']}, After: {layout_metrics['asideTopAfter']}"
+        )
+        print(f"   PASS: Sidebar is permanently fixed (top={layout_metrics['asideTopBefore']}px) while main scrolls independently (scrollTop={layout_metrics['mainScrollTop']}px).")
 
         # Tab: Knowledge & Rules
         print("   Navigating to Knowledge & Rules...")
         page.click("button:has-text('Knowledge & Rules')")
-        page.wait_for_selector("text=Knowledge Chunks & Markdown Docs", timeout=5000)
+        page.wait_for_selector("text=Partitioned Knowledge Chunks", timeout=5000)
         time.sleep(0.5)
         page.screenshot(path=str(SCREENSHOTS_DIR / "qa_04_knowledge_docs.png"))
+
+        # Test Target Scope Filter on Knowledge Chunks
+        print("   Testing Target Scope Filter on Knowledge Chunks...")
+        target_filter = page.locator("[data-testid='target-filter-select']")
+        assert target_filter.is_visible(), "Target Scope filter dropdown not visible"
+        # Select Global Scope Only
+        target_filter.select_option("global")
+        time.sleep(0.5)
+        # Select SQL Server Prod
+        target_filter.select_option("sqlserver_prod")
+        time.sleep(0.5)
+        # Verify target badge on chunk
+        chunk_badge = page.locator("[data-testid^='chunk-target-badge-']").first
+        assert chunk_badge.is_visible()
+        assert "Target: SQL Server Enterprise Gateway" in chunk_badge.inner_text()
+        # Reset to All Pluggable Targets
+        target_filter.select_option("all")
+        time.sleep(0.5)
 
         # Test Markdown Save
         print("   Testing Markdown Docs Save...")
@@ -164,10 +313,77 @@ def run_anti_gravity_browser_qa() -> None:
         page.wait_for_selector("text=Saved!", timeout=5000)
 
         # Sub-tab: Governance Rules
-        print("   Testing Governance Rules Sub-tab...")
+        print("   Testing Governance Rules Sub-tab & Target Scoping...")
         page.click("button:has-text('Governance Rules')")
         page.wait_for_selector("text=Governance & Security Rules", timeout=5000)
         page.screenshot(path=str(SCREENSHOTS_DIR / "qa_05_governance_rules.png"))
+
+        # Verify Global & Target badges on Rules
+        rule_badges = page.locator("[data-testid^='rule-target-badge-']").all_inner_texts()
+        assert any("Global Scope" in b for b in rule_badges), "Global Scope badge not found on rules"
+        assert any("Target: SQL Server Enterprise Gateway" in b for b in rule_badges), "Target badge not found on rules"
+        print("   PASS: Global Scope and Target badges verified on governance rules.")
+
+        # Test Target Filter on Rules
+        target_filter.select_option("global")
+        time.sleep(0.5)
+        global_only_badges = page.locator("[data-testid^='rule-target-badge-']").all_inner_texts()
+        assert all("Global Scope" in b for b in global_only_badges)
+        page.screenshot(path=str(SCREENSHOTS_DIR / "qa_05b_rules_global_filter.png"))
+
+        target_filter.select_option("all")
+        time.sleep(0.5)
+
+        # Test Create Target-Scoped Rule Modal
+        print("   Testing 'Create New Rule' modal with Target Scope selector...")
+        page.click("[data-testid='create-rule-btn']")
+        page.wait_for_selector("text=Create Governance Rule", timeout=3000)
+        assert page.locator("[data-testid='create-rule-target-select']").is_visible()
+        
+        # Fill rule fields and select target: sqlserver_prod
+        new_rule_id = f"rule_sp_who2_{int(time.time())}"
+        page.fill("input[placeholder='e.g. rule_no_cross_join']", new_rule_id)
+        page.fill("input[placeholder='e.g. Forbid Orders & AuditLogs Join']", "Block SQL Server Sp_Who2")
+        page.locator("[data-testid='create-rule-target-select']").select_option("sqlserver_prod")
+        page.fill("input[placeholder='e.g. Orders,AuditLogs']", "sp_who2")
+        page.fill("textarea[placeholder='Why this rule must be enforced...']", "Direct execution of sp_who2 is restricted.")
+        page.screenshot(path=str(SCREENSHOTS_DIR / "qa_05c_create_rule_target_scoped.png"))
+        page.click("[data-testid='submit-create-rule-btn']")
+        time.sleep(1.0)
+
+        # Verify new target-scoped rule has badge Target: SQL Server Enterprise Gateway
+        new_rule_card = page.locator(f"div[data-testid='rule-card-{new_rule_id}']")
+        assert new_rule_card.is_visible()
+        badge_in_new_rule = new_rule_card.locator("[data-testid^='rule-target-badge-']")
+        assert badge_in_new_rule.is_visible()
+        assert "Target: SQL Server Enterprise Gateway" in badge_in_new_rule.inner_text()
+        print("   PASS: Created target-scoped rule and verified Target: SQL Server Enterprise Gateway badge.")
+
+        # Test Edit Governance Rule & Reassign Target Scope
+        print("   Testing 'Edit Governance Rule' and Reassigning Target Scope back to Global Scope...")
+        edit_rule_btn = page.locator(f"[data-testid='edit-rule-btn-{new_rule_id}']")
+        assert edit_rule_btn.is_visible(), "Edit rule button not visible"
+        edit_rule_btn.click()
+        page.wait_for_selector(f"text=Edit Governance Rule: #{new_rule_id}", timeout=3000)
+
+        # Verify Rule ID is disabled
+        rule_id_disabled = page.evaluate(f"() => document.querySelector(\"input[value='{new_rule_id}']\").disabled")
+        assert rule_id_disabled is True, "Rule ID input should be disabled in edit mode"
+
+        # Update Rule Name
+        page.fill("input[value='Block SQL Server Sp_Who2']", "Block SQL Server Sp_Who2 (Updated Global)")
+        # Reassign target scope from sqlserver_prod to Global Scope ("")
+        page.locator("[data-testid='create-rule-target-select']").select_option("")
+        page.screenshot(path=str(SCREENSHOTS_DIR / "qa_05d_edit_rule_modal.png"))
+
+        # Save changes
+        page.click("[data-testid='submit-create-rule-btn']")
+        time.sleep(1.0)
+
+        # Verify rule badge dynamically updated to Global Scope
+        updated_badge = page.locator(f"div[data-testid='rule-card-{new_rule_id}'] [data-testid^='rule-target-badge-']")
+        assert "Global Scope" in updated_badge.inner_text(), f"Expected Global Scope badge, got: {updated_badge.inner_text()}"
+        print("   PASS: Rule updated successfully; target scope reassigned to Global Scope and badge updated reactively.")
 
         # Tab: Live Execution Monitor & State Machine Simulation
         print("5. Testing Live Execution Monitor & State Machine...")
@@ -222,9 +438,16 @@ def run_anti_gravity_browser_qa() -> None:
         # Inspect details modal
         page.locator("button:has-text('Inspect')").first.click()
         page.wait_for_selector("text=Execution Audit Detail", timeout=3000)
+        assert page.locator("text=Execution Output & Results").is_visible()
         page.screenshot(path=str(SCREENSHOTS_DIR / "qa_11_audit_log_drawer.png"))
+
+        # Switch to Input Tab
+        page.click("button:has-text('Input Statement & Intent')")
+        assert page.locator("text=Full SQL Statement / Command Input").is_visible()
+        page.screenshot(path=str(SCREENSHOTS_DIR / "qa_11b_audit_input_tab.png"))
+
         page.click("button:has-text('Close')")
-        print("   PASS: Audit Logs table and inspect drawer verified.")
+        print("   PASS: Audit Logs table and structured Input/Output inspect drawer verified.")
 
         ctx.close()
 

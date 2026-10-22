@@ -11,12 +11,112 @@
     "port": 1433,
     "database": "EnterpriseSales",
     "username": "sa",
+    "password": "",
+    "auth_mode": "SQL Server Authentication",
     "use_simulation": true
   },
   "supported_rules": [
     "FORBID_JOIN",
     "FORBID_TABLE_SCAN",
     "MAX_EXECUTION_TIME"
-  ]
+  ],
+  "ui_schema": [
+    {
+      "key": "server",
+      "label": "Server Host / Address",
+      "type": "text",
+      "default": "localhost",
+      "required": true,
+      "placeholder": "e.g. localhost or 10.0.0.15"
+    },
+    {
+      "key": "port",
+      "label": "TCP Port",
+      "type": "number",
+      "default": 1433,
+      "required": true,
+      "placeholder": "1433"
+    },
+    {
+      "key": "database",
+      "label": "Target Database Name",
+      "type": "text",
+      "default": "EnterpriseSales",
+      "required": true,
+      "placeholder": "e.g. EnterpriseSales"
+    },
+    {
+      "key": "username",
+      "label": "SQL Login Username",
+      "type": "text",
+      "default": "sa",
+      "required": true,
+      "placeholder": "sa"
+    },
+    {
+      "key": "password",
+      "label": "Password",
+      "type": "password",
+      "default": "",
+      "required": false,
+      "placeholder": "••••••••"
+    },
+    {
+      "key": "auth_mode",
+      "label": "Authentication Mode",
+      "type": "select",
+      "options": [
+        "SQL Server Authentication",
+        "Windows Authentication / Integrated"
+      ],
+      "default": "SQL Server Authentication",
+      "required": true
+    },
+    {
+      "key": "use_simulation",
+      "label": "Simulation Mode (Mock Engine)",
+      "type": "select",
+      "options": [
+        "true",
+        "false"
+      ],
+      "default": "true",
+      "required": false
+    }
+  ],
+  "custom_card": {
+    "type": "sqlserver_spid",
+    "title": "Active SPID & Process Pool",
+    "badge": "sys.dm_exec_requests",
+    "columns": [
+      "SPID",
+      "Status",
+      "Login",
+      "Host",
+      "Command"
+    ],
+    "sample_data": [
+      {
+        "SPID": 52,
+        "Status": "RUNNABLE",
+        "Login": "sa",
+        "Host": "app-node-01",
+        "Command": "SELECT"
+      },
+      {
+        "SPID": 53,
+        "Status": "SUSPENDED",
+        "Login": "etl_user",
+        "Host": "data-worker",
+        "Command": "PAGEIOLATCH_SH"
+      },
+      {
+        "SPID": 54,
+        "Status": "SLEEPING",
+        "Login": "reporting",
+        "Host": "bi-dash-02",
+        "Command": "AWAITING COMMAND"
+      }
+    ]
+  }
 }
-

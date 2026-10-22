@@ -1,0 +1,101 @@
+{
+  "id": "mongodb_prod",
+  "name": "MongoDB Enterprise Analytics",
+  "version": "1.0.0",
+  "driver": "pymongo/mongodb",
+  "entrypoint": "python plugins/mongodb_plugin/adapter.py",
+  "dry_run_command": "db.runCommand({explain: ...})",
+  "abort_command": "db.killOp({opid})",
+  "default_config": {
+    "connection_uri": "mongodb://localhost:27017",
+    "database": "EnterpriseAnalytics",
+    "auth_source": "admin",
+    "max_pool_size": 100,
+    "ssl_enabled": "false"
+  },
+  "supported_rules": [
+    "FORBID_TABLE_SCAN",
+    "MAX_EXECUTION_TIME"
+  ],
+  "ui_schema": [
+    {
+      "key": "connection_uri",
+      "label": "Connection URI",
+      "type": "text",
+      "default": "mongodb://localhost:27017",
+      "required": true,
+      "placeholder": "mongodb://user:pass@host:27017"
+    },
+    {
+      "key": "database",
+      "label": "Target Database",
+      "type": "text",
+      "default": "EnterpriseAnalytics",
+      "required": true,
+      "placeholder": "e.g. EnterpriseAnalytics"
+    },
+    {
+      "key": "auth_source",
+      "label": "Authentication DB (authSource)",
+      "type": "text",
+      "default": "admin",
+      "required": false,
+      "placeholder": "admin"
+    },
+    {
+      "key": "max_pool_size",
+      "label": "Max Connection Pool Size",
+      "type": "number",
+      "default": 100,
+      "required": false,
+      "placeholder": "100"
+    },
+    {
+      "key": "ssl_enabled",
+      "label": "TLS / SSL Mode",
+      "type": "select",
+      "options": [
+        "false",
+        "true"
+      ],
+      "default": "false",
+      "required": false
+    }
+  ],
+  "custom_card": {
+    "type": "mongodb_opid",
+    "title": "MongoDB Active Operations & OpID Pool",
+    "badge": "db.currentOp()",
+    "columns": [
+      "OpID",
+      "Type",
+      "Namespace",
+      "SecsRunning",
+      "WaitingForLock"
+    ],
+    "sample_data": [
+      {
+        "OpID": "op_9921",
+        "Type": "query",
+        "Namespace": "EnterpriseAnalytics.Events",
+        "SecsRunning": 0.04,
+        "WaitingForLock": false
+      },
+      {
+        "OpID": "op_9922",
+        "Type": "update",
+        "Namespace": "EnterpriseAnalytics.UserSessions",
+        "SecsRunning": 0.01,
+        "WaitingForLock": false
+      },
+      {
+        "OpID": "op_9925",
+        "Type": "aggregate",
+        "Namespace": "EnterpriseAnalytics.Metrics",
+        "SecsRunning": 0.12,
+        "WaitingForLock": true
+      }
+    ]
+  }
+}
+

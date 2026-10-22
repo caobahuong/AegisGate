@@ -1,29 +1,37 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
 import { Sidebar } from "@/components/Sidebar";
 import { LiveExecutionMonitor } from "@/components/LiveExecutionMonitor";
 import { PluginManagement } from "@/components/PluginManagement";
 import { KnowledgeAndRules } from "@/components/KnowledgeAndRules";
 import { AuditLogs } from "@/components/AuditLogs";
+import { McpConfigModal } from "@/components/McpConfigModal";
+import { UserGuideModal } from "@/components/UserGuideModal";
 import {
   ActiveTab,
   CreateRuleRequest,
   ExecutionResponse,
   KnowledgeChunkResponse,
+  McpConfigResponse,
   PluginProfileResponse,
   RegisterPluginRequest,
   RuleResponse,
+  UpdatePluginConfigRequest,
+  UpdateRuleRequest,
 } from "@/types";
 import {
   abortExecution,
   approveExecution,
   createRule,
+  deletePlugin,
   deleteRule,
   fetchAutoMode,
   fetchExecutions,
+  fetchGlobalMcpConfig,
   fetchKnowledgeChunks,
+  fetchPluginMcpConfig,
   fetchPlugins,
   fetchRules,
   registerPlugin,
@@ -32,6 +40,8 @@ import {
   submitExecution,
   syncPluginCatalog,
   updateKnowledgeDocs,
+  updatePluginConfig,
+  updateRule,
 } from "@/lib/api";
 
 const SSE_URL = process.env.NEXT_PUBLIC_SSE_URL || "http://127.0.0.1:8000/api/monitor/events";
@@ -39,46 +49,64 @@ const SSE_URL = process.env.NEXT_PUBLIC_SSE_URL || "http://127.0.0.1:8000/api/mo
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("monitor");
   const [autoMode, setAutoModeState] = useState<boolean>(false);
-  const [plugins, setPlugins] = useState<PluginProfileResponse[]>([]);
+  const [mcpOnline, setMcpOnline] = useState<boolean>(true);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  // Core Data Collections
   const [executions, setExecutions] = useState<ExecutionResponse[]>([]);
   const [selectedExecution, setSelectedExecution] = useState<ExecutionResponse | null>(null);
+  const [plugins, setPlugins] = useState<PluginProfileResponse[]>([]);
   const [chunks, setChunks] = useState<KnowledgeChunkResponse[]>([]);
   const [rules, setRules] = useState<RuleResponse[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [mcpOnline, setMcpOnline] = useState<boolean>(true);
 
-  // Initial Data Fetching
-  const loadInitialData = useCallback(async () => {
-    try {
-      const [fetchedPlugins, fetchedAutoMode, fetchedExecs, fetchedChunks, fetchedRules] =
-        await Promise.allSettled([
-          fetchPlugins(),
-          fetchAutoMode(),
-          fetchExecutions(),
-          fetchKnowledgeChunks(),
-          fetchRules(),
-        ]);
+  // MCP Connection Modal State
+  const [showMcpModal, setShowMcpModal] = useState<boolean>(false);
+  const [showUserGuideModal, setShowUserGuideModal] = useState<boolean>(false);
+  const [mcpModalData, setMcpModalData] = useState<McpConfigResponse | null>(null);
+  const [mcpModalTitle, setMcpModalTitle] = useState<string>("MCP Connection Configuration");
+  const [mcpModalSubtitle, setMcpModalSubtitle] = useState<string>(
+    "Global AegisGate MCP Server configuration for Claude, Cursor, and Cline"
+  );
+  const [isMcpLoading, setIsMcpLoading] = useState<boolean>(false);
 
-      if (fetchedPlugins.status === "fulfilled") setPlugins(fetchedPlugins.value);
-      if (fetchedAutoMode.status === "fulfilled") setAutoModeState(fetchedAutoMode.value);
-      if (fetchedExecs.status === "fulfilled") {
-        setExecutions(fetchedExecs.value);
-        if (fetchedExecs.value.length > 0) {
-          setSelectedExecution(fetchedExecs.value[0]);
+  // 1. Initial Data Load
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadInitialData() {
+      try {
+        const [loadedAutoMode, loadedExecutions, loadedPlugins, loadedChunks, loadedRules] =
+          await Promise.all([
+            fetchAutoMode(),
+            fetchExecutions(),
+            fetchPlugins(),
+            fetchKnowledgeChunks(),
+            fetchRules(),
+          ]);
+
+        if (isMounted) {
+          setAutoModeState(loadedAutoMode);
+          setExecutions(loadedExecutions);
+          if (loadedExecutions.length > 0) {
+            setSelectedExecution(loadedExecutions[0]);
+          }
+          setPlugins(loadedPlugins);
+          setChunks(loadedChunks);
+          setRules(loadedRules);
         }
+      } catch (err) {
+        console.error("Failed to load initial AegisGate data:", err);
       }
-      if (fetchedChunks.status === "fulfilled") setChunks(fetchedChunks.value);
-      if (fetchedRules.status === "fulfilled") setRules(fetchedRules.value);
-    } catch (err) {
-      console.error("Initial data load error:", err);
     }
+
+    loadInitialData();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  useEffect(() => {
-    loadInitialData();
-  }, [loadInitialData]);
-
-  // Clean Server-Sent Events Lifecycle per typescript_clean_code.md
+  // 2. Real-Time SSE Listener (Server-Sent Events)
   useEffect(() => {
     let eventSource: EventSource | null = null;
     let reconnectTimer: NodeJS.Timeout | null = null;
@@ -93,25 +121,31 @@ export default function DashboardPage() {
 
         eventSource.onmessage = (event) => {
           try {
-            const parsed = JSON.parse(event.data);
-            const { event: eventType, data } = parsed;
+            const rawData = JSON.parse(event.data);
+            if (rawData.event === "execution_update" && rawData.data) {
+              const updatedExec: ExecutionResponse = rawData.data;
 
-            // When an execution state changes, re-fetch executions or update state immutably
-            if (eventType.startsWith("execution_")) {
-              fetchExecutions().then((updatedList) => {
-                setExecutions(updatedList);
-                if (data?.execution_id) {
-                  const currentSelected = updatedList.find(
-                    (e) => e.id === data.execution_id
-                  );
-                  if (currentSelected) {
-                    setSelectedExecution(currentSelected);
-                  }
+              // Immutable list update
+              setExecutions((prev) => {
+                const exists = prev.some((e) => e.id === updatedExec.id);
+                if (exists) {
+                  return prev.map((e) => (e.id === updatedExec.id ? updatedExec : e));
                 }
+                return [updatedExec, ...prev];
               });
+
+              // Keep selected execution synced
+              setSelectedExecution((current) => {
+                if (!current || current.id === updatedExec.id) {
+                  return updatedExec;
+                }
+                return current;
+              });
+            } else if (rawData.event === "auto_mode_changed") {
+              setAutoModeState(Boolean(rawData.data?.enabled));
             }
           } catch (err) {
-            console.error("Failed to parse SSE payload:", err);
+            console.error("SSE parse error:", err);
           }
         };
 
@@ -169,8 +203,8 @@ export default function DashboardPage() {
 
   const handleApprove = async (id: string) => {
     try {
-      const updated = await approveExecution(id);
-      setExecutions((prev) => prev.map((e) => (e.id === id ? updated : e)));
+      const updated = await approveExecution(id, "Admin Dashboard");
+      setExecutions((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
       setSelectedExecution(updated);
     } catch (err) {
       alert(`Approval error: ${err instanceof Error ? err.message : "Unknown error"}`);
@@ -179,8 +213,8 @@ export default function DashboardPage() {
 
   const handleReject = async (id: string) => {
     try {
-      const updated = await rejectExecution(id);
-      setExecutions((prev) => prev.map((e) => (e.id === id ? updated : e)));
+      const updated = await rejectExecution(id, "Rejected by Admin Dashboard");
+      setExecutions((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
       setSelectedExecution(updated);
     } catch (err) {
       alert(`Rejection error: ${err instanceof Error ? err.message : "Unknown error"}`);
@@ -190,7 +224,7 @@ export default function DashboardPage() {
   const handleAbort = async (id: string) => {
     try {
       const updated = await abortExecution(id);
-      setExecutions((prev) => prev.map((e) => (e.id === id ? updated : e)));
+      setExecutions((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
       setSelectedExecution(updated);
     } catch (err) {
       alert(`Abort error: ${err instanceof Error ? err.message : "Unknown error"}`);
@@ -200,6 +234,11 @@ export default function DashboardPage() {
   const handleRegisterPlugin = async (req: RegisterPluginRequest) => {
     const newPlugin = await registerPlugin(req);
     setPlugins((prev) => [...prev.filter((p) => p.id !== newPlugin.id), newPlugin]);
+  };
+
+  const handleUpdatePlugin = async (pluginId: string, req: UpdatePluginConfigRequest) => {
+    const updated = await updatePluginConfig(pluginId, req);
+    setPlugins((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
   };
 
   const handleSyncPlugin = async (pluginId: string) => {
@@ -220,29 +259,75 @@ export default function DashboardPage() {
     setRules((prev) => [...prev.filter((r) => r.id !== newRule.id), newRule]);
   };
 
+  const handleUpdateRule = async (ruleId: string, ruleReq: UpdateRuleRequest) => {
+    const updated = await updateRule(ruleId, ruleReq);
+    setRules((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+  };
+
   const handleDeleteRule = async (ruleId: string) => {
     await deleteRule(ruleId);
     setRules((prev) => prev.filter((r) => r.id !== ruleId));
   };
 
+  const handleUninstallPlugin = async (pluginId: string, hardDelete: boolean = false) => {
+    await deletePlugin(pluginId, hardDelete);
+    setPlugins((prev) => prev.filter((p) => p.id !== pluginId));
+  };
+
+  const handleOpenGlobalMcp = async () => {
+    setMcpModalTitle("AegisGate Global MCP Connection");
+    setMcpModalSubtitle(
+      "Connect Claude Desktop, Cursor, or Cline to AegisGate Core Gateway & Governance Proxy"
+    );
+    setShowMcpModal(true);
+    setIsMcpLoading(true);
+    try {
+      const data = await fetchGlobalMcpConfig();
+      setMcpModalData(data);
+    } catch (err) {
+      console.error("Failed to fetch global MCP config:", err);
+    } finally {
+      setIsMcpLoading(false);
+    }
+  };
+
+  const handleOpenPluginMcp = async (plugin: PluginProfileResponse) => {
+    setMcpModalTitle(`MCP Connection: ${plugin.name}`);
+    setMcpModalSubtitle(`Target connector snippet for ${plugin.driver} (${plugin.id})`);
+    setShowMcpModal(true);
+    setIsMcpLoading(true);
+    try {
+      const data = await fetchPluginMcpConfig(plugin.id);
+      setMcpModalData(data);
+    } catch (err) {
+      console.error(`Failed to fetch MCP config for ${plugin.id}:`, err);
+    } finally {
+      setIsMcpLoading(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+    <div className="h-screen w-screen bg-slate-950 text-slate-100 flex flex-col overflow-hidden">
       {/* Top Header */}
       <Header
         autoMode={autoMode}
         onToggleAutoMode={handleToggleAutoMode}
         mcpOnline={mcpOnline}
+        onOpenMcpModal={handleOpenGlobalMcp}
       />
 
-      {/* Main Workspace: Sidebar + Dynamic Content */}
-      <div className="flex flex-1 overflow-hidden">
+      {/* Main Grid: Sidebar + Dynamic Tabbed Views */}
+      <div className="flex-1 flex overflow-hidden min-h-0">
+        {/* Left Sidebar */}
         <Sidebar
           activeTab={activeTab}
           onTabChange={setActiveTab}
           plugins={plugins}
+          onOpenUserGuide={() => setShowUserGuideModal(true)}
         />
 
-        <main className="flex-1 p-6 overflow-y-auto max-h-[calc(100vh-4rem)]">
+        {/* Dynamic Main Workspace Tab Content */}
+        <main className="flex-1 overflow-y-auto p-6 min-h-0">
           {activeTab === "monitor" && (
             <LiveExecutionMonitor
               executions={executions}
@@ -261,7 +346,10 @@ export default function DashboardPage() {
             <PluginManagement
               plugins={plugins}
               onRegisterPlugin={handleRegisterPlugin}
+              onUpdatePlugin={handleUpdatePlugin}
               onSyncPlugin={handleSyncPlugin}
+              onUninstallPlugin={handleUninstallPlugin}
+              onViewMcpConfig={handleOpenPluginMcp}
             />
           )}
 
@@ -269,16 +357,38 @@ export default function DashboardPage() {
             <KnowledgeAndRules
               chunks={chunks}
               rules={rules}
+              plugins={plugins}
               onSaveDocs={handleSaveDocs}
               onCreateRule={handleCreateRule}
+              onUpdateRule={handleUpdateRule}
               onDeleteRule={handleDeleteRule}
             />
           )}
 
-          {activeTab === "logs" && <AuditLogs logs={executions} />}
+          {activeTab === "logs" && (
+            <AuditLogs
+              executions={executions}
+              plugins={plugins}
+            />
+          )}
         </main>
       </div>
+
+      {/* Reusable MCP Snippet Modal */}
+      <McpConfigModal
+        isOpen={showMcpModal}
+        onClose={() => setShowMcpModal(false)}
+        title={mcpModalTitle}
+        subtitle={mcpModalSubtitle}
+        configData={mcpModalData}
+        isLoading={isMcpLoading}
+      />
+
+      {/* Interactive User Guide & Documentation Modal */}
+      <UserGuideModal
+        isOpen={showUserGuideModal}
+        onClose={() => setShowUserGuideModal(false)}
+      />
     </div>
   );
 }
-

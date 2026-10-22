@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Activity, Boxes, BookOpen, FileText, Database } from "lucide-react";
+import { Activity, Boxes, BookOpen, FileText, Database, HelpCircle } from "lucide-react";
 import { ActiveTab, PluginProfileResponse } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -9,12 +9,14 @@ interface SidebarProps {
   activeTab: ActiveTab;
   onTabChange: (tab: ActiveTab) => void;
   plugins: PluginProfileResponse[];
+  onOpenUserGuide?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   onTabChange,
   plugins,
+  onOpenUserGuide,
 }) => {
   const navItems = [
     {
@@ -40,7 +42,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   return (
-    <aside className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col justify-between h-[calc(100vh-4rem)] select-none">
+    <aside className="w-64 flex-shrink-0 bg-slate-900 border-r border-slate-800 flex flex-col justify-between h-full overflow-hidden select-none">
       {/* Navigation Links */}
       <div className="p-4 space-y-1">
         <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">
@@ -65,6 +67,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           );
         })}
+
+        {/* User Guide Button */}
+        <div className="pt-3">
+          <button
+            onClick={onOpenUserGuide}
+            data-testid="sidebar-user-guide-btn"
+            className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs font-semibold text-indigo-300 hover:text-white bg-indigo-600/10 hover:bg-indigo-600/20 border border-indigo-500/20 transition-all duration-150 shadow-sm"
+          >
+            <HelpCircle className="h-4 w-4 text-indigo-400 flex-shrink-0" />
+            <span>Hướng dẫn sử dụng</span>
+          </button>
+        </div>
       </div>
 
       {/* Connected Plugins Section at Bottom */}
@@ -81,6 +95,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             plugins.map((plugin) => (
               <div
                 key={plugin.id}
+                data-testid={`sidebar-plugin-${plugin.id}`}
                 className="flex items-center justify-between p-2 rounded bg-slate-900 border border-slate-800 text-[11px]"
               >
                 <div className="flex items-center space-x-2 truncate">
@@ -106,4 +121,3 @@ export const Sidebar: React.FC<SidebarProps> = ({
     </aside>
   );
 };
-

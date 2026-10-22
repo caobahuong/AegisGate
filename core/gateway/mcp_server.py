@@ -8,8 +8,12 @@ Provides 4 standard MCP tools for AI Agents per plan.md & tech.md:
 """
 
 import json
+import sys
 from typing import Any, Optional
-from mcp.server.fastmcp import FastMCP
+try:
+    from mcp.server.fastmcp import FastMCP
+except Exception:
+    from mcp.server.mcpserver import MCPServer as FastMCP
 from sqlmodel import Session
 from core.database import engine
 from core.engine.state_machine import ExecutionStateMachine
@@ -17,29 +21,44 @@ from core.storage.knowledge_store import KnowledgeStore
 from core.storage.log_store import LogStore
 from core.storage.rule_store import RuleStore
 
-mcp_app = FastMCP(name="AegisGate-MCP-Server")
+# Parse optional --plugin from command line
+DEFAULT_TARGET_ID: Optional[str] = None
+for idx, arg in enumerate(sys.argv):
+    if arg == "--plugin" and idx + 1 < len(sys.argv):
+        DEFAULT_TARGET_ID = sys.argv[idx + 1]
+        break
+
+server_name = f"AegisGate-MCP-{DEFAULT_TARGET_ID}" if DEFAULT_TARGET_ID else "AegisGate-MCP-Server"
+mcp_app = FastMCP(name=server_name)
 
 
 @mcp_app.tool()
-def get_catalog(target_id: str, partition_key: Optional[str] = None) -> str:
+def get_catalog(target_id: Optional[str] = None, partition_key: Optional[str] = None) -> str:
     """Retrieve database schema and structural catalog without touching the target system.
     
     Returns table definitions, columns, data types, and indexes cached in AegisGate.
     Args:
-        target_id: Identifier of the target plugin (e.g. 'sqlserver_prod')
+        target_id: Identifier of the target plugin (e.g. 'sqlserver_prod'). Defaults to server's bound target if configured.
         partition_key: Optional partition name (e.g. 'Sales', 'Finance')
     """
+    effective_target = target_id or DEFAULT_TARGET_ID
+    if not effective_target:
+        return json.dumps(
+            {"error": "target_id must be provided when server is not bound to a specific plugin."},
+            indent=2,
+        )
+
     with Session(engine) as session:
         store = KnowledgeStore(session)
-        chunks = store.list_chunks(target_id=target_id)
+        chunks = store.list_chunks(target_id=effective_target)
         if partition_key:
             chunks = [c for c in chunks if c["partition_key"].lower() == partition_key.lower()]
 
         if not chunks:
             return json.dumps(
                 {
-                    "target_id": target_id,
-                    "message": f"No catalog partitions found for target '{target_id}'. Please sync first.",
+                    "target_id": effective_target,
+                    "message": f"No catalog partitions found for target '{effective_target}'. Please sync first.",
                     "partitions": [],
                 },
                 indent=2,
@@ -57,18 +76,25 @@ def get_catalog(target_id: str, partition_key: Optional[str] = None) -> str:
 
 
 @mcp_app.tool()
-def get_knowledge(target_id: str, partition_key: Optional[str] = None) -> str:
+def get_knowledge(target_id: Optional[str] = None, partition_key: Optional[str] = None) -> str:
     """Retrieve business documentation (doc.md), query skills, and active rules for a target.
     
     Args:
-        target_id: Identifier of the target plugin (e.g. 'sqlserver_prod')
+        target_id: Identifier of the target plugin (e.g. 'sqlserver_prod'). Defaults to server's bound target if configured.
         partition_key: Optional partition name
     """
+    effective_target = target_id or DEFAULT_TARGET_ID
+    if not effective_target:
+        return json.dumps(
+            {"error": "target_id must be provided when server is not bound to a specific plugin."},
+            indent=2,
+        )
+
     with Session(engine) as session:
         k_store = KnowledgeStore(session)
         r_store = RuleStore(session)
 
-        chunks = k_store.list_chunks(target_id=target_id)
+        chunks = k_store.list_chunks(target_id=effective_target)
         if partition_key:
             chunks = [c for c in chunks if c["partition_key"].lower() == partition_key.lower()]
 
@@ -85,7 +111,7 @@ def get_knowledge(target_id: str, partition_key: Optional[str] = None) -> str:
                     }
                 )
 
-        active_rules = r_store.list_rules(target_id=target_id, is_active_only=True)
+        active_rules = r_store.list_rules(target_id=effective_target, is_active_only=True)
         rules_output = [
             {
                 "id": r.id,
@@ -100,7 +126,7 @@ def get_knowledge(target_id: str, partition_key: Optional[str] = None) -> str:
 
         return json.dumps(
             {
-                "target_id": target_id,
+                "target_id": effective_target,
                 "knowledge_chunks": hydrated_chunks,
                 "active_rules": rules_output,
             },
@@ -109,20 +135,27 @@ def get_knowledge(target_id: str, partition_key: Optional[str] = None) -> str:
 
 
 @mcp_app.tool()
-async def submit_execution(target_id: str, query: str, reasoning: str = "") -> str:
+async def submit_execution(query: str, target_id: Optional[str] = None, reasoning: str = "") -> str:
     """Submit a SQL query or command to AegisGate for Dry-Run and Execution control.
     
     If Auto Approval is ON, AegisGate executes automatically if valid.
     If Auto Approval is OFF, query transitions to PAUSED_FOR_REVIEW for human approval.
     Args:
-        target_id: Identifier of the target plugin (e.g. 'sqlserver_prod')
         query: Raw SQL query statement to execute
+        target_id: Identifier of the target plugin (e.g. 'sqlserver_prod'). Defaults to server's bound target if configured.
         reasoning: Explanation of AI intent and purpose for this query
     """
+    effective_target = target_id or DEFAULT_TARGET_ID
+    if not effective_target:
+        return json.dumps(
+            {"error": "target_id must be provided when server is not bound to a specific plugin."},
+            indent=2,
+        )
+
     with Session(engine) as session:
         state_machine = ExecutionStateMachine(session)
         log = await state_machine.initiate_execution(
-            target_id=target_id,
+            target_id=effective_target,
             query=query,
             reasoning=reasoning,
         )
@@ -201,3 +234,19 @@ def check_execution_status(execution_id: str) -> str:
 
         return json.dumps(resp, indent=2)
 
+
+
+if __name__ == "__main__":
+    # Remove --plugin <target> from sys.argv so MCPServer stdio runner is clean
+    cleaned_argv = [sys.argv[0]]
+    skip = False
+    for i, a in enumerate(sys.argv[1:], start=1):
+        if skip:
+            skip = False
+            continue
+        if a == "--plugin":
+            skip = True
+            continue
+        cleaned_argv.append(a)
+    sys.argv = cleaned_argv
+    mcp_app.run()

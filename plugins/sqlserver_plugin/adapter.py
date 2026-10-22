@@ -35,6 +35,8 @@ from plugins.plugin_contract import (
     JsonRpcRequest,
     JsonRpcResponse,
     PartitionSchema,
+    ReinitParams,
+    ReinitResult,
     SyncKnowledgeParams,
     SyncKnowledgeResult,
     TableSchema,
@@ -42,12 +44,13 @@ from plugins.plugin_contract import (
 
 
 class SqlServerAdapter(IPluginAdapter):
-    """Adapter for Microsoft SQL Server implementing the 4 AegisGate ports."""
+    """Adapter for Microsoft SQL Server implementing the AegisGate ports."""
 
     def __init__(self) -> None:
         # In-memory tracking of running execution sessions and their assigned SPIDs
         self._active_sessions: dict[str, int] = {}
         self._spid_counter: int = 50
+        self._config: dict[str, Any] = {}
 
     def _allocate_spid(self, execution_id: str) -> int:
         self._spid_counter += 1
@@ -188,10 +191,17 @@ class SqlServerAdapter(IPluginAdapter):
         operators = []
         if "JOIN" in normalized:
             operators.append({"PhysicalOp": "Hash Match", "LogicalOp": "Inner Join", "EstimateRows": 15000})
+
+        target_obj = "[dbo].[Orders].[PK_Orders]"
+        if "PRODUCT" in normalized:
+            target_obj = "[dbo].[Products].[PK_Products]"
+        elif "AUDIT" in normalized:
+            target_obj = "[dbo].[AuditLogs].[PK_AuditLogs]"
+
         if "WHERE" in normalized:
-            operators.append({"PhysicalOp": "Clustered Index Seek", "Object": "[dbo].[Orders].[PK_Orders]"})
+            operators.append({"PhysicalOp": "Clustered Index Seek", "Object": target_obj})
         else:
-            operators.append({"PhysicalOp": "Clustered Index Scan", "Object": "[dbo].[Orders].[PK_Orders]"})
+            operators.append({"PhysicalOp": "Clustered Index Scan", "Object": target_obj})
 
         explain_plan = {
             "StatementText": query,
@@ -229,12 +239,26 @@ class SqlServerAdapter(IPluginAdapter):
         time.sleep(0.05)  # simulate 50ms database roundtrip
         duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
 
-        # Generate sample dataset
-        sample_rows = [
-            {"OrderID": 1001, "CustomerID": 42, "OrderDate": "2026-10-21T09:30:00", "TotalAmount": 450.00, "Status": "Completed"},
-            {"OrderID": 1002, "CustomerID": 88, "OrderDate": "2026-10-21T10:15:00", "TotalAmount": 1280.50, "Status": "Completed"},
-            {"OrderID": 1003, "CustomerID": 15, "OrderDate": "2026-10-21T11:00:00", "TotalAmount": 89.99, "Status": "Pending"},
-        ]
+        # Generate sample dataset according to query entity
+        norm_q = params.query.upper()
+        if "PRODUCT" in norm_q:
+            sample_rows = [
+                {"ProductID": 101, "SKU": "SRV-42U-PRO", "Name": "Enterprise Server Rack 42U", "Price": 1299.99, "CurrentStock": 18},
+                {"ProductID": 102, "SKU": "SW-48G-L3", "Name": "Managed Gigabit Switch 48-Port", "Price": 549.50, "CurrentStock": 45},
+                {"ProductID": 103, "SKU": "CBL-CAT6A-2M", "Name": "Cat6A Shielded Patch Cable 2m", "Price": 14.99, "CurrentStock": 350},
+                {"ProductID": 104, "SKU": "SFP-10G-SR", "Name": "10GBASE-SR SFP+ Optical Transceiver", "Price": 79.00, "CurrentStock": 120},
+            ]
+        elif "AUDIT" in norm_q:
+            sample_rows = [
+                {"LogID": 9001, "EventTime": "2026-10-22T08:00:15", "Action": "LOGIN_SUCCESS", "RawPayload": "User sa logged in from 10.0.1.5"},
+                {"LogID": 9002, "EventTime": "2026-10-22T08:15:22", "Action": "SCHEMA_AUDIT", "RawPayload": "Table dbo.Products read by AI Agent"},
+            ]
+        else:
+            sample_rows = [
+                {"OrderID": 1001, "CustomerID": 42, "OrderDate": "2026-10-21T09:30:00", "TotalAmount": 450.00, "Status": "Completed"},
+                {"OrderID": 1002, "CustomerID": 88, "OrderDate": "2026-10-21T10:15:00", "TotalAmount": 1280.50, "Status": "Completed"},
+                {"OrderID": 1003, "CustomerID": 15, "OrderDate": "2026-10-21T11:00:00", "TotalAmount": 89.99, "Status": "Pending"},
+            ]
 
         # Clean up session
         self._active_sessions.pop(params.execution_id, None)
@@ -257,6 +281,18 @@ class SqlServerAdapter(IPluginAdapter):
         return AbortResult(
             success=True,
             message=message,
+        )
+
+    def reinit(self, params: ReinitParams) -> ReinitResult:
+        """Port 5: Reinitialize connection with updated configuration parameters."""
+        self._config = params.config
+        server = self._config.get("server", "localhost")
+        port = self._config.get("port", 1433)
+        db = self._config.get("database", "EnterpriseSales")
+        return ReinitResult(
+            success=True,
+            message=f"SQL Server connection reinitialized to {server}:{port}/{db}",
+            status="active",
         )
 
 
@@ -289,6 +325,9 @@ def handle_stdio_jsonrpc() -> None:
         elif req.method == "abort":
             params_abort = AbortParams.model_validate(req.params)
             result = adapter.abort(params_abort).model_dump()
+        elif req.method == "reinit":
+            params_reinit = ReinitParams.model_validate(req.params)
+            result = adapter.reinit(params_reinit).model_dump()
         else:
             resp_err = JsonRpcResponse(
                 id=req_id,

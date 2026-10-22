@@ -32,15 +32,22 @@ class RuleStore:
         self,
         target_id: Optional[str] = None,
         is_active_only: bool = False,
+        exact_target: bool = False,
     ) -> list[Rule]:
         """List rules, optionally filtered by target and active status.
         
-        Rules with target_id == None are global rules and apply to all targets.
+        If target_id == 'global', matches rules where target_id is None.
+        If exact_target is True, matches Rule.target_id == target_id strictly.
+        Otherwise, target_id includes both target-specific and global rules.
         """
         statement = select(Rule)
-        if target_id is not None:
-            # Include both target-specific rules and global rules
-            statement = statement.where((Rule.target_id == target_id) | (Rule.target_id == None))  # noqa: E711
+        if target_id == "global":
+            statement = statement.where(Rule.target_id == None)  # noqa: E711
+        elif target_id is not None:
+            if exact_target:
+                statement = statement.where(Rule.target_id == target_id)
+            else:
+                statement = statement.where((Rule.target_id == target_id) | (Rule.target_id == None))  # noqa: E711
         if is_active_only:
             statement = statement.where(Rule.is_active == True)  # noqa: E712
 
