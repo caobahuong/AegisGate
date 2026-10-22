@@ -8,6 +8,7 @@ import { PluginManagement } from "../components/PluginManagement";
 import { McpConfigModal } from "../components/McpConfigModal";
 import { UserGuideModal } from "../components/UserGuideModal";
 import { KnowledgeAndRules } from "../components/KnowledgeAndRules";
+import { LiveExecutionMonitor } from "../components/LiveExecutionMonitor";
 import {
   ExecutionResponse,
   KnowledgeChunkResponse,
@@ -700,6 +701,192 @@ describe("Frontend Component Tests", () => {
       expression: "15",
       description: "Enforced across all targets",
       is_active: true,
+    });
+  });
+
+  it("renders LiveExecutionMonitor operational hub with categorized sessions and filters", async () => {
+    const handleSelect = vi.fn();
+    const handleSubmit = vi.fn();
+    const handleApprove = vi.fn().mockResolvedValue(undefined);
+    const handleReject = vi.fn().mockResolvedValue(undefined);
+    const handleAbort = vi.fn().mockResolvedValue(undefined);
+
+    const sampleExecutions: ExecutionResponse[] = [
+      {
+        id: "exec_pending_1",
+        target_id: "sqlserver_prod",
+        query: "SELECT TOP 10 * FROM dbo.Orders;",
+        query_type: "READ",
+        reasoning: "Checking pending review flow",
+        status: "PAUSED_FOR_REVIEW",
+        explain_plan: { QueryPlan: { RelOp: [] } },
+        violations: [],
+        execution_time_ms: null,
+        auto_approved: false,
+        approved_by: null,
+        result_summary: null,
+        error_message: null,
+        spid: 51,
+        created_at: "2026-10-22T10:00:00Z",
+        finished_at: null,
+      },
+      {
+        id: "exec_running_1",
+        target_id: "mongodb_prod",
+        query: "db.inventory.find({ qty: { $gt: 20 } })",
+        query_type: "READ",
+        reasoning: "Long running inventory aggregation",
+        status: "EXECUTING",
+        explain_plan: {},
+        violations: [],
+        execution_time_ms: null,
+        auto_approved: true,
+        approved_by: "System",
+        result_summary: null,
+        error_message: null,
+        spid: 99,
+        created_at: "2026-10-22T10:01:00Z",
+        finished_at: null,
+      },
+      {
+        id: "exec_blocked_1",
+        target_id: "sqlserver_prod",
+        query: "SELECT * FROM Orders CROSS JOIN AuditLogs",
+        query_type: "READ",
+        reasoning: "Malicious cross join attempt",
+        status: "REJECTED",
+        explain_plan: {},
+        violations: ["Rule Violation: FORBID_JOIN Orders,AuditLogs"],
+        execution_time_ms: null,
+        auto_approved: false,
+        approved_by: null,
+        result_summary: null,
+        error_message: "Policy Violation: Cross Join forbidden",
+        spid: null,
+        created_at: "2026-10-22T10:02:00Z",
+        finished_at: "2026-10-22T10:02:01Z",
+      },
+      {
+        id: "exec_completed_1",
+        target_id: "sqlserver_prod",
+        query: "SELECT OrderID FROM dbo.Orders WHERE OrderID = 100;",
+        query_type: "READ",
+        reasoning: "Normal query",
+        status: "COMPLETED",
+        explain_plan: {},
+        violations: [],
+        execution_time_ms: 18.5,
+        auto_approved: true,
+        approved_by: "System",
+        result_summary: { count: 1 },
+        error_message: null,
+        spid: 52,
+        created_at: "2026-10-22T10:03:00Z",
+        finished_at: "2026-10-22T10:03:01Z",
+      },
+    ];
+
+    const samplePlugins: PluginProfileResponse[] = [
+      {
+        id: "sqlserver_prod",
+        name: "SQL Server Enterprise",
+        driver: "pyodbc/mssql",
+        entrypoint: "python adapter.py",
+        dry_run_command: "SET SHOWPLAN_XML ON",
+        abort_command: "KILL {spid}",
+        config: {},
+        status: "active",
+        latency_ms: 12.0,
+        active_sessions_count: 2,
+        created_at: "2026-10-21T00:00:00Z",
+        updated_at: "2026-10-21T00:00:00Z",
+      },
+    ];
+
+    const { rerender } = render(
+      <LiveExecutionMonitor
+        executions={sampleExecutions}
+        selectedExecution={sampleExecutions[0]}
+        onSelectExecution={handleSelect}
+        onSubmitQuery={handleSubmit}
+        onApprove={handleApprove}
+        onReject={handleReject}
+        onAbort={handleAbort}
+        plugins={samplePlugins}
+      />
+    );
+
+    // 1. Verify Header and Total Count
+    expect(screen.getByText("Live Operational Sessions")).toBeDefined();
+    expect(screen.getByText("(4 total)")).toBeDefined();
+
+    // 2. Verify State Category Filter Badges
+    const filterAllBtn = screen.getByTestId("filter-all-btn");
+    const filterPendingBtn = screen.getByTestId("filter-pending-btn");
+    const filterRunningBtn = screen.getByTestId("filter-running-btn");
+    const filterBlockedBtn = screen.getByTestId("filter-blocked-btn");
+    const filterCompletedBtn = screen.getByTestId("filter-completed-btn");
+
+    expect(filterAllBtn).toBeDefined();
+    expect(filterPendingBtn.textContent).toContain("Chờ duyệt");
+    expect(filterRunningBtn.textContent).toContain("Đang chạy");
+    expect(filterBlockedBtn.textContent).toContain("Bị chặn / Lỗi");
+    expect(filterCompletedBtn.textContent).toContain("Hoàn tất");
+
+    // 3. Test Filter: Clicking 'Chờ duyệt' shows only pending sessions
+    fireEvent.click(filterPendingBtn);
+    expect(screen.getByTestId("session-pill-exec_pending_1")).toBeDefined();
+    expect(screen.queryByTestId("session-pill-exec_running_1")).toBeNull();
+    expect(screen.queryByTestId("session-pill-exec_blocked_1")).toBeNull();
+    expect(screen.queryByTestId("session-pill-exec_completed_1")).toBeNull();
+
+    // 4. Test Filter: Clicking 'Đang chạy' shows only running sessions
+    fireEvent.click(filterRunningBtn);
+    expect(screen.getByTestId("session-pill-exec_running_1")).toBeDefined();
+    expect(screen.queryByTestId("session-pill-exec_pending_1")).toBeNull();
+
+    // 5. Switch back to 'Tất cả' and select a session
+    fireEvent.click(filterAllBtn);
+    const sessionCard = screen.getByTestId("session-pill-exec_running_1");
+    fireEvent.click(sessionCard);
+    expect(handleSelect).toHaveBeenCalledWith(sampleExecutions[1]);
+
+    // 6. Test Approve action button on Pending session
+    rerender(
+      <LiveExecutionMonitor
+        executions={sampleExecutions}
+        selectedExecution={sampleExecutions[0]}
+        onSelectExecution={handleSelect}
+        onSubmitQuery={handleSubmit}
+        onApprove={handleApprove}
+        onReject={handleReject}
+        onAbort={handleAbort}
+        plugins={samplePlugins}
+      />
+    );
+    const approveBtn = screen.getByText("Approve & Run");
+    fireEvent.click(approveBtn);
+    await waitFor(() => {
+      expect(handleApprove).toHaveBeenCalledWith("exec_pending_1");
+    });
+
+    // 7. Test Abort action button on Running session
+    rerender(
+      <LiveExecutionMonitor
+        executions={sampleExecutions}
+        selectedExecution={sampleExecutions[1]}
+        onSelectExecution={handleSelect}
+        onSubmitQuery={handleSubmit}
+        onApprove={handleApprove}
+        onReject={handleReject}
+        onAbort={handleAbort}
+        plugins={samplePlugins}
+      />
+    );
+    const stopBtn = screen.getByText("Stop & KILL Session Now");
+    fireEvent.click(stopBtn);
+    await waitFor(() => {
+      expect(handleAbort).toHaveBeenCalledWith("exec_running_1");
     });
   });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -13,6 +13,8 @@ import {
   Layers,
   Terminal,
   ShieldAlert,
+  Activity,
+  Database,
 } from "lucide-react";
 import { ExecutionResponse, PluginProfileResponse } from "@/types";
 import { cn } from "@/lib/utils";
@@ -28,6 +30,8 @@ interface LiveExecutionMonitorProps {
   plugins: PluginProfileResponse[];
   isSubmitting?: boolean;
 }
+
+type SessionFilter = "ALL" | "PENDING" | "RUNNING" | "BLOCKED" | "COMPLETED";
 
 export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
   executions,
@@ -51,6 +55,49 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
     "AI Agent retrieving latest completed customer orders for dashboard KPI computation."
   );
   const [actionLoading, setActionLoading] = useState<boolean>(false);
+
+  // Operational Session Category Filter
+  const [sessionFilter, setSessionFilter] = useState<SessionFilter>("ALL");
+
+  // Filtered session cohorts
+  const pendingSessions = useMemo(
+    () => executions.filter((ex) => ex.status === "PAUSED_FOR_REVIEW" || ex.status === "DRY_RUN"),
+    [executions]
+  );
+  const runningSessions = useMemo(
+    () => executions.filter((ex) => ex.status === "EXECUTING"),
+    [executions]
+  );
+  const blockedSessions = useMemo(
+    () =>
+      executions.filter(
+        (ex) =>
+          ex.status === "REJECTED" ||
+          ex.status === "TIMEOUT" ||
+          ex.status === "ABORTED"
+      ),
+    [executions]
+  );
+  const completedSessions = useMemo(
+    () => executions.filter((ex) => ex.status === "COMPLETED"),
+    [executions]
+  );
+
+  const filteredExecutions = useMemo(() => {
+    switch (sessionFilter) {
+      case "PENDING":
+        return pendingSessions;
+      case "RUNNING":
+        return runningSessions;
+      case "BLOCKED":
+        return blockedSessions;
+      case "COMPLETED":
+        return completedSessions;
+      case "ALL":
+      default:
+        return executions;
+    }
+  }, [sessionFilter, executions, pendingSessions, runningSessions, blockedSessions, completedSessions]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,7 +135,7 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
     }
   };
 
-  // Helper for status badge
+  // Status badge for detailed Gatekeeper panel
   const renderStatusBadge = (status: string) => {
     switch (status) {
       case "PAUSED_FOR_REVIEW":
@@ -136,40 +183,351 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
     }
   };
 
+  // Compact status badge for operational session cards
+  const renderCompactStatus = (status: string) => {
+    switch (status) {
+      case "PAUSED_FOR_REVIEW":
+      case "DRY_RUN":
+        return (
+          <span className="flex items-center text-amber-400 font-semibold text-[11px]">
+            <Clock className="h-3 w-3 mr-1 animate-pulse" />
+            Chờ duyệt (Review)
+          </span>
+        );
+      case "EXECUTING":
+        return (
+          <span className="flex items-center text-indigo-400 font-semibold text-[11px]">
+            <RotateCw className="h-3 w-3 mr-1 animate-spin" />
+            Đang chạy (Running)
+          </span>
+        );
+      case "COMPLETED":
+        return (
+          <span className="flex items-center text-emerald-400 font-semibold text-[11px]">
+            <CheckCircle2 className="h-3 w-3 mr-1" />
+            Hoàn thành
+          </span>
+        );
+      case "REJECTED":
+        return (
+          <span className="flex items-center text-red-400 font-semibold text-[11px]">
+            <XCircle className="h-3 w-3 mr-1" />
+            Bị chặn (Rejected)
+          </span>
+        );
+      case "TIMEOUT":
+        return (
+          <span className="flex items-center text-red-400 font-semibold text-[11px]">
+            <AlertTriangle className="h-3 w-3 mr-1" />
+            Timeout (Killed)
+          </span>
+        );
+      case "ABORTED":
+        return (
+          <span className="flex items-center text-slate-400 font-semibold text-[11px]">
+            <StopCircle className="h-3 w-3 mr-1" />
+            Đã dừng (Aborted)
+          </span>
+        );
+      default:
+        return (
+          <span className="text-slate-400 text-[11px] font-mono">
+            {status}
+          </span>
+        );
+    }
+  };
+
   return (
     <div className="space-y-6">
-      {/* Recent Sessions Bar */}
-      <div className="flex items-center space-x-3 overflow-x-auto pb-2 border-b border-slate-800">
-        <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex-shrink-0">
-          Recent Sessions:
-        </span>
-        {executions.length === 0 ? (
-          <span className="text-xs text-slate-500 italic">No execution sessions recorded yet.</span>
-        ) : (
-          executions.slice(0, 8).map((ex) => (
+      {/* ========================================================
+          LIVE OPERATIONAL SESSION HUB (State-based Cockpit)
+         ======================================================== */}
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3.5 shadow-sm">
+        {/* Header & Filter Controls */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+          <div className="flex items-center space-x-2.5">
+            <div className="p-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+              <Activity className="h-4 w-4" />
+            </div>
+            <div>
+              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-100 flex items-center space-x-2">
+                <span>Live Operational Sessions</span>
+                <span className="text-[10px] font-normal text-slate-400 font-mono">
+                  ({executions.length} total)
+                </span>
+              </h2>
+              <p className="text-[11px] text-slate-400">
+                Bảng điều khiển tác chiến giám sát và can thiệp phiên truy vấn theo thời gian thực
+              </p>
+            </div>
+          </div>
+
+          {/* Lifecycle State Category Tabs */}
+          <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 sm:pb-0">
+            {/* Filter: All */}
             <button
-              key={ex.id}
-              onClick={() => onSelectExecution(ex)}
+              type="button"
+              onClick={() => setSessionFilter("ALL")}
+              data-testid="filter-all-btn"
               className={cn(
-                "px-2.5 py-1 rounded border text-xs font-mono transition-colors flex items-center space-x-1.5 flex-shrink-0",
-                selectedExecution?.id === ex.id
-                  ? "bg-indigo-600/20 border-indigo-500 text-indigo-300 font-bold"
-                  : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200"
+                "px-2.5 py-1 rounded-lg text-xs font-medium transition-all flex items-center space-x-1.5 border",
+                sessionFilter === "ALL"
+                  ? "bg-slate-800 text-slate-100 border-slate-700 shadow-sm"
+                  : "bg-slate-950/60 text-slate-400 border-slate-800/80 hover:text-slate-200 hover:border-slate-700"
               )}
             >
-              <span>#{ex.id}</span>
+              <Database className="h-3 w-3" />
+              <span>Tất cả</span>
+              <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-slate-800 text-slate-300 font-mono">
+                {executions.length}
+              </span>
+            </button>
+
+            {/* Filter: Pending Review */}
+            <button
+              type="button"
+              onClick={() => setSessionFilter("PENDING")}
+              data-testid="filter-pending-btn"
+              className={cn(
+                "px-2.5 py-1 rounded-lg text-xs font-medium transition-all flex items-center space-x-1.5 border",
+                sessionFilter === "PENDING"
+                  ? "bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-sm shadow-amber-500/10"
+                  : pendingSessions.length > 0
+                  ? "bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/15"
+                  : "bg-slate-950/60 text-slate-400 border-slate-800/80 hover:text-slate-200"
+              )}
+            >
+              <Clock className={cn("h-3 w-3", pendingSessions.length > 0 && "animate-pulse text-amber-400")} />
+              <span>Chờ duyệt</span>
               <span
                 className={cn(
-                  "h-1.5 w-1.5 rounded-full",
-                  ex.status === "COMPLETED" && "bg-emerald-400",
-                  ex.status === "PAUSED_FOR_REVIEW" && "bg-amber-400 animate-pulse",
-                  ex.status === "EXECUTING" && "bg-indigo-400 animate-spin",
-                  (ex.status === "REJECTED" || ex.status === "TIMEOUT") && "bg-red-400"
+                  "ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-mono",
+                  pendingSessions.length > 0
+                    ? "bg-amber-500/30 text-amber-300 font-bold animate-pulse"
+                    : "bg-slate-800 text-slate-400"
                 )}
-              />
+              >
+                {pendingSessions.length}
+              </span>
             </button>
-          ))
-        )}
+
+            {/* Filter: Running */}
+            <button
+              type="button"
+              onClick={() => setSessionFilter("RUNNING")}
+              data-testid="filter-running-btn"
+              className={cn(
+                "px-2.5 py-1 rounded-lg text-xs font-medium transition-all flex items-center space-x-1.5 border",
+                sessionFilter === "RUNNING"
+                  ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/50 shadow-sm shadow-indigo-500/10"
+                  : runningSessions.length > 0
+                  ? "bg-indigo-500/10 text-indigo-400 border-indigo-500/30 hover:bg-indigo-500/15"
+                  : "bg-slate-950/60 text-slate-400 border-slate-800/80 hover:text-slate-200"
+              )}
+            >
+              <RotateCw className={cn("h-3 w-3", runningSessions.length > 0 && "animate-spin text-indigo-400")} />
+              <span>Đang chạy</span>
+              <span
+                className={cn(
+                  "ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-mono",
+                  runningSessions.length > 0
+                    ? "bg-indigo-500/30 text-indigo-300 font-bold"
+                    : "bg-slate-800 text-slate-400"
+                )}
+              >
+                {runningSessions.length}
+              </span>
+            </button>
+
+            {/* Filter: Blocked */}
+            <button
+              type="button"
+              onClick={() => setSessionFilter("BLOCKED")}
+              data-testid="filter-blocked-btn"
+              className={cn(
+                "px-2.5 py-1 rounded-lg text-xs font-medium transition-all flex items-center space-x-1.5 border",
+                sessionFilter === "BLOCKED"
+                  ? "bg-red-500/20 text-red-300 border-red-500/50 shadow-sm shadow-red-500/10"
+                  : blockedSessions.length > 0
+                  ? "bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/15"
+                  : "bg-slate-950/60 text-slate-400 border-slate-800/80 hover:text-slate-200"
+              )}
+            >
+              <ShieldAlert className="h-3 w-3" />
+              <span>Bị chặn / Lỗi</span>
+              <span
+                className={cn(
+                  "ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-mono",
+                  blockedSessions.length > 0
+                    ? "bg-red-500/30 text-red-300 font-bold"
+                    : "bg-slate-800 text-slate-400"
+                )}
+              >
+                {blockedSessions.length}
+              </span>
+            </button>
+
+            {/* Filter: Completed */}
+            <button
+              type="button"
+              onClick={() => setSessionFilter("COMPLETED")}
+              data-testid="filter-completed-btn"
+              className={cn(
+                "px-2.5 py-1 rounded-lg text-xs font-medium transition-all flex items-center space-x-1.5 border",
+                sessionFilter === "COMPLETED"
+                  ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-sm shadow-emerald-500/10"
+                  : completedSessions.length > 0
+                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/15"
+                  : "bg-slate-950/60 text-slate-400 border-slate-800/80 hover:text-slate-200"
+              )}
+            >
+              <CheckCircle2 className="h-3 w-3" />
+              <span>Hoàn tất</span>
+              <span
+                className={cn(
+                  "ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-mono",
+                  completedSessions.length > 0
+                    ? "bg-emerald-500/30 text-emerald-300"
+                    : "bg-slate-800 text-slate-400"
+                )}
+              >
+                {completedSessions.length}
+              </span>
+            </button>
+          </div>
+        </div>
+
+        {/* Operational Sessions Carousel / Cards Strip */}
+        <div>
+          {filteredExecutions.length === 0 ? (
+            <div className="p-5 rounded-lg border border-slate-800/80 bg-slate-950/40 text-center py-6 text-xs text-slate-400">
+              {sessionFilter === "PENDING" && (
+                <div className="flex flex-col items-center space-y-1">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-400/80 mb-1" />
+                  <span className="font-semibold text-slate-200">Không có truy vấn nào đang chờ duyệt</span>
+                  <span className="text-[11px] text-slate-500">
+                    Mọi truy vấn AI đều đã được xử lý hoặc hệ thống đang ở trạng thái an toàn.
+                  </span>
+                </div>
+              )}
+              {sessionFilter === "RUNNING" && (
+                <div className="flex flex-col items-center space-y-1">
+                  <Activity className="h-5 w-5 text-slate-500 mb-1" />
+                  <span className="font-semibold text-slate-200">Không có session nào đang chạy trong background</span>
+                  <span className="text-[11px] text-slate-500">
+                    Hệ thống sẵn sàng tiếp nhận các truy vấn mới từ AI Client qua FastMCP.
+                  </span>
+                </div>
+              )}
+              {sessionFilter === "BLOCKED" && (
+                <div className="flex flex-col items-center space-y-1">
+                  <ShieldAlert className="h-5 w-5 text-emerald-400/80 mb-1" />
+                  <span className="font-semibold text-slate-200">Không có truy vấn nào bị chặn</span>
+                  <span className="text-[11px] text-slate-500">
+                    Chưa ghi nhận vi phạm chính sách bảo mật hoặc timeout nào trong danh sách.
+                  </span>
+                </div>
+              )}
+              {sessionFilter === "COMPLETED" && (
+                <div className="flex flex-col items-center space-y-1">
+                  <Database className="h-5 w-5 text-slate-500 mb-1" />
+                  <span className="font-semibold text-slate-200">Chưa có session hoàn tất</span>
+                  <span className="text-[11px] text-slate-500">
+                    Gửi truy vấn thử nghiệm bên dưới để kiểm tra chu trình hoàn chỉnh.
+                  </span>
+                </div>
+              )}
+              {sessionFilter === "ALL" && (
+                <div className="flex flex-col items-center space-y-1">
+                  <Activity className="h-5 w-5 text-slate-500 mb-1" />
+                  <span className="font-semibold text-slate-200">Chưa có phiên thực thi nào</span>
+                  <span className="text-[11px] text-slate-500">
+                    Gửi truy vấn từ form bên dưới hoặc kết nối AI agent (Claude, Cursor, Cline) qua MCP.
+                  </span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-stretch space-x-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-slate-800">
+              {filteredExecutions.slice(0, 15).map((ex) => {
+                const isSelected = selectedExecution?.id === ex.id;
+                const isPending = ex.status === "PAUSED_FOR_REVIEW" || ex.status === "DRY_RUN";
+                const isRunning = ex.status === "EXECUTING";
+                const isBlocked =
+                  ex.status === "REJECTED" ||
+                  ex.status === "TIMEOUT" ||
+                  ex.status === "ABORTED";
+                const isCompleted = ex.status === "COMPLETED";
+
+                return (
+                  <button
+                    key={ex.id}
+                    onClick={() => onSelectExecution(ex)}
+                    data-testid={`session-pill-${ex.id}`}
+                    className={cn(
+                      "flex-shrink-0 text-left rounded-xl border p-3 transition-all cursor-pointer min-w-[210px] max-w-[260px] flex flex-col justify-between space-y-2",
+                      isSelected
+                        ? "bg-slate-900 border-indigo-500 ring-1 ring-indigo-500/50 shadow-md shadow-indigo-500/10"
+                        : "bg-slate-950/70 border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/60",
+                      isPending && !isSelected && "border-amber-500/40 bg-amber-500/[0.04]",
+                      isRunning && !isSelected && "border-indigo-500/40 bg-indigo-500/[0.04]"
+                    )}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span className="font-mono text-xs font-bold text-slate-200">
+                        #{ex.id}
+                      </span>
+                      <span
+                        className={cn(
+                          "text-[10px] font-semibold px-1.5 py-0.5 rounded uppercase tracking-wider font-mono",
+                          ex.query_type === "WRITE"
+                            ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+                            : "bg-sky-500/20 text-sky-300 border border-sky-500/30"
+                        )}
+                      >
+                        {ex.query_type}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center space-x-1.5 text-xs">
+                      {renderCompactStatus(ex.status)}
+                    </div>
+
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1.5 border-t border-slate-800/60 w-full">
+                      <span
+                        className="truncate max-w-[110px] font-medium text-slate-400"
+                        title={ex.target_id}
+                      >
+                        {ex.target_id}
+                      </span>
+                      {isPending && (
+                        <span className="text-amber-400 font-bold flex items-center animate-pulse">
+                          Cần duyệt
+                        </span>
+                      )}
+                      {isRunning && (
+                        <span className="text-indigo-400 font-mono font-semibold">
+                          SPID: {ex.spid ?? "..."}
+                        </span>
+                      )}
+                      {isCompleted && (
+                        <span className="font-mono text-emerald-400/90 font-medium">
+                          {ex.execution_time_ms !== null ? `${ex.execution_time_ms}ms` : "OK"}
+                        </span>
+                      )}
+                      {isBlocked && (
+                        <span className="text-red-400 font-medium">
+                          {ex.status === "TIMEOUT" ? "Timeout" : "Vi phạm"}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* 3-Column Balanced Grid */}
@@ -474,4 +832,3 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
     </div>
   );
 };
-
