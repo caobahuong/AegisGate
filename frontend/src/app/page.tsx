@@ -17,6 +17,9 @@ import {
   McpConfigResponse,
   PluginProfileResponse,
   RegisterPluginRequest,
+  InstallGitPluginRequest,
+  PluginCertificationReport,
+  PluginCertificationResponse,
   RuleResponse,
   UpdatePluginConfigRequest,
   UpdateRuleRequest,
@@ -35,6 +38,9 @@ import {
   fetchPlugins,
   fetchRules,
   registerPlugin,
+  installPluginZip,
+  installPluginGit,
+  verifyPlugin,
   rejectExecution,
   setAutoMode,
   submitExecution,
@@ -231,6 +237,33 @@ export default function DashboardPage() {
     }
   };
 
+
+  const handleInstallZip = async (file: File) => {
+    const installed = await installPluginZip(file);
+    setPlugins((prev) => [...prev.filter((p) => p.id !== installed.id), installed]);
+  };
+
+  const handleInstallGit = async (req: InstallGitPluginRequest) => {
+    const installed = await installPluginGit(req);
+    setPlugins((prev) => [...prev.filter((p) => p.id !== installed.id), installed]);
+  };
+
+  const handleVerifyPlugin = async (pluginId: string): Promise<PluginCertificationResponse> => {
+    const report = await verifyPlugin(pluginId);
+    setPlugins((prev) =>
+      prev.map((p) =>
+        p.id === pluginId
+          ? {
+              ...p,
+              is_certified: report.certified,
+              certification_report: report as unknown as PluginCertificationReport,
+            }
+          : p
+      )
+    );
+    return report;
+  };
+
   const handleRegisterPlugin = async (req: RegisterPluginRequest) => {
     const newPlugin = await registerPlugin(req);
     setPlugins((prev) => [...prev.filter((p) => p.id !== newPlugin.id), newPlugin]);
@@ -350,6 +383,9 @@ export default function DashboardPage() {
               onSyncPlugin={handleSyncPlugin}
               onUninstallPlugin={handleUninstallPlugin}
               onViewMcpConfig={handleOpenPluginMcp}
+              onInstallZip={handleInstallZip}
+              onInstallGit={handleInstallGit}
+              onVerifyPlugin={handleVerifyPlugin}
             />
           )}
 

@@ -88,9 +88,29 @@ class PluginProfileResponse(BaseModel):
     status: str
     latency_ms: float
     active_sessions_count: int
+    is_certified: bool = False
+    certification_report: Optional[dict[str, Any]] = None
     created_at: str
     updated_at: str
 
+
+
+
+class InstallGitPluginRequest(BaseModel):
+    """Payload for installing a plugin directly from a remote Git repository."""
+    git_url: str = Field(description="Remote Git URL e.g. https://github.com/org/plugin.git")
+    branch: Optional[str] = Field(default=None, description="Optional branch or tag name")
+    plugin_id: Optional[str] = Field(default=None, description="Optional override for plugin ID")
+
+
+class PluginCertificationResponse(BaseModel):
+    """Report from running 4-stage sanity linter against a plugin."""
+    plugin_id: str
+    certified: bool
+    badge: str
+    checks: dict[str, Any]
+    verified_at: str
+    error: Optional[str] = None
 
 class PluginSchemaResponse(BaseModel):
     """Response containing plugin dynamic UI schema and current config."""

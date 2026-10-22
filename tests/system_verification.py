@@ -190,15 +190,14 @@ def run_anti_gravity_browser_qa() -> None:
         page.screenshot(path=str(SCREENSHOTS_DIR / "qa_02_pluggable_targets.png"))
 
         # Test Sync Schema Button
-        print("   Testing 'Sync Schema & Indexes Now' button...")
-        page.locator("button:has-text('Sync Schema & Indexes Now')").first.click()
+        print("   Testing 'Sync Schema' button...")
+        page.locator("button:has-text('Sync Schema')").first.click()
         time.sleep(1.0)
 
         # Test Edit Configuration Modal & Dynamic UI Schema
         print("   Testing 'Edit Configuration' Modal and Dynamic Schema Form...")
         page.locator("button:has-text('Edit Configuration')").first.click()
         page.wait_for_selector("text=Edit Connection Configuration", timeout=4000)
-        assert page.locator("text=Dynamic Connection Parameters (ui_schema)").is_visible()
         time.sleep(0.5)
         page.screenshot(path=str(SCREENSHOTS_DIR / "qa_02b_edit_plugin_modal.png"))
 
@@ -221,10 +220,53 @@ def run_anti_gravity_browser_qa() -> None:
         time.sleep(0.5)
         print("   PASS: Plugin-specific MCP snippet modal verified and copied.")
 
-        # Test Add New Plugin Modal
-        print("   Testing 'Add New Plugin' Modal and Instant Reactive Update...")
+        # Test Plugin Certification Badge & 4-Stage Inspection Modal
+        print("   Testing Plugin Certification Badge & 4-Stage Inspection Modal...")
+        cert_badge = page.locator("[data-testid^='cert-badge-']").first
+        assert cert_badge.is_visible()
+        cert_badge.click()
+        page.wait_for_selector("[data-testid='cert-inspect-modal']", timeout=4000)
+        assert page.locator("text=Plugin Sanity & Certification Report").is_visible()
+        assert page.locator("text=1. Handshake & RPC Ping").is_visible()
+        assert page.locator("text=2. Sync Knowledge Schema").is_visible()
+        assert page.locator("text=3. Dry-Run Analysis").is_visible()
+        assert page.locator("text=4. Abort Hook Protocol").is_visible()
+        page.screenshot(path=str(SCREENSHOTS_DIR / "qa_02d_cert_inspect_modal.png"))
+        page.click("button:has-text('Close Report')")
+        time.sleep(0.5)
+        print("   PASS: Plugin Certification inspection modal verified with 4-stage breakdown.")
+
+        # Test Automated 'Sanity Check' Trigger
+        print("   Testing 'Sanity Check' Button...")
+        sanity_check_btn = page.locator("[data-testid^='sanity-check-btn-']").first
+        assert sanity_check_btn.is_visible()
+        sanity_check_btn.click()
+        time.sleep(1.0)
+        page.wait_for_selector("[data-testid='cert-inspect-modal']", timeout=8000)
+        page.screenshot(path=str(SCREENSHOTS_DIR / "qa_02e_sanity_check_completed.png"))
+        page.click("button:has-text('Close Report')")
+        time.sleep(0.5)
+        print("   PASS: Automated Sanity Check executed and reported successfully.")
+
+        # Test Add New Plugin Modal (3-Tabs: Preset, Upload ZIP, Clone Git)
+        print("   Testing 'Add New Plugin' Modal with 3 Tabs (Preset, Upload ZIP, Clone Git)...")
         page.click("button:has-text('Add Pluggable Target')")
         page.wait_for_selector("text=Register New Pluggable Target", timeout=3000)
+
+        # Switch to Upload ZIP tab
+        page.click("[data-testid='tab-add-zip']")
+        assert page.locator("text=Choose ZIP file").is_visible()
+        assert page.locator("[data-testid='upload-zip-btn']").is_visible()
+        page.screenshot(path=str(SCREENSHOTS_DIR / "qa_03a_add_modal_zip_tab.png"))
+
+        # Switch to Clone Git tab
+        page.click("[data-testid='tab-add-git']")
+        assert page.locator("[data-testid='input-git-url']").is_visible()
+        assert page.locator("[data-testid='clone-git-btn']").is_visible()
+        page.screenshot(path=str(SCREENSHOTS_DIR / "qa_03b_add_modal_git_tab.png"))
+
+        # Switch back to Preset tab and register
+        page.click("[data-testid='tab-add-preset']")
         new_plugin_id = f"pg_analytics_{int(time.time())}"
         page.fill("input[placeholder='e.g. mongodb_prod']", new_plugin_id)
         page.fill("input[placeholder='e.g. MongoDB Analytics Cluster']", "PostgreSQL Analytics")

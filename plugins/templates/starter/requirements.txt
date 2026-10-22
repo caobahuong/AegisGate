@@ -1,0 +1,6 @@
+# AegisGate Starter Plugin Dependencies
+# List any third-party driver packages required by your connector here:
+# e.g.:
+# psycopg2-binary>=2.9.0
+# pymongo>=4.6.0
+# clickhouse-connect>=0.7.0

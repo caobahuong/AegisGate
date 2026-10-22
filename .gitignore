@@ -42,3 +42,11 @@ $RECYCLE.BIN/
 # Temporary Playwright & Chrome Profiles
 chrome_debug/
 chrome_debug_runner/
+
+# Plugin Isolated Virtual Environments & Temporary Tests
+plugins/*/.venv/
+plugins/**/.venv/
+plugins/test_*/
+plugins/*_test*/
+plugins/custom_*/
+plugins/api_zip_target/

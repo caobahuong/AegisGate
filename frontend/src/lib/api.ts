@@ -10,6 +10,8 @@ import {
   KnowledgeChunkResponse,
   McpConfigResponse,
   PluginProfileResponse,
+  InstallGitPluginRequest,
+  PluginCertificationResponse,
   PluginSchemaResponse,
   RegisterPluginRequest,
   RuleResponse,
@@ -86,6 +88,45 @@ export async function registerPlugin(data: RegisterPluginRequest): Promise<Plugi
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error("Failed to register plugin");
+  return res.json();
+}
+
+
+export async function installPluginZip(file: File): Promise<PluginProfileResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetch(`${API_BASE}/plugins/install-zip`, {
+    method: "POST",
+    body: formData,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Failed to install plugin from ZIP" }));
+    throw new Error(err.detail || "Failed to install plugin from ZIP");
+  }
+  return res.json();
+}
+
+export async function installPluginGit(payload: InstallGitPluginRequest): Promise<PluginProfileResponse> {
+  const res = await fetch(`${API_BASE}/plugins/install-git`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Failed to install plugin from Git" }));
+    throw new Error(err.detail || "Failed to install plugin from Git");
+  }
+  return res.json();
+}
+
+export async function verifyPlugin(pluginId: string): Promise<PluginCertificationResponse> {
+  const res = await fetch(`${API_BASE}/plugins/${encodeURIComponent(pluginId)}/verify`, {
+    method: "POST",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Failed to verify plugin" }));
+    throw new Error(err.detail || "Failed to verify plugin");
+  }
   return res.json();
 }
 

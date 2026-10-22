@@ -53,9 +53,10 @@ export interface UiFieldSchema {
 }
 
 export interface CustomCardData {
-  type: string;
+  type?: string;
   title: string;
   badge?: string;
+  badges?: Array<{ label: string; value: string }>;
   columns?: string[];
   sample_data?: Record<string, unknown>[];
 }
@@ -73,6 +74,8 @@ export interface PluginProfileResponse {
   status: "active" | "inactive" | "error";
   latency_ms: number;
   active_sessions_count: number;
+  is_certified?: boolean;
+  certification_report?: PluginCertificationReport | null;
   created_at: string;
   updated_at: string;
 }
@@ -161,6 +164,38 @@ export interface UpdateRuleRequest {
   description?: string;
   severity?: RuleSeverity;
   is_active?: boolean;
+}
+
+
+export interface SanityCheckItem {
+  status: "PASSED" | "FAILED";
+  latency_ms?: number;
+  details?: string;
+  error?: string;
+}
+
+export interface PluginCertificationReport {
+  plugin_id: string;
+  certified: boolean;
+  badge: "CERTIFIED_READY" | "COMPATIBILITY_WARNING";
+  checks: Record<string, SanityCheckItem>;
+  verified_at: string;
+  error?: string | null;
+}
+
+export interface InstallGitPluginRequest {
+  git_url: string;
+  branch?: string;
+  plugin_id?: string;
+}
+
+export interface PluginCertificationResponse {
+  plugin_id: string;
+  certified: boolean;
+  badge: string;
+  checks: Record<string, SanityCheckItem>;
+  verified_at: string;
+  error?: string | null;
 }
 
 export interface RegisterPluginRequest {

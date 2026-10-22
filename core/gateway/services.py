@@ -13,6 +13,8 @@ from sqlmodel import Session
 from core.database import ExecutionLog, PluginProfile, Rule, utc_now
 from core.engine.plugin_client import terminate_all_subprocesses
 from core.engine.plugin_registry import PluginRegistry
+from core.engine.plugin_installer import PluginInstaller
+from core.engine.plugin_linter import PluginLinter
 from core.engine.state_machine import ExecutionStateMachine
 from core.exceptions import PluginExecutionError, PluginNotFoundError
 from core.gateway.schemas import (
@@ -22,6 +24,8 @@ from core.gateway.schemas import (
     KnowledgeChunkResponse,
     McpConfigResponse,
     PluginProfileResponse,
+    InstallGitPluginRequest,
+    PluginCertificationResponse,
     PluginSchemaResponse,
     RegisterPluginRequest,
     RejectExecutionRequest,
@@ -155,49 +159,57 @@ class GatewayService:
 
     # --- Plugin Management Services ---
 
+    def _format_plugin_profile_response(self, p: PluginProfile) -> PluginProfileResponse:
+        """Helper to format PluginProfile SQLModel entity to PluginProfileResponse schema."""
+        cfg = {}
+        try:
+            cfg = json.loads(p.config_json)
+        except Exception:
+            cfg = {}
+
+        ui_schema = []
+        try:
+            ui_schema = json.loads(p.ui_schema_json)
+        except Exception:
+            ui_schema = []
+
+        custom_card = None
+        try:
+            if p.custom_card_json and p.custom_card_json != "{}":
+                custom_card = json.loads(p.custom_card_json)
+        except Exception:
+            custom_card = None
+
+        cert_report = None
+        try:
+            if getattr(p, "certification_report_json", None):
+                cert_report = json.loads(p.certification_report_json)
+        except Exception:
+            cert_report = None
+
+        return PluginProfileResponse(
+            id=p.id,
+            name=p.name,
+            driver=p.driver,
+            entrypoint=p.entrypoint,
+            dry_run_command=p.dry_run_command,
+            abort_command=p.abort_command,
+            config=cfg,
+            ui_schema=ui_schema,
+            custom_card=custom_card,
+            status=p.status,
+            latency_ms=p.latency_ms,
+            active_sessions_count=p.active_sessions_count,
+            is_certified=getattr(p, "is_certified", False),
+            certification_report=cert_report,
+            created_at=p.created_at.isoformat(),
+            updated_at=p.updated_at.isoformat(),
+        )
+
     def list_plugins(self, include_disabled: bool = False) -> list[PluginProfileResponse]:
         """List all registered plugins."""
         profiles = self.plugin_registry.list_profiles(include_disabled=include_disabled)
-        res: list[PluginProfileResponse] = []
-        for p in profiles:
-            cfg = {}
-            try:
-                cfg = json.loads(p.config_json)
-            except Exception:
-                cfg = {}
-
-            ui_schema = []
-            try:
-                ui_schema = json.loads(p.ui_schema_json)
-            except Exception:
-                ui_schema = []
-
-            custom_card = None
-            try:
-                if p.custom_card_json and p.custom_card_json != "{}":
-                    custom_card = json.loads(p.custom_card_json)
-            except Exception:
-                custom_card = None
-
-            res.append(
-                PluginProfileResponse(
-                    id=p.id,
-                    name=p.name,
-                    driver=p.driver,
-                    entrypoint=p.entrypoint,
-                    dry_run_command=p.dry_run_command,
-                    abort_command=p.abort_command,
-                    config=cfg,
-                    ui_schema=ui_schema,
-                    custom_card=custom_card,
-                    status=p.status,
-                    latency_ms=p.latency_ms,
-                    active_sessions_count=p.active_sessions_count,
-                    created_at=p.created_at.isoformat(),
-                    updated_at=p.updated_at.isoformat(),
-                )
-            )
-        return res
+        return [self._format_plugin_profile_response(p) for p in profiles]
 
     def get_plugin_schema(self, plugin_id: str) -> PluginSchemaResponse:
         """Retrieve dynamic UI schema and current config for a plugin."""
@@ -219,7 +231,7 @@ class GatewayService:
             if p.custom_card_json and p.custom_card_json != "{}":
                 custom_card = json.loads(p.custom_card_json)
         except Exception:
-            custom_card = None
+            pass
 
         return PluginSchemaResponse(
             plugin_id=p.id,
@@ -247,22 +259,7 @@ class GatewayService:
             status="active",
         )
         saved = self.plugin_registry.register_profile(profile)
-        return PluginProfileResponse(
-            id=saved.id,
-            name=saved.name,
-            driver=saved.driver,
-            entrypoint=saved.entrypoint,
-            dry_run_command=saved.dry_run_command,
-            abort_command=saved.abort_command,
-            config=req.config,
-            ui_schema=req.ui_schema or [],
-            custom_card=req.custom_card,
-            status=saved.status,
-            latency_ms=saved.latency_ms,
-            active_sessions_count=saved.active_sessions_count,
-            created_at=saved.created_at.isoformat(),
-            updated_at=saved.updated_at.isoformat(),
-        )
+        return self._format_plugin_profile_response(saved)
 
     async def update_plugin_config(
         self,
@@ -288,44 +285,13 @@ class GatewayService:
         self.session.commit()
         self.session.refresh(p)
 
-        # Dispatch re-init to plugin subprocess
         try:
             client = self.plugin_registry.get_client(plugin_id)
             await client.reinit(ReinitParams(config=req.config))
-            logger.info("Dispatched reinit signal to plugin %s successfully", plugin_id)
         except Exception as exc:
             logger.warning("Plugin '%s' reinit command note: %s", plugin_id, exc)
 
-        ui_schema = []
-        try:
-            ui_schema = json.loads(p.ui_schema_json)
-        except Exception:
-            pass
-
-        custom_card = None
-        try:
-            if p.custom_card_json and p.custom_card_json != "{}":
-                custom_card = json.loads(p.custom_card_json)
-        except Exception:
-            pass
-
-        return PluginProfileResponse(
-            id=p.id,
-            name=p.name,
-            driver=p.driver,
-            entrypoint=p.entrypoint,
-            dry_run_command=p.dry_run_command,
-            abort_command=p.abort_command,
-            config=req.config,
-            ui_schema=ui_schema,
-            custom_card=custom_card,
-            status=p.status,
-            latency_ms=p.latency_ms,
-            active_sessions_count=p.active_sessions_count,
-            created_at=p.created_at.isoformat(),
-            updated_at=p.updated_at.isoformat(),
-        )
-
+        return self._format_plugin_profile_response(p)
     async def delete_plugin(self, plugin_id: str, hard_delete: bool = False) -> dict[str, Any]:
         """Uninstall or disable a plugin, disconnect active subprocesses, and abort running tasks."""
         # Check if profile exists (raises PluginNotFoundError if not found)
@@ -559,6 +525,36 @@ class GatewayService:
                 "cursor": {"mcpServers": servers},
                 "cline": {"mcpServers": servers},
             },
+        )
+
+
+    async def install_plugin_zip(self, file_content: bytes, filename: Optional[str] = None) -> PluginProfileResponse:
+        """Install, build, and certify an external plugin from an uploaded ZIP archive."""
+        installer = PluginInstaller(self.session)
+        profile = await installer.install_from_zip(file_content, filename=filename)
+        return self._format_plugin_profile_response(profile)
+
+    async def install_plugin_git(self, req: InstallGitPluginRequest) -> PluginProfileResponse:
+        """Clone, build, and certify an external plugin from a remote Git repository."""
+        installer = PluginInstaller(self.session)
+        profile = await installer.install_from_git(
+            git_url=req.git_url,
+            branch=req.branch,
+            plugin_id_override=req.plugin_id,
+        )
+        return self._format_plugin_profile_response(profile)
+
+    async def verify_plugin(self, plugin_id: str) -> PluginCertificationResponse:
+        """Execute 4-stage sanity checks and generate certification badge."""
+        linter = PluginLinter(self.session)
+        report = await linter.verify_plugin(plugin_id)
+        return PluginCertificationResponse(
+            plugin_id=report["plugin_id"],
+            certified=report["certified"],
+            badge=report["badge"],
+            checks=report["checks"],
+            verified_at=report["verified_at"],
+            error=report.get("error"),
         )
 
     def get_plugin_mcp_config(self, plugin_id: str) -> McpConfigResponse:

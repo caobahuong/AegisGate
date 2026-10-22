@@ -8,7 +8,7 @@ Adheres strictly to python_clean_code.md:
 """
 
 from typing import Annotated, Any, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlmodel import Session
 from core.database import get_session
@@ -27,6 +27,8 @@ from core.gateway.schemas import (
     KnowledgeChunkResponse,
     McpConfigResponse,
     PluginProfileResponse,
+    InstallGitPluginRequest,
+    PluginCertificationResponse,
     PluginSchemaResponse,
     RegisterPluginRequest,
     RejectExecutionRequest,
@@ -163,6 +165,45 @@ def register_plugin(
     """Register a new plugin via Add Plugin Modal."""
     return service.register_plugin(req)
 
+
+
+@router.post("/plugins/install-zip", response_model=PluginProfileResponse, status_code=status.HTTP_201_CREATED)
+async def install_plugin_zip(
+    service: Annotated[GatewayService, Depends(get_service)],
+    file: UploadFile = File(..., description="ZIP archive containing plugin files and manifest.json"),
+) -> PluginProfileResponse:
+    """Install, build, and certify an external plugin from an uploaded ZIP archive."""
+    try:
+        content = await file.read()
+        return await service.install_plugin_zip(content, filename=file.filename)
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+
+@router.post("/plugins/install-git", response_model=PluginProfileResponse, status_code=status.HTTP_201_CREATED)
+async def install_plugin_git(
+    req: InstallGitPluginRequest,
+    service: Annotated[GatewayService, Depends(get_service)],
+) -> PluginProfileResponse:
+    """Clone, build, and certify an external plugin from a remote Git repository."""
+    try:
+        return await service.install_plugin_git(req)
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+
+@router.post("/plugins/{plugin_id}/verify", response_model=PluginCertificationResponse)
+async def verify_plugin(
+    plugin_id: str,
+    service: Annotated[GatewayService, Depends(get_service)],
+) -> PluginCertificationResponse:
+    """Run 4-stage automated sanity linter and generate certification report."""
+    try:
+        return await service.verify_plugin(plugin_id)
+    except PluginNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=exc.message) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
 
 @router.get("/plugins/{plugin_id}/schema", response_model=PluginSchemaResponse)
 def get_plugin_schema(

@@ -9,20 +9,28 @@ import {
   Server,
   Zap,
   Activity,
-  CheckCircle,
+  CheckCircle2,
   Sliders,
   Save,
   X,
   Layers,
   Terminal,
   ShieldCheck,
+  ShieldAlert,
   Eye,
   EyeOff,
   Trash2,
   AlertTriangle,
+  UploadCloud,
+  GitBranch,
+  FileArchive,
+  Info,
 } from "lucide-react";
 import {
   CustomCardData,
+  InstallGitPluginRequest,
+  PluginCertificationReport,
+  PluginCertificationResponse,
   PluginProfileResponse,
   RegisterPluginRequest,
   UiFieldSchema,
@@ -33,6 +41,9 @@ import { cn } from "@/lib/utils";
 interface PluginManagementProps {
   plugins: PluginProfileResponse[];
   onRegisterPlugin: (req: RegisterPluginRequest) => Promise<void>;
+  onInstallZip?: (file: File) => Promise<void>;
+  onInstallGit?: (req: InstallGitPluginRequest) => Promise<void>;
+  onVerifyPlugin?: (pluginId: string) => Promise<PluginCertificationResponse>;
   onUpdatePlugin?: (pluginId: string, req: UpdatePluginConfigRequest) => Promise<void>;
   onSyncPlugin: (pluginId: string) => Promise<void>;
   onUninstallPlugin?: (pluginId: string, hardDelete: boolean) => Promise<void>;
@@ -50,7 +61,6 @@ interface DynamicFormFieldProps {
 
 const DynamicFormField: React.FC<DynamicFormFieldProps> = ({ field, value, onChange }) => {
   const [showPassword, setShowPassword] = useState<boolean>(false);
-
   const stringVal = value !== undefined && value !== null ? String(value) : "";
 
   return (
@@ -110,7 +120,7 @@ const DynamicFormField: React.FC<DynamicFormFieldProps> = ({ field, value, onCha
           onChange={(e) => onChange(e.target.value)}
           placeholder={field.placeholder}
           required={field.required}
-          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
+          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500 resize-y"
         />
       ) : (
         <input
@@ -124,7 +134,7 @@ const DynamicFormField: React.FC<DynamicFormFieldProps> = ({ field, value, onCha
       )}
 
       {field.description && (
-        <p className="text-[10px] text-slate-500">{field.description}</p>
+        <p className="text-[10px] text-slate-500 leading-tight">{field.description}</p>
       )}
     </div>
   );
@@ -133,113 +143,87 @@ const DynamicFormField: React.FC<DynamicFormFieldProps> = ({ field, value, onCha
 export const PluginManagement: React.FC<PluginManagementProps> = ({
   plugins,
   onRegisterPlugin,
+  onInstallZip,
+  onInstallGit,
+  onVerifyPlugin,
   onUpdatePlugin,
   onSyncPlugin,
   onUninstallPlugin,
   onViewMcpConfig,
 }) => {
-  // Modal states
+  // Add Modal State
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
-  const [editingPlugin, setEditingPlugin] = useState<PluginProfileResponse | null>(null);
-  const [syncingPluginId, setSyncingPluginId] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [addTab, setAddTab] = useState<"preset" | "zip" | "git">("preset");
 
-  // Uninstall Modal State
-  const [uninstallingPlugin, setUninstallingPlugin] = useState<PluginProfileResponse | null>(null);
-  const [isHardDelete, setIsHardDelete] = useState<boolean>(false);
-  const [isUninstalling, setIsUninstalling] = useState<boolean>(false);
-  const [uninstallError, setUninstallError] = useState<string | null>(null);
-
-  // Edit Plugin Form State
-  const [editName, setEditName] = useState<string>("");
-  const [editConfig, setEditConfig] = useState<Record<string, unknown>>({});
-  const [editDryRunCmd, setEditDryRunCmd] = useState<string>("");
-  const [editAbortCmd, setEditAbortCmd] = useState<string>("");
-
-  // Add Plugin Form State
+  // Preset Form State
+  const [addPreset, setAddPreset] = useState<string>("sqlserver");
   const [addId, setAddId] = useState<string>("");
   const [addName, setAddName] = useState<string>("");
   const [addDriver, setAddDriver] = useState<string>("pyodbc/mssql");
   const [addEntrypoint, setAddEntrypoint] = useState<string>("python plugins/sqlserver_plugin/adapter.py");
   const [addDryRunCmd, setAddDryRunCmd] = useState<string>("SET SHOWPLAN_XML ON");
   const [addAbortCmd, setAddAbortCmd] = useState<string>("KILL {spid}");
-  const [addPreset, setAddPreset] = useState<string>("sqlserver");
-  const [addConfig, setAddConfig] = useState<Record<string, unknown>>({
-    server: "localhost",
-    port: 1433,
-    database: "EnterpriseSales",
-    username: "sa",
-  });
 
-  const handleOpenEdit = (plugin: PluginProfileResponse) => {
-    setEditingPlugin(plugin);
-    setEditName(plugin.name);
-    setEditConfig({ ...(plugin.config || {}) });
-    setEditDryRunCmd(plugin.dry_run_command || "");
-    setEditAbortCmd(plugin.abort_command || "");
-  };
+  // ZIP Upload State
+  const [selectedZipFile, setSelectedZipFile] = useState<File | null>(null);
+  const [isUploadingZip, setIsUploadingZip] = useState<boolean>(false);
+  const [zipMessage, setZipMessage] = useState<string>("");
 
-  const handleSaveEdit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingPlugin || !onUpdatePlugin) return;
+  // Git Clone State
+  const [gitUrl, setGitUrl] = useState<string>("");
+  const [gitBranch, setGitBranch] = useState<string>("main");
+  const [gitPluginId, setGitPluginId] = useState<string>("");
+  const [isCloningGit, setIsCloningGit] = useState<boolean>(false);
+  const [gitMessage, setGitMessage] = useState<string>("");
 
-    setIsSubmitting(true);
-    try {
-      await onUpdatePlugin(editingPlugin.id, {
-        name: editName.trim(),
-        config: editConfig,
-        dry_run_command: editDryRunCmd.trim(),
-        abort_command: editAbortCmd.trim(),
-      });
-      setEditingPlugin(null);
-    } catch (err) {
-      alert(`Update failed: ${err instanceof Error ? err.message : "Unknown error"}`);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  // Inspect Certification Modal
+  const [inspectCertPlugin, setInspectCertPlugin] = useState<PluginProfileResponse | null>(null);
+  const [verifyingId, setVerifyingId] = useState<string | null>(null);
+
+  // Edit Configuration Modal State
+  const [editingPlugin, setEditingPlugin] = useState<PluginProfileResponse | null>(null);
+  const [editConfigValues, setEditConfigValues] = useState<Record<string, unknown>>({});
+  const [isSavingConfig, setIsSavingConfig] = useState<boolean>(false);
+
+  // Uninstall State
+  const [uninstallingPlugin, setUninstallingPlugin] = useState<PluginProfileResponse | null>(null);
+  const [uninstallHardDelete, setUninstallHardDelete] = useState<boolean>(false);
+  const [isUninstalling, setIsUninstalling] = useState<boolean>(false);
+
+  // General Loading & Statuses
+  const [syncingId, setSyncingId] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   const handlePresetChange = (preset: string) => {
     setAddPreset(preset);
     if (preset === "sqlserver") {
       setAddId("sqlserver_prod");
-      setAddName("SQL Server Enterprise Gateway");
+      setAddName("SQL Server Enterprise");
       setAddDriver("pyodbc/mssql");
       setAddEntrypoint("python plugins/sqlserver_plugin/adapter.py");
       setAddDryRunCmd("SET SHOWPLAN_XML ON");
       setAddAbortCmd("KILL {spid}");
-      setAddConfig({
-        server: "localhost",
-        port: 1433,
-        database: "EnterpriseSales",
-        username: "sa",
-      });
     } else if (preset === "mongodb") {
       setAddId("mongodb_prod");
-      setAddName("MongoDB Enterprise Analytics");
+      setAddName("MongoDB Analytics Cluster");
       setAddDriver("pymongo/mongodb");
       setAddEntrypoint("python plugins/mongodb_plugin/adapter.py");
-      setAddDryRunCmd("db.runCommand({explain: ...})");
+      setAddDryRunCmd("db.runCommand({explain})");
       setAddAbortCmd("db.killOp({opid})");
-      setAddConfig({
-        connection_uri: "mongodb://localhost:27017",
-        database: "EnterpriseAnalytics",
-        auth_source: "admin",
-      });
     } else {
-      setAddId("");
-      setAddName("");
+      setAddId("custom_plugin");
+      setAddName("Custom Data Target");
       setAddDriver("custom/driver");
-      setAddEntrypoint("python plugins/custom_plugin/adapter.py");
-      setAddDryRunCmd("EXPLAIN");
-      setAddAbortCmd("KILL {id}");
-      setAddConfig({});
+      setAddEntrypoint("python adapter.py");
+      setAddDryRunCmd("EXPLAIN {query}");
+      setAddAbortCmd("KILL {spid}");
     }
   };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!addId || !addName) return;
+    if (!addId.trim() || !addName.trim() || isSubmitting) return;
+
     setIsSubmitting(true);
     try {
       await onRegisterPlugin({
@@ -249,37 +233,118 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
         entrypoint: addEntrypoint.trim(),
         dry_run_command: addDryRunCmd.trim(),
         abort_command: addAbortCmd.trim(),
-        config: addConfig,
+        config: {},
       });
       setShowAddModal(false);
       setAddId("");
       setAddName("");
-    } catch (err) {
-      alert(`Registration failed: ${err instanceof Error ? err.message : "Unknown error"}`);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleSync = async (pluginId: string) => {
-    setSyncingPluginId(pluginId);
+  const handleUploadZip = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedZipFile || !onInstallZip || isUploadingZip) return;
+
+    setIsUploadingZip(true);
+    setZipMessage("Extracting archive, setting up isolated venv, and running 4-stage linter...");
     try {
-      await onSyncPlugin(pluginId);
+      await onInstallZip(selectedZipFile);
+      setZipMessage("Plugin successfully installed and certified!");
+      setTimeout(() => {
+        setShowAddModal(false);
+        setSelectedZipFile(null);
+        setZipMessage("");
+      }, 1000);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setZipMessage(`Install failed: ${msg}`);
     } finally {
-      setSyncingPluginId(null);
+      setIsUploadingZip(false);
+    }
+  };
+
+  const handleCloneGit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!gitUrl.trim() || !onInstallGit || isCloningGit) return;
+
+    setIsCloningGit(true);
+    setGitMessage("Cloning Git repository, verifying manifest, and certifying...");
+    try {
+      await onInstallGit({
+        git_url: gitUrl.trim(),
+        branch: gitBranch.trim() || undefined,
+        plugin_id: gitPluginId.trim() || undefined,
+      });
+      setGitMessage("Git Plugin successfully cloned and certified!");
+      setTimeout(() => {
+        setShowAddModal(false);
+        setGitUrl("");
+        setGitMessage("");
+      }, 1000);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setGitMessage(`Git install failed: ${msg}`);
+    } finally {
+      setIsCloningGit(false);
+    }
+  };
+
+  const handleRunSanityCheck = async (pluginId: string) => {
+    if (!onVerifyPlugin || verifyingId) return;
+    setVerifyingId(pluginId);
+    try {
+      const report = await onVerifyPlugin(pluginId);
+      // Auto-open inspect report to let user view details
+      const targetPlugin = plugins.find((p) => p.id === pluginId);
+      if (targetPlugin) {
+        setInspectCertPlugin({
+          ...targetPlugin,
+          is_certified: report.certified,
+          certification_report: report as unknown as PluginCertificationReport,
+        });
+      }
+    } finally {
+      setVerifyingId(null);
+    }
+  };
+
+  const handleOpenEdit = (p: PluginProfileResponse) => {
+    setEditingPlugin(p);
+    setEditConfigValues(p.config || {});
+  };
+
+  const handleSaveConfig = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPlugin || !onUpdatePlugin || isSavingConfig) return;
+
+    setIsSavingConfig(true);
+    try {
+      await onUpdatePlugin(editingPlugin.id, {
+        config: editConfigValues,
+      });
+      setEditingPlugin(null);
+    } finally {
+      setIsSavingConfig(false);
+    }
+  };
+
+  const handleSync = async (id: string) => {
+    setSyncingId(id);
+    try {
+      await onSyncPlugin(id);
+    } finally {
+      setSyncingId(null);
     }
   };
 
   const handleConfirmUninstall = async () => {
     if (!uninstallingPlugin || !onUninstallPlugin) return;
     setIsUninstalling(true);
-    setUninstallError(null);
     try {
-      await onUninstallPlugin(uninstallingPlugin.id, isHardDelete);
+      await onUninstallPlugin(uninstallingPlugin.id, uninstallHardDelete);
       setUninstallingPlugin(null);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to uninstall plugin";
-      setUninstallError(msg);
     } finally {
       setIsUninstalling(false);
     }
@@ -287,396 +352,786 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Section Header */}
-      <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+      {/* Header & Controls */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
         <div>
-          <h2 className="text-sm font-bold tracking-tight text-slate-100 flex items-center space-x-2">
+          <h1 className="text-sm font-bold uppercase tracking-wider text-slate-100 flex items-center space-x-2">
             <Boxes className="h-4 w-4 text-indigo-400" />
             <span>Pluggable Targets & Connectors</span>
-          </h2>
-          <p className="text-xs text-slate-400">
-            Process-isolated third-party database connectors with schema-driven Dynamic UI forms.
+          </h1>
+          <p className="text-xs text-slate-400 mt-1">
+            Quản trị các kết nối cơ sở dữ liệu qua giao thức chuẩn JSON-RPC 2.0 Stdio
           </p>
         </div>
+
         <button
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-md shadow-indigo-600/30 transition-colors"
+          onClick={() => {
+            handlePresetChange("sqlserver");
+            setShowAddModal(true);
+          }}
+          className="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-md shadow-indigo-600/30 transition-colors"
         >
           <Plus className="h-4 w-4" />
           <span>Add Pluggable Target</span>
         </button>
       </div>
 
-      {/* Target Cards List */}
-      <div className="space-y-6">
+      {/* Target Plugins Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {plugins.map((plugin) => (
           <div
             key={plugin.id}
             data-testid={`plugin-card-${plugin.id}`}
-            className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4 shadow-sm"
+            className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4 shadow-sm hover:border-slate-700 transition-all flex flex-col justify-between"
           >
-            {/* Target Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <div className="flex items-center space-x-3">
-                <div className="h-9 w-9 rounded-lg bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center">
-                  <Database className="h-4 w-4 text-indigo-400" />
+            {/* Top Meta Area */}
+            <div className="space-y-3">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <div className="flex items-center space-x-2">
+                    <Database className="h-4 w-4 text-indigo-400" />
+                    <h3 className="font-bold text-slate-100 text-sm tracking-wide">
+                      {plugin.name}
+                    </h3>
+                  </div>
+                  <span className="text-[11px] font-mono text-slate-400 block">
+                    ID: {plugin.id}
+                  </span>
                 </div>
-                <div>
-                  <h3 className="text-sm font-bold text-slate-100 flex items-center space-x-2">
-                    <span>{plugin.name}</span>
-                    <span className="text-[10px] font-normal px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-indigo-300 font-mono">
-                      {plugin.driver}
-                    </span>
-                  </h3>
-                  <span className="text-[11px] font-mono text-slate-400">ID: {plugin.id}</span>
+
+                {/* Status and Certification Badges */}
+                <div className="flex flex-col items-end space-y-1.5">
+                  <span
+                    className={cn(
+                      "px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider",
+                      plugin.status === "active"
+                        ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                        : "bg-slate-800 text-slate-400 border border-slate-700"
+                    )}
+                  >
+                    {plugin.status === "active" ? "Connected" : "Disconnected"}
+                  </span>
+
+                  {/* Certification Badge */}
+                  {plugin.is_certified ? (
+                    <button
+                      type="button"
+                      data-testid={`cert-badge-${plugin.id}`}
+                      onClick={() => setInspectCertPlugin(plugin)}
+                      className="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition-colors cursor-pointer"
+                      title="Certified & Ready. Click to view 4-stage sanity test report."
+                    >
+                      <ShieldCheck className="h-3 w-3 text-emerald-400" />
+                      <span>Certified &amp; Ready 🛡️</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      data-testid={`cert-badge-${plugin.id}`}
+                      onClick={() => setInspectCertPlugin(plugin)}
+                      className="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 transition-colors cursor-pointer"
+                      title="Certification pending or warning. Click to inspect report."
+                    >
+                      <ShieldAlert className="h-3 w-3 text-amber-400" />
+                      <span>Verification Warning ⚠️</span>
+                    </button>
+                  )}
                 </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => handleOpenEdit(plugin)}
-                  data-testid={`edit-btn-${plugin.id}`}
-                  className="flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-                >
-                  <Sliders className="h-3.5 w-3.5 text-indigo-400" />
-                  <span>Edit Configuration</span>
-                </button>
-                {onViewMcpConfig && (
-                  <button
-                    onClick={() => onViewMcpConfig(plugin)}
-                    data-testid={`mcp-btn-${plugin.id}`}
-                    className="flex items-center space-x-1.5 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 hover:text-indigo-300 border border-indigo-500/30 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-                    title="View & Copy MCP JSON snippet for Claude, Cursor, Cline"
-                  >
-                    <Terminal className="h-3.5 w-3.5 text-indigo-400" />
-                    <span>MCP Config</span>
-                  </button>
+
+              {/* Dynamic Connection Parameter Summary */}
+              <div className="bg-slate-950 border border-slate-800 rounded-lg p-3 space-y-1.5 text-xs">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block border-b border-slate-800/80 pb-1">
+                  Active Connection Parameters
+                </span>
+                {Object.keys(plugin.config || {}).length === 0 ? (
+                  <span className="text-slate-500 italic block py-0.5">No parameters configured.</span>
+                ) : (
+                  Object.entries(plugin.config).map(([k, v]) => (
+                    <div key={k} className="flex justify-between items-center text-[11px]">
+                      <span className="text-slate-400 capitalize">{k}:</span>
+                      <span className="font-mono text-slate-200 truncate max-w-[200px]">
+                        {k.toLowerCase().includes("password") ? "••••••••" : String(v)}
+                      </span>
+                    </div>
+                  ))
                 )}
-                {onUninstallPlugin && (
-                  <button
-                    onClick={() => {
-                      setUninstallingPlugin(plugin);
-                      setIsHardDelete(false);
-                      setUninstallError(null);
-                    }}
-                    data-testid={`uninstall-btn-${plugin.id}`}
-                    className="flex items-center space-x-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-rose-500/30 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-                    title="Uninstall / Disable Plugin"
-                  >
-                    <Trash2 className="h-3.5 w-3.5 text-rose-400" />
-                    <span>Uninstall</span>
-                  </button>
-                )}
-                <div className="flex items-center space-x-1.5 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                  <span className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wide">
-                    {plugin.status}
+              </div>
+
+              {/* Custom Plugin Card Table */}
+              {plugin.custom_card && (
+                <div className="bg-slate-950/70 border border-slate-800/80 rounded-lg p-3 space-y-2">
+                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-1">
+                    <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider flex items-center space-x-1">
+                      <Terminal className="h-3 w-3" />
+                      <span>{plugin.custom_card.title}</span>
+                    </span>
+                    {plugin.custom_card.badge ? (
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                        {plugin.custom_card.badge}
+                      </span>
+                    ) : (
+                      <span className="text-[9px] font-mono text-slate-500">custom_card</span>
+                    )}
+                  </div>
+
+                  {plugin.custom_card.badges && (
+                    <div className="flex flex-wrap gap-1.5 pt-0.5">
+                      {plugin.custom_card.badges.map((b, i) => (
+                        <span
+                          key={i}
+                          className="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-900 border border-slate-800 text-slate-300"
+                        >
+                          <strong className="text-slate-400">{b.label}:</strong> {b.value}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {plugin.custom_card.sample_data && plugin.custom_card.sample_data.length > 0 && (
+                    <div className="overflow-x-auto pt-1">
+                      <table className="w-full text-left text-[10px] border-collapse">
+                        <thead>
+                          <tr className="border-b border-slate-800 text-slate-400">
+                            {(plugin.custom_card.columns || Object.keys(plugin.custom_card.sample_data[0] || {})).map(
+                              (col) => (
+                                <th key={col} className="py-1 px-1.5 font-semibold">
+                                  {col}
+                                </th>
+                              )
+                            )}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-850">
+                          {plugin.custom_card.sample_data.map((row, idx) => (
+                            <tr key={idx} className="hover:bg-slate-900/50">
+                              {(plugin.custom_card?.columns || Object.keys(row)).map((col) => (
+                                <td key={col} className="py-1 px-1.5 font-mono text-slate-300">
+                                  {String(row[col] ?? "")}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Operational Metrics */}
+              <div className="bg-slate-950/40 border border-slate-800/50 rounded-lg p-3 space-y-1 text-xs">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block border-b border-slate-800/60 pb-1">
+                  Live Operational Metrics &amp; Pool
+                </span>
+                <div className="flex justify-between text-[11px] pt-1">
+                  <span className="text-slate-400">Driver Identifier:</span>
+                  <span className="font-mono text-indigo-300">{plugin.driver}</span>
+                </div>
+                <div className="flex justify-between text-[11px]">
+                  <span className="text-slate-400">Active SPID Pool:</span>
+                  <span className="font-mono text-slate-200">
+                    {plugin.active_sessions_count} sessions
                   </span>
+                </div>
+                <div className="flex justify-between text-[11px]">
+                  <span className="text-slate-400">Roundtrip Latency:</span>
+                  <span className="font-mono text-emerald-400">{plugin.latency_ms} ms</span>
                 </div>
               </div>
             </div>
 
-            {/* Multi-Card Grid: 2 Standard Cards + Optional Plugin-Specific Custom Card */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* Card 1: Configuration & Adapters */}
-              <div className="bg-slate-950 border border-slate-800/80 rounded-lg p-4 space-y-3 flex flex-col justify-between">
-                <div className="space-y-3">
-                  <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center space-x-1.5">
-                    <Server className="h-3.5 w-3.5 text-indigo-400" />
-                    <span>Active Connection Parameters</span>
-                  </div>
-
-                  <div className="space-y-2 text-xs">
-                    {/* Render active connection parameters dynamically from config */}
-                    {plugin.config && Object.keys(plugin.config).length > 0 ? (
-                      <div className="grid grid-cols-2 gap-2 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/60 font-mono text-[11px]">
-                        {Object.entries(plugin.config)
-                          .filter(([key]) => key !== "password")
-                          .slice(0, 4)
-                          .map(([key, val]) => (
-                            <div key={key} className="overflow-hidden">
-                              <span className="text-slate-500 block text-[9px] uppercase font-semibold">
-                                {key}
-                              </span>
-                              <span className="text-slate-200 truncate block">
-                                {String(val)}
-                              </span>
-                            </div>
-                          ))}
-                      </div>
-                    ) : (
-                      <p className="text-[11px] text-slate-500 italic">No connection parameters configured.</p>
+            {/* Bottom Actions Row */}
+            <div className="pt-2 border-t border-slate-800/80 space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                {/* Run Sanity Check Button */}
+                <button
+                  type="button"
+                  data-testid={`sanity-check-btn-${plugin.id}`}
+                  onClick={() => handleRunSanityCheck(plugin.id)}
+                  disabled={verifyingId === plugin.id}
+                  className="flex items-center justify-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors disabled:opacity-50"
+                  title="Run 4-stage automated compatibility & sanity check"
+                >
+                  <RefreshCw
+                    className={cn(
+                      "h-3.5 w-3.5",
+                      verifyingId === plugin.id && "animate-spin text-indigo-400"
                     )}
+                  />
+                  <span>{verifyingId === plugin.id ? "Testing..." : "Sanity Check"}</span>
+                </button>
 
-                    <div className="pt-1 space-y-1">
-                      <div>
-                        <span className="text-slate-500 block text-[10px] uppercase font-semibold">
-                          Dry-Run Directive
-                        </span>
-                        <span className="font-mono text-amber-300 text-[11px]">{plugin.dry_run_command}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500 block text-[10px] uppercase font-semibold">
-                          Abort / Kill Directive
-                        </span>
-                        <span className="font-mono text-red-400 text-[11px]">{plugin.abort_command}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-2">
-                  <button
-                    onClick={() => handleSync(plugin.id)}
-                    disabled={syncingPluginId === plugin.id}
-                    className="w-full flex items-center justify-center space-x-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50"
-                  >
-                    <RefreshCw
-                      className={cn(
-                        "h-3.5 w-3.5",
-                        syncingPluginId === plugin.id && "animate-spin text-indigo-400"
-                      )}
-                    />
-                    <span>
-                      {syncingPluginId === plugin.id
-                        ? "Syncing Schema & Indexes..."
-                        : "Sync Schema & Indexes Now"}
-                    </span>
-                  </button>
-                </div>
+                {/* Edit Config Button */}
+                <button
+                  type="button"
+                  data-testid={`edit-btn-${plugin.id}`}
+                  onClick={() => handleOpenEdit(plugin)}
+                  className="flex items-center justify-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 transition-colors"
+                >
+                  <Sliders className="h-3.5 w-3.5" />
+                  <span>Edit Configuration</span>
+                </button>
               </div>
 
-              {/* Card 2: Live Metrics & Pool */}
-              <div className="bg-slate-950 border border-slate-800/80 rounded-lg p-4 space-y-3 flex flex-col justify-between">
-                <div className="space-y-3">
-                  <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center space-x-1.5">
-                    <Activity className="h-3.5 w-3.5 text-emerald-400" />
-                    <span>Live Operational Metrics & Pool</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3 pt-1">
-                    <div className="bg-slate-900 border border-slate-800 rounded p-2.5">
-                      <span className="text-[10px] uppercase font-semibold text-slate-500 block">
-                        Active Sessions / SPIDs
-                      </span>
-                      <span className="text-base font-bold font-mono text-slate-100">
-                        {plugin.active_sessions_count}
-                      </span>
-                    </div>
-                    <div className="bg-slate-900 border border-slate-800 rounded p-2.5">
-                      <span className="text-[10px] uppercase font-semibold text-slate-500 block">
-                        Avg Roundtrip Latency
-                      </span>
-                      <span className="text-base font-bold font-mono text-indigo-400">
-                        {plugin.latency_ms > 0 ? `${plugin.latency_ms} ms` : "12.5 ms"}
-                      </span>
-                    </div>
-                  </div>
+              <div className="grid grid-cols-3 gap-2">
+                {/* Sync Schema */}
+                <button
+                  type="button"
+                  onClick={() => handleSync(plugin.id)}
+                  disabled={syncingId === plugin.id}
+                  className="flex items-center justify-center space-x-1 bg-slate-800 hover:bg-slate-750 text-slate-200 px-2 py-1.5 rounded-lg text-[11px] font-semibold border border-slate-700 transition-colors disabled:opacity-50"
+                  title="Sync database tables and structural schema into Knowledge Store"
+                >
+                  <RefreshCw
+                    className={cn(
+                      "h-3 w-3",
+                      syncingId === plugin.id && "animate-spin text-indigo-400"
+                    )}
+                  />
+                  <span>{syncingId === plugin.id ? "Syncing..." : "Sync Schema"}</span>
+                </button>
 
-                  <div className="p-2 rounded bg-slate-900 border border-slate-800 flex items-center space-x-2 text-[11px] text-slate-400">
-                    <CheckCircle className="h-3.5 w-3.5 text-emerald-400 flex-shrink-0" />
-                    <span className="truncate">Subprocess IPC: Process isolation active</span>
-                  </div>
-                </div>
+                {/* MCP Config Snippet */}
+                <button
+                  type="button"
+                  data-testid={`mcp-btn-${plugin.id}`}
+                  onClick={() => onViewMcpConfig && onViewMcpConfig(plugin)}
+                  className="flex items-center justify-center space-x-1 bg-indigo-950/60 hover:bg-indigo-900/60 text-indigo-300 border border-indigo-800/80 px-2 py-1.5 rounded-lg text-[11px] font-semibold transition-colors"
+                >
+                  <Zap className="h-3 w-3 text-indigo-400" />
+                  <span>MCP Config</span>
+                </button>
 
-                <div className="p-2 rounded bg-slate-900/50 border border-slate-800/60 text-[10px] font-mono text-slate-400 flex items-center space-x-1.5">
-                  <Terminal className="h-3 w-3 text-slate-500" />
-                  <span className="truncate">{plugin.entrypoint}</span>
-                </div>
+                {/* Uninstall */}
+                <button
+                  type="button"
+                  data-testid={`uninstall-btn-${plugin.id}`}
+                  onClick={() => setUninstallingPlugin(plugin)}
+                  className="flex items-center justify-center space-x-1 bg-slate-800/80 hover:bg-red-950/60 text-slate-400 hover:text-red-300 border border-slate-700 hover:border-red-800/80 px-2 py-1.5 rounded-lg text-[11px] font-semibold transition-colors"
+                >
+                  <Trash2 className="h-3 w-3" />
+                  <span>Uninstall</span>
+                </button>
               </div>
-
-              {/* Card 3: Plugin-Specific Custom UI Card (Rendered if defined in manifest) */}
-              {plugin.custom_card ? (
-                <div className="bg-slate-950 border border-indigo-900/40 rounded-lg p-4 space-y-3 flex flex-col justify-between">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between pb-1 border-b border-slate-800">
-                      <div className="text-[11px] font-bold uppercase tracking-wider text-indigo-300 flex items-center space-x-1.5">
-                        <Layers className="h-3.5 w-3.5 text-indigo-400" />
-                        <span>{plugin.custom_card.title}</span>
-                      </div>
-                      {plugin.custom_card.badge && (
-                        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-indigo-950 border border-indigo-800 text-indigo-300">
-                          {plugin.custom_card.badge}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Dynamic Table from Custom Card */}
-                    {plugin.custom_card.columns && plugin.custom_card.sample_data ? (
-                      <div className="overflow-x-auto text-[10px] font-mono pt-1">
-                        <table className="w-full border-collapse">
-                          <thead>
-                            <tr className="border-b border-slate-800 text-slate-500 text-left">
-                              {plugin.custom_card.columns.map((col) => (
-                                <th key={col} className="pb-1 pr-2 font-semibold">
-                                  {col}
-                                </th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-800/50 text-slate-300">
-                            {plugin.custom_card.sample_data.map((row, idx) => (
-                              <tr key={idx} className="hover:bg-slate-900/50">
-                                {plugin.custom_card?.columns?.map((col) => {
-                                  const cellVal = row[col];
-                                  const isStatus = col.toLowerCase() === "status" || col.toLowerCase() === "type";
-                                  return (
-                                    <td key={col} className="py-1 pr-2 truncate max-w-[100px]">
-                                      {isStatus ? (
-                                        <span className="text-emerald-400 font-semibold">{String(cellVal)}</span>
-                                      ) : (
-                                        String(cellVal)
-                                      )}
-                                    </td>
-                                  );
-                                })}
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    ) : null}
-                  </div>
-
-                  <div className="text-[10px] text-slate-500 flex items-center space-x-1 pt-1">
-                    <ShieldCheck className="h-3 w-3 text-emerald-400" />
-                    <span>Dialect-specific health inspection verified</span>
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-slate-950 border border-dashed border-slate-800 rounded-lg p-4 flex flex-col items-center justify-center text-center space-y-2">
-                  <Sliders className="h-6 w-6 text-slate-600" />
-                  <span className="text-xs font-semibold text-slate-400">Pluggable UI Hook Ready</span>
-                  <p className="text-[10px] text-slate-500 max-w-xs">
-                    Define <code>custom_card</code> in <code>plugin_manifest.json</code> to surface real-time dialect tables.
-                  </p>
-                </div>
-              )}
             </div>
           </div>
         ))}
       </div>
 
-      {/* Dynamic Edit Plugin Modal */}
-      {editingPlugin && (
+      {/* ========================================================
+          INSPECT CERTIFICATION MODAL (4-Stage Sanity Checklist)
+         ======================================================== */}
+      {inspectCertPlugin && (
         <div
-          data-testid="edit-plugin-modal"
+          data-testid="cert-inspect-modal"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 overflow-y-auto"
         >
-          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-xl w-full p-6 shadow-2xl space-y-5 my-8">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-lg w-full p-6 shadow-2xl space-y-4 my-8">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <div className="flex items-center space-x-2.5">
-                <div className="h-8 w-8 rounded-lg bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center">
-                  <Sliders className="h-4 w-4 text-indigo-400" />
-                </div>
+              <div className="flex items-center space-x-2">
+                <ShieldCheck className="h-5 w-5 text-indigo-400" />
                 <div>
                   <h3 className="text-sm font-bold text-slate-100">
-                    Edit Connection Configuration
+                    Plugin Sanity &amp; Certification Report
                   </h3>
-                  <p className="text-[11px] text-slate-400 font-mono">
-                    Target: {editingPlugin.id} ({editingPlugin.driver})
-                  </p>
+                  <span className="text-[11px] font-mono text-slate-400">
+                    Target: #{inspectCertPlugin.id} ({inspectCertPlugin.name})
+                  </span>
                 </div>
               </div>
               <button
-                onClick={() => setEditingPlugin(null)}
-                className="text-slate-400 hover:text-slate-200 p-1 rounded-md hover:bg-slate-800 transition-colors"
+                onClick={() => setInspectCertPlugin(null)}
+                className="text-slate-400 hover:text-slate-200 p-1"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveEdit} className="space-y-4">
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                  Target Display Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500 font-sans"
-                />
+            {/* Overall Certification Status */}
+            <div
+              className={cn(
+                "p-3 rounded-lg border flex items-center justify-between text-xs font-semibold",
+                inspectCertPlugin.is_certified
+                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                  : "bg-amber-500/10 border-amber-500/30 text-amber-400"
+              )}
+            >
+              <div className="flex items-center space-x-2">
+                {inspectCertPlugin.is_certified ? (
+                  <CheckCircle2 className="h-4 w-4" />
+                ) : (
+                  <AlertTriangle className="h-4 w-4" />
+                )}
+                <span>
+                  {inspectCertPlugin.is_certified
+                    ? "Passed 4-Stage Compatibility Checks (Certified & Ready)"
+                    : "Compatibility Warning or Incomplete Sanity Checks"}
+                </span>
               </div>
+              <span className="font-mono text-[10px] text-slate-400">
+                {inspectCertPlugin.certification_report?.verified_at
+                  ? new Date(inspectCertPlugin.certification_report.verified_at).toLocaleTimeString()
+                  : "Latest"}
+              </span>
+            </div>
 
-              {/* Dynamic Form Schema Rendering */}
-              <div className="border border-slate-800 rounded-xl p-4 bg-slate-950/70 space-y-3.5">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-400 flex items-center space-x-1.5">
-                    <Server className="h-3.5 w-3.5" />
-                    <span>Dynamic Connection Parameters (ui_schema)</span>
-                  </span>
-                  <span className="text-[10px] text-slate-500 font-mono">
-                    {editingPlugin.ui_schema?.length || 0} fields
-                  </span>
-                </div>
+            {/* 4-Stage Breakdown */}
+            <div className="space-y-2.5">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                Verification Pipeline Checklist:
+              </span>
 
-                {editingPlugin.ui_schema && editingPlugin.ui_schema.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                    {editingPlugin.ui_schema.map((field) => (
-                      <div
-                        key={field.key}
-                        className={field.type === "textarea" ? "md:col-span-2" : ""}
+              {[
+                {
+                  key: "handshake",
+                  name: "1. Handshake & RPC Ping",
+                  desc: "Subprocess spawn and JSON-RPC 2.0 protocol responsiveness",
+                },
+                {
+                  key: "sync_knowledge",
+                  name: "2. Sync Knowledge Schema",
+                  desc: "Catalog schema extraction (tables, columns, indexes)",
+                },
+                {
+                  key: "dry_run",
+                  name: "3. Dry-Run Analysis",
+                  desc: "Execution plan generation (SHOWPLAN/EXPLAIN) and risk score",
+                },
+                {
+                  key: "abort",
+                  name: "4. Abort Hook Protocol",
+                  desc: "Emergency kill protocol validation (KILL {spid})",
+                },
+              ].map((stage) => {
+                const check = inspectCertPlugin.certification_report?.checks?.[stage.key];
+                const isPassed = check?.status === "PASSED";
+
+                return (
+                  <div
+                    key={stage.key}
+                    className="p-3 rounded-lg bg-slate-950 border border-slate-800 space-y-1 text-xs"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-200">{stage.name}</span>
+                      <span
+                        className={cn(
+                          "px-2 py-0.5 rounded text-[10px] font-bold uppercase",
+                          isPassed
+                            ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                            : "bg-red-500/15 text-red-400 border border-red-500/30"
+                        )}
                       >
-                        <DynamicFormField
-                          field={field}
-                          value={editConfig[field.key] !== undefined ? editConfig[field.key] : field.default}
-                          onChange={(newVal) =>
-                            setEditConfig((prev) => ({ ...prev, [field.key]: newVal }))
-                          }
-                        />
+                        {isPassed ? "PASSED" : "FAILED / PENDING"}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-400">{stage.desc}</p>
+                    {check && (
+                      <div className="text-[10px] font-mono text-slate-500 pt-1 flex justify-between">
+                        <span>Latency: {check.latency_ms ?? "N/A"} ms</span>
+                        <span className="text-slate-400 truncate max-w-[200px]">
+                          {check.details || check.error || "Verified"}
+                        </span>
                       </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="pt-2 border-t border-slate-800 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setInspectCertPlugin(null)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold transition-colors"
+              >
+                Close Report
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          ADD PLUGGABLE TARGET MODAL (3 TABS: Preset, ZIP, Git)
+         ======================================================== */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-lg w-full p-6 shadow-2xl space-y-4 my-8">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <h3 className="text-sm font-bold text-slate-100 flex items-center space-x-2">
+                <Plus className="h-4 w-4 text-indigo-400" />
+                <span>Register New Pluggable Target</span>
+              </h3>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="text-slate-400 hover:text-slate-200 text-xs"
+              >
+                Cancel
+              </button>
+            </div>
+
+            {/* 3 Installation Tabs */}
+            <div className="grid grid-cols-3 gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
+              <button
+                type="button"
+                data-testid="tab-add-preset"
+                onClick={() => setAddTab("preset")}
+                className={cn(
+                  "py-1.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center space-x-1.5",
+                  addTab === "preset"
+                    ? "bg-slate-800 text-slate-100 shadow-sm"
+                    : "text-slate-400 hover:text-slate-200"
+                )}
+              >
+                <Sliders className="h-3 w-3" />
+                <span>Preset &amp; Form</span>
+              </button>
+              <button
+                type="button"
+                data-testid="tab-add-zip"
+                onClick={() => setAddTab("zip")}
+                className={cn(
+                  "py-1.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center space-x-1.5",
+                  addTab === "zip"
+                    ? "bg-slate-800 text-slate-100 shadow-sm"
+                    : "text-slate-400 hover:text-slate-200"
+                )}
+              >
+                <UploadCloud className="h-3 w-3" />
+                <span>Upload ZIP</span>
+              </button>
+              <button
+                type="button"
+                data-testid="tab-add-git"
+                onClick={() => setAddTab("git")}
+                className={cn(
+                  "py-1.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center space-x-1.5",
+                  addTab === "git"
+                    ? "bg-slate-800 text-slate-100 shadow-sm"
+                    : "text-slate-400 hover:text-slate-200"
+                )}
+              >
+                <GitBranch className="h-3 w-3" />
+                <span>Clone Git</span>
+              </button>
+            </div>
+
+            {/* TAB 1: PRESET FORM */}
+            {addTab === "preset" && (
+              <form onSubmit={handleCreate} className="space-y-3">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                    Target Architecture Preset
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { id: "sqlserver", label: "SQL Server" },
+                      { id: "mongodb", label: "MongoDB" },
+                      { id: "custom", label: "Custom Plugin" },
+                    ].map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => handlePresetChange(p.id)}
+                        className={cn(
+                          "py-1.5 px-2 rounded-lg text-xs font-medium border text-center transition-colors",
+                          addPreset === p.id
+                            ? "bg-indigo-600/20 border-indigo-500 text-indigo-200"
+                            : "bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700"
+                        )}
+                      >
+                        {p.label}
+                      </button>
                     ))}
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                    Plugin ID (Unique Key)
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={addId}
+                    onChange={(e) => setAddId(e.target.value)}
+                    placeholder="e.g. mongodb_prod"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                    Display Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={addName}
+                    onChange={(e) => setAddName(e.target.value)}
+                    placeholder="e.g. MongoDB Analytics Cluster"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                      Driver Identifier
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={addDriver}
+                      onChange={(e) => setAddDriver(e.target.value)}
+                      placeholder="e.g. pymongo/mongodb"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                      Dry-Run Directive
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={addDryRunCmd}
+                      onChange={(e) => setAddDryRunCmd(e.target.value)}
+                      placeholder="e.g. db.runCommand({explain})"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                    Subprocess Entrypoint
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={addEntrypoint}
+                    onChange={(e) => setAddEntrypoint(e.target.value)}
+                    placeholder="e.g. python plugins/mongodb_plugin/adapter.py"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                <div className="flex space-x-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    className="w-1/2 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 rounded-lg text-xs font-semibold transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-1/2 bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-lg text-xs font-semibold transition-colors shadow-md shadow-indigo-600/30"
+                  >
+                    {isSubmitting ? "Registering..." : "Register Plugin"}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* TAB 2: UPLOAD ZIP PACKAGE */}
+            {addTab === "zip" && (
+              <form onSubmit={handleUploadZip} className="space-y-4">
+                <div className="border-2 border-dashed border-slate-800 hover:border-indigo-500/50 rounded-xl p-6 text-center space-y-2 bg-slate-950/50 transition-colors">
+                  <FileArchive className="h-8 w-8 text-indigo-400 mx-auto" />
+                  <div>
+                    <label
+                      htmlFor="zip-upload-input"
+                      className="cursor-pointer text-xs font-bold text-indigo-400 hover:text-indigo-300 underline"
+                    >
+                      Choose ZIP file
+                    </label>
+                    <span className="text-xs text-slate-400"> or drag and drop</span>
+                    <input
+                      id="zip-upload-input"
+                      type="file"
+                      accept=".zip"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) setSelectedZipFile(file);
+                      }}
+                      className="hidden"
+                    />
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    Package must contain manifest.json, adapter.py, and optional requirements.txt
+                  </p>
+                  {selectedZipFile && (
+                    <div className="pt-2 text-xs font-mono text-emerald-400 bg-emerald-500/10 py-1 px-2 rounded border border-emerald-500/20 inline-block">
+                      {selectedZipFile.name} ({(selectedZipFile.size / 1024).toFixed(1)} KB)
+                    </div>
+                  )}
+                </div>
+
+                {zipMessage && (
+                  <p className="text-xs text-indigo-300 font-medium text-center animate-pulse">
+                    {zipMessage}
+                  </p>
+                )}
+
+                <div className="flex space-x-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    className="w-1/2 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 rounded-lg text-xs font-semibold transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    data-testid="upload-zip-btn"
+                    disabled={!selectedZipFile || isUploadingZip}
+                    className="w-1/2 flex items-center justify-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-lg text-xs font-semibold transition-colors shadow-md shadow-indigo-600/30 disabled:opacity-50"
+                  >
+                    {isUploadingZip ? (
+                      <>
+                        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                        <span>Building...</span>
+                      </>
+                    ) : (
+                      <>
+                        <UploadCloud className="h-3.5 w-3.5" />
+                        <span>Upload &amp; Install</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* TAB 3: CLONE FROM GIT */}
+            {addTab === "git" && (
+              <form onSubmit={handleCloneGit} className="space-y-3">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                    Remote Git Repository URL
+                  </label>
+                  <input
+                    type="url"
+                    required
+                    data-testid="input-git-url"
+                    value={gitUrl}
+                    onChange={(e) => setGitUrl(e.target.value)}
+                    placeholder="https://github.com/my-org/aegisgate-plugin-postgres.git"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                      Git Branch / Tag (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={gitBranch}
+                      onChange={(e) => setGitBranch(e.target.value)}
+                      placeholder="main"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                      Target Plugin ID (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={gitPluginId}
+                      onChange={(e) => setGitPluginId(e.target.value)}
+                      placeholder="e.g. postgres_prod"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                </div>
+
+                {gitMessage && (
+                  <p className="text-xs text-indigo-300 font-medium text-center animate-pulse">
+                    {gitMessage}
+                  </p>
+                )}
+
+                <div className="flex space-x-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    className="w-1/2 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 rounded-lg text-xs font-semibold transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    data-testid="clone-git-btn"
+                    disabled={!gitUrl.trim() || isCloningGit}
+                    className="w-1/2 flex items-center justify-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-lg text-xs font-semibold transition-colors shadow-md shadow-indigo-600/30 disabled:opacity-50"
+                  >
+                    {isCloningGit ? (
+                      <>
+                        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                        <span>Cloning...</span>
+                      </>
+                    ) : (
+                      <>
+                        <GitBranch className="h-3.5 w-3.5" />
+                        <span>Clone &amp; Install</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {editingPlugin && (
+        <div
+          data-testid="edit-plugin-modal"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 overflow-y-auto"
+        >
+          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-lg w-full p-6 shadow-2xl space-y-4 my-8">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <h3 className="text-sm font-bold text-slate-100 flex items-center space-x-2">
+                <Sliders className="h-4 w-4 text-indigo-400" />
+                <span>Edit Connection Configuration: {editingPlugin.name}</span>
+              </h3>
+              <button
+                onClick={() => setEditingPlugin(null)}
+                className="text-slate-400 hover:text-slate-200 text-xs"
+              >
+                Cancel
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveConfig} className="space-y-4">
+              <div className="space-y-3">
+                {editingPlugin.ui_schema && editingPlugin.ui_schema.length > 0 ? (
+                  editingPlugin.ui_schema.map((field) => (
+                    <DynamicFormField
+                      key={field.key}
+                      field={field}
+                      value={editConfigValues[field.key] ?? field.default ?? ""}
+                      onChange={(val) =>
+                        setEditConfigValues((prev) => ({ ...prev, [field.key]: val }))
+                      }
+                    />
+                  ))
                 ) : (
-                  // Fallback generic editor if plugin has no ui_schema defined
-                  <div className="space-y-2 text-xs">
-                    <p className="text-slate-400 text-[11px]">
-                      No dynamic <code>ui_schema</code> declared in plugin manifest. Direct key-value configuration:
-                    </p>
-                    {Object.entries(editConfig).map(([k, v]) => (
-                      <div key={k} className="flex space-x-2">
-                        <span className="w-1/3 font-mono text-slate-400 text-xs py-1.5 truncate">{k}</span>
-                        <input
-                          type="text"
-                          value={String(v)}
-                          onChange={(e) =>
-                            setEditConfig((prev) => ({ ...prev, [k]: e.target.value }))
-                          }
-                          className="w-2/3 bg-slate-950 border border-slate-800 rounded px-2.5 py-1 text-xs text-slate-100 font-mono"
-                        />
-                      </div>
-                    ))}
+                  <div className="text-xs text-slate-500 italic py-2">
+                    No dynamic UI schema defined for this plugin.
                   </div>
                 )}
               </div>
 
-              {/* Adapter Directives */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                    Dry-Run Directive
-                  </label>
-                  <input
-                    type="text"
-                    value={editDryRunCmd}
-                    onChange={(e) => setEditDryRunCmd(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                    Emergency Abort Command
-                  </label>
-                  <input
-                    type="text"
-                    value={editAbortCmd}
-                    onChange={(e) => setEditAbortCmd(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
-                  />
-                </div>
-              </div>
-
-              <div className="flex space-x-2 pt-2">
+              <div className="flex space-x-2 pt-2 border-t border-slate-800">
                 <button
                   type="button"
                   onClick={() => setEditingPlugin(null)}
@@ -686,11 +1141,20 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSavingConfig}
                   className="w-1/2 flex items-center justify-center space-x-1.5 bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-lg text-xs font-semibold transition-colors shadow-md shadow-indigo-600/30"
                 >
-                  <Save className="h-3.5 w-3.5" />
-                  <span>{isSubmitting ? "Saving & Reinitializing..." : "Save & Re-Init Connection"}</span>
+                  {isSavingConfig ? (
+                    <>
+                      <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-3.5 w-3.5" />
+                      <span>Save &amp; Re-Init Connection</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
@@ -698,111 +1162,67 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
         </div>
       )}
 
-      {/* Uninstall / Disable Confirmation Modal */}
+      {/* Uninstall Modal */}
       {uninstallingPlugin && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto animate-in fade-in duration-150">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-5 border-b border-slate-800 bg-rose-950/20">
-              <div className="flex items-center space-x-3">
-                <div className="h-9 w-9 rounded-lg bg-rose-500/20 border border-rose-500/30 flex items-center justify-center">
-                  <AlertTriangle className="h-5 w-5 text-rose-400" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full shadow-2xl overflow-hidden my-8">
+            <div className="p-6 space-y-4">
+              <div className="flex items-center space-x-3 text-rose-400">
+                <div className="p-2.5 rounded-full bg-rose-500/10 border border-rose-500/20">
+                  <AlertTriangle className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-100">
-                    Uninstall Pluggable Target
-                  </h3>
-                  <p className="text-[11px] text-rose-300/80 font-mono">
-                    {uninstallingPlugin.id} ({uninstallingPlugin.name})
-                  </p>
+                  <h3 className="text-sm font-bold text-slate-100">Uninstall Pluggable Target</h3>
+                  <span className="text-xs text-slate-400 font-mono">#{uninstallingPlugin.id}</span>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setUninstallingPlugin(null)}
-                className="text-slate-400 hover:text-slate-100 p-1.5 rounded-lg hover:bg-slate-800 transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
 
-            {/* Modal Body */}
-            <div className="p-6 space-y-4">
               <p className="text-xs text-slate-300 leading-relaxed">
-                Are you sure you want to uninstall or remove this pluggable target? Any running queries or active subprocesses will be immediately terminated.
+                Are you sure you want to uninstall connector{" "}
+                <strong className="text-white font-semibold">{uninstallingPlugin.name}</strong>?
               </p>
 
-              {uninstallError && (
-                <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs">
-                  {uninstallError}
-                </div>
-              )}
-
-              {/* Mode Selection */}
-              <div className="space-y-3 pt-1">
-                <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
-                  Select Deletion Mode
-                </label>
-
-                {/* Mode 1: Soft Disable */}
-                <div
-                  onClick={() => setIsHardDelete(false)}
-                  data-testid="mode-soft-disable"
-                  className={cn(
-                    "p-3.5 rounded-xl border cursor-pointer transition-all flex items-start space-x-3",
-                    !isHardDelete
-                      ? "bg-slate-800/80 border-indigo-500/50 ring-1 ring-indigo-500/30"
-                      : "bg-slate-950/50 border-slate-800 hover:border-slate-700"
-                  )}
-                >
+              <div className="space-y-2">
+                <label className="flex items-start space-x-2.5 p-2.5 rounded-lg border border-slate-800 bg-slate-950 cursor-pointer">
                   <input
                     type="radio"
-                    name="uninstallMode"
-                    checked={!isHardDelete}
-                    onChange={() => setIsHardDelete(false)}
+                    name="uninstall-mode"
+                    data-testid="mode-soft-deactivate"
+                    checked={!uninstallHardDelete}
+                    onChange={() => setUninstallHardDelete(false)}
                     className="mt-0.5 text-indigo-500 focus:ring-0"
                   />
                   <div>
-                    <div className="text-xs font-semibold text-slate-200">
+                    <span className="text-xs font-semibold text-slate-200 block">
                       Soft Deactivate (Recommended)
-                    </div>
-                    <div className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
-                      Sets status to <code className="text-amber-400 font-mono">disabled</code>. Terminates subprocesses and prevents auto-discovery from reloading it on next launch.
-                    </div>
+                    </span>
+                    <span className="text-[11px] text-slate-400">
+                      Disable target connection while retaining schema &amp; audit history.
+                    </span>
                   </div>
-                </div>
+                </label>
 
-                {/* Mode 2: Hard Delete */}
-                <div
-                  onClick={() => setIsHardDelete(true)}
-                  data-testid="mode-hard-delete"
-                  className={cn(
-                    "p-3.5 rounded-xl border cursor-pointer transition-all flex items-start space-x-3",
-                    isHardDelete
-                      ? "bg-rose-950/30 border-rose-500/50 ring-1 ring-rose-500/30"
-                      : "bg-slate-950/50 border-slate-800 hover:border-slate-700"
-                  )}
-                >
+                <label className="flex items-start space-x-2.5 p-2.5 rounded-lg border border-rose-950/40 bg-slate-950 cursor-pointer">
                   <input
                     type="radio"
-                    name="uninstallMode"
-                    checked={isHardDelete}
-                    onChange={() => setIsHardDelete(true)}
+                    name="uninstall-mode"
+                    data-testid="mode-hard-delete"
+                    checked={uninstallHardDelete}
+                    onChange={() => setUninstallHardDelete(true)}
                     className="mt-0.5 text-rose-500 focus:ring-0"
                   />
                   <div>
-                    <div className="text-xs font-semibold text-rose-300">
+                    <span className="text-xs font-semibold text-rose-400 block">
                       Permanent Hard Delete
-                    </div>
-                    <div className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
-                      Permanently wipes this target profile and its configuration from the SQLite database.
-                    </div>
+                    </span>
+                    <span className="text-[11px] text-slate-400">
+                      Permanently remove plugin configuration and metadata from SQLite database.
+                    </span>
                   </div>
-                </div>
+                </label>
               </div>
             </div>
 
-            {/* Modal Footer */}
             <div className="p-5 border-t border-slate-800 bg-slate-950/50 flex items-center justify-end space-x-3">
               <button
                 type="button"
@@ -832,158 +1252,6 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
                 )}
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Add Plugin Modal with Presets */}
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-lg w-full p-6 shadow-2xl space-y-4 my-8">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <h3 className="text-sm font-bold text-slate-100 flex items-center space-x-2">
-                <Plus className="h-4 w-4 text-indigo-400" />
-                <span>Register New Pluggable Target</span>
-              </h3>
-              <button
-                onClick={() => setShowAddModal(false)}
-                className="text-slate-400 hover:text-slate-200 text-xs"
-              >
-                Cancel
-              </button>
-            </div>
-
-            {/* Target Template Preset Selector */}
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                Target Architecture Preset
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { id: "sqlserver", label: "SQL Server" },
-                  { id: "mongodb", label: "MongoDB" },
-                  { id: "custom", label: "Custom Plugin" },
-                ].map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => handlePresetChange(p.id)}
-                    className={cn(
-                      "py-1.5 px-2 rounded-lg text-xs font-medium border text-center transition-colors",
-                      addPreset === p.id
-                        ? "bg-indigo-600/20 border-indigo-500 text-indigo-200"
-                        : "bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700"
-                    )}
-                  >
-                    {p.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <form onSubmit={handleCreate} className="space-y-3">
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                  Plugin ID (Unique Key)
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={addId}
-                  onChange={(e) => setAddId(e.target.value)}
-                  placeholder="e.g. mongodb_prod"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                  Display Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={addName}
-                  onChange={(e) => setAddName(e.target.value)}
-                  placeholder="e.g. MongoDB Analytics Cluster"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                    Driver Identifier
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={addDriver}
-                    onChange={(e) => setAddDriver(e.target.value)}
-                    placeholder="e.g. pymongo/mongodb"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                    Dry-Run Directive
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={addDryRunCmd}
-                    onChange={(e) => setAddDryRunCmd(e.target.value)}
-                    placeholder="e.g. db.runCommand({explain})"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                  Subprocess Entrypoint
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={addEntrypoint}
-                  onChange={(e) => setAddEntrypoint(e.target.value)}
-                  placeholder="e.g. python plugins/mongodb_plugin/adapter.py"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                  Emergency Abort Command
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={addAbortCmd}
-                  onChange={(e) => setAddAbortCmd(e.target.value)}
-                  placeholder="e.g. db.killOp({opid})"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
-                />
-              </div>
-
-              <div className="flex space-x-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="w-1/2 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 rounded-lg text-xs font-semibold transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-1/2 bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-lg text-xs font-semibold transition-colors shadow-md shadow-indigo-600/30"
-                >
-                  {isSubmitting ? "Registering..." : "Register Plugin"}
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       )}

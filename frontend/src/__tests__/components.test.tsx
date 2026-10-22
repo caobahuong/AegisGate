@@ -889,4 +889,110 @@ describe("Frontend Component Tests", () => {
       expect(handleAbort).toHaveBeenCalledWith("exec_running_1");
     });
   });
+
+  it("renders PluginManagement with 3-tab Add Modal (Preset, ZIP, Git) and verifies certification inspection", async () => {
+    const handleRegister = vi.fn();
+    const handleInstallZip = vi.fn();
+    const handleInstallGit = vi.fn();
+    const handleVerify = vi.fn().mockResolvedValue({
+      plugin_id: "sqlserver_certified",
+      certified: true,
+      badge: "CERTIFIED_READY",
+      checks: {
+        handshake: { status: "PASSED", latency_ms: 5.2 },
+        sync_knowledge: { status: "PASSED", latency_ms: 12.0 },
+        dry_run: { status: "PASSED", latency_ms: 15.1 },
+        abort: { status: "PASSED", latency_ms: 3.0 },
+      },
+      verified_at: "2026-10-22T22:00:00Z",
+    });
+
+    const samplePlugins: PluginProfileResponse[] = [
+      {
+        id: "sqlserver_certified",
+        name: "SQL Server Enterprise",
+        driver: "pyodbc/mssql",
+        entrypoint: "python adapter.py",
+        dry_run_command: "SET SHOWPLAN_XML ON",
+        abort_command: "KILL {spid}",
+        config: { server: "localhost" },
+        status: "active",
+        latency_ms: 10.0,
+        active_sessions_count: 1,
+        is_certified: true,
+        certification_report: {
+          plugin_id: "sqlserver_certified",
+          certified: true,
+          badge: "CERTIFIED_READY",
+          checks: {
+            handshake: { status: "PASSED", latency_ms: 5.2, details: "OK" },
+            sync_knowledge: { status: "PASSED", latency_ms: 12.0, details: "2 tables" },
+            dry_run: { status: "PASSED", latency_ms: 15.1, details: "Plan OK" },
+            abort: { status: "PASSED", latency_ms: 3.0, details: "Kill OK" },
+          },
+          verified_at: "2026-10-22T22:00:00Z",
+        },
+        created_at: "2026-10-22T00:00:00Z",
+        updated_at: "2026-10-22T00:00:00Z",
+      },
+    ];
+
+    render(
+      <PluginManagement
+        plugins={samplePlugins}
+        onRegisterPlugin={handleRegister}
+        onInstallZip={handleInstallZip}
+        onInstallGit={handleInstallGit}
+        onVerifyPlugin={handleVerify}
+        onSyncPlugin={vi.fn()}
+      />
+    );
+
+    // 1. Verify Certified Badge is displayed
+    const certBadge = screen.getByTestId("cert-badge-sqlserver_certified");
+    expect(certBadge).toBeDefined();
+    expect(certBadge.textContent).toContain("Certified & Ready");
+
+    // 2. Click Badge to open Certification Inspection Modal
+    fireEvent.click(certBadge);
+    expect(screen.getByTestId("cert-inspect-modal")).toBeDefined();
+    expect(screen.getByText("Plugin Sanity & Certification Report")).toBeDefined();
+    expect(screen.getByText("1. Handshake & RPC Ping")).toBeDefined();
+    expect(screen.getByText("2. Sync Knowledge Schema")).toBeDefined();
+    expect(screen.getByText("3. Dry-Run Analysis")).toBeDefined();
+    expect(screen.getByText("4. Abort Hook Protocol")).toBeDefined();
+
+    // Close Modal
+    fireEvent.click(screen.getByText("Close Report"));
+    expect(screen.queryByTestId("cert-inspect-modal")).toBeNull();
+
+    // 3. Click Sanity Check button
+    const sanityBtn = screen.getByTestId("sanity-check-btn-sqlserver_certified");
+    fireEvent.click(sanityBtn);
+    await waitFor(() => {
+      expect(handleVerify).toHaveBeenCalledWith("sqlserver_certified");
+    });
+
+    // 4. Open Add Pluggable Target Modal and switch tabs
+    fireEvent.click(screen.getByText("Add Pluggable Target"));
+    expect(screen.getByText("Register New Pluggable Target")).toBeDefined();
+
+    // Switch to Upload ZIP tab
+    const tabZip = screen.getByTestId("tab-add-zip");
+    fireEvent.click(tabZip);
+    expect(screen.getByText("Choose ZIP file")).toBeDefined();
+    expect(screen.getByTestId("upload-zip-btn")).toBeDefined();
+
+    // Switch to Clone Git tab
+    const tabGit = screen.getByTestId("tab-add-git");
+    fireEvent.click(tabGit);
+    expect(screen.getByTestId("input-git-url")).toBeDefined();
+    expect(screen.getByTestId("clone-git-btn")).toBeDefined();
+
+    // Switch back to Preset tab
+    const tabPreset = screen.getByTestId("tab-add-preset");
+    fireEvent.click(tabPreset);
+    expect(screen.getByText("Target Architecture Preset")).toBeDefined();
+  });
+
 });

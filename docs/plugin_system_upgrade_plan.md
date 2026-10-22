@@ -279,3 +279,4 @@ if __name__ == "__main__":
    * Pytest Backend đạt 100% Pass cho cả SDK, Installer và Linter.
    * Vitest Frontend đạt 100% Pass cho modal upload và badge certified.
    * Anti-Gravity Browser verification chạy qua Chrome Debugging không có lỗi console.
+

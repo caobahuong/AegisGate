@@ -35,6 +35,8 @@ class PluginProfile(SQLModel, table=True):
     status: str = Field(default="active", description="Status: active | inactive | error")
     latency_ms: float = Field(default=0.0, description="Average response latency in ms")
     active_sessions_count: int = Field(default=0, description="Current number of active sessions/SPIDs")
+    is_certified: bool = Field(default=False, description="Whether plugin passed 4-stage sanity linter")
+    certification_report_json: Optional[str] = Field(default=None, description="Detailed 4-stage sanity check report in JSON")
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
 
@@ -127,6 +129,8 @@ def init_db() -> None:
         for col_name, col_type, col_default in [
             ("ui_schema_json", "TEXT", "'[]'"),
             ("custom_card_json", "TEXT", "'{}'"),
+            ("is_certified", "BOOLEAN", "0"),
+            ("certification_report_json", "TEXT", "NULL"),
         ]:
             try:
                 conn.execute(text(f"ALTER TABLE plugin_profiles ADD COLUMN {col_name} {col_type} DEFAULT {col_default}"))

@@ -1,0 +1,64 @@
+{
+  "id": "starter_plugin",
+  "name": "AegisGate Database Starter Template",
+  "version": "1.0.0",
+  "description": "Standard boilerplate template for creating external AegisGate database connectors.",
+  "driver": "custom/rdbms",
+  "entrypoint": "python adapter.py",
+  "dry_run_command": "EXPLAIN {query}",
+  "abort_command": "KILL {spid}",
+  "config": {
+    "host": "localhost",
+    "port": 5432,
+    "database": "sample_db",
+    "username": "aegis_user",
+    "password": "changeme"
+  },
+  "ui_schema": [
+    {
+      "key": "host",
+      "label": "Database Host",
+      "type": "text",
+      "default": "localhost",
+      "required": true
+    },
+    {
+      "key": "port",
+      "label": "Port",
+      "type": "number",
+      "default": 5432,
+      "required": true
+    },
+    {
+      "key": "database",
+      "label": "Database Name",
+      "type": "text",
+      "default": "sample_db",
+      "required": true
+    },
+    {
+      "key": "username",
+      "label": "User",
+      "type": "text",
+      "default": "aegis_user",
+      "required": true
+    },
+    {
+      "key": "password",
+      "label": "Password",
+      "type": "password",
+      "required": true
+    }
+  ],
+  "custom_card": {
+    "title": "Database Connection Metrics",
+    "badges": [
+      { "label": "Driver", "value": "Python/RDBMS", "color": "indigo" },
+      { "label": "Engine", "value": "AegisGate SDK 1.0", "color": "emerald" }
+    ],
+    "fields": [
+      { "label": "Target Host", "key": "host" },
+      { "label": "Default Database", "key": "database" }
+    ]
+  }
+}
