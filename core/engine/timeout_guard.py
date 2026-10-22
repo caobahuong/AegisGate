@@ -7,7 +7,9 @@ Adheres strictly to python_clean_code.md:
 """
 
 import asyncio
-from typing import Any, Awaitable, Callable, Optional, TypeVar
+from collections.abc import Awaitable, Callable
+from typing import Any, TypeVar
+
 from core.config import settings
 from core.exceptions import ExecutionTimeoutError
 
@@ -18,7 +20,7 @@ class TimeoutGuard:
     """Calculates query timeouts and executes coroutines with strict time limits."""
 
     @staticmethod
-    def get_timeout_for_query(query_type: str, custom_limit: Optional[float] = None) -> float:
+    def get_timeout_for_query(query_type: str, custom_limit: float | None = None) -> float:
         """Resolve maximum allowed execution duration based on query type or rule."""
         if custom_limit is not None and custom_limit > 0:
             return custom_limit
@@ -31,7 +33,7 @@ class TimeoutGuard:
     async def run_with_timeout(
         coro: Awaitable[T],
         timeout_seconds: float,
-        on_timeout_abort: Optional[Callable[[], Awaitable[Any]]] = None,
+        on_timeout_abort: Callable[[], Awaitable[Any]] | None = None,
     ) -> T:
         """Execute a coroutine within strict timeout.
         

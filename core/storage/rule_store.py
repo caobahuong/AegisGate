@@ -5,8 +5,10 @@ Adheres strictly to python_clean_code.md:
 - Safe query execution
 """
 
-from typing import Any, Optional
+from typing import Any
+
 from sqlmodel import Session, select
+
 from core.database import Rule
 
 
@@ -23,14 +25,14 @@ class RuleStore:
         self.session.refresh(rule)
         return rule
 
-    def get_rule(self, rule_id: str) -> Optional[Rule]:
+    def get_rule(self, rule_id: str) -> Rule | None:
         """Fetch a rule by ID."""
         statement = select(Rule).where(Rule.id == rule_id)
         return self.session.exec(statement).first()
 
     def list_rules(
         self,
-        target_id: Optional[str] = None,
+        target_id: str | None = None,
         is_active_only: bool = False,
         exact_target: bool = False,
     ) -> list[Rule]:
@@ -42,18 +44,18 @@ class RuleStore:
         """
         statement = select(Rule)
         if target_id == "global":
-            statement = statement.where(Rule.target_id == None)  # noqa: E711
+            statement = statement.where(Rule.target_id == None)
         elif target_id is not None:
             if exact_target:
                 statement = statement.where(Rule.target_id == target_id)
             else:
-                statement = statement.where((Rule.target_id == target_id) | (Rule.target_id == None))  # noqa: E711
+                statement = statement.where((Rule.target_id == target_id) | (Rule.target_id == None))
         if is_active_only:
-            statement = statement.where(Rule.is_active == True)  # noqa: E712
+            statement = statement.where(Rule.is_active == True)
 
         return list(self.session.exec(statement).all())
 
-    def update_rule(self, rule_id: str, updates: dict[str, Any]) -> Optional[Rule]:
+    def update_rule(self, rule_id: str, updates: dict[str, Any]) -> Rule | None:
         """Update existing rule fields."""
         rule = self.get_rule(rule_id)
         if not rule:

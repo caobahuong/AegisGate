@@ -5,8 +5,10 @@ Adheres strictly to python_clean_code.md:
 - Efficient querying
 """
 
-from typing import Any, Optional
-from sqlmodel import Session, col, desc, select
+from typing import Any
+
+from sqlmodel import Session, desc, select
+
 from core.database import ExecutionLog
 
 
@@ -23,12 +25,12 @@ class LogStore:
         self.session.refresh(log)
         return log
 
-    def get_log(self, log_id: str) -> Optional[ExecutionLog]:
+    def get_log(self, log_id: str) -> ExecutionLog | None:
         """Fetch log by execution ID."""
         statement = select(ExecutionLog).where(ExecutionLog.id == log_id)
         return self.session.exec(statement).first()
 
-    def update_log(self, log_id: str, updates: dict[str, Any]) -> Optional[ExecutionLog]:
+    def update_log(self, log_id: str, updates: dict[str, Any]) -> ExecutionLog | None:
         """Update existing execution log with results or state changes."""
         log = self.get_log(log_id)
         if not log:
@@ -46,8 +48,8 @@ class LogStore:
     def list_logs(
         self,
         limit: int = 100,
-        target_id: Optional[str] = None,
-        status: Optional[str] = None,
+        target_id: str | None = None,
+        status: str | None = None,
     ) -> list[ExecutionLog]:
         """List execution logs ordered by most recent."""
         statement = select(ExecutionLog).order_by(desc(ExecutionLog.created_at))

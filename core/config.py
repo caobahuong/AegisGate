@@ -4,6 +4,7 @@ Enforces zero-hardcoding policy as specified in python_clean_code.md.
 """
 
 from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 

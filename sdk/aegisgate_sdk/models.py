@@ -1,12 +1,12 @@
 """AegisGate Plugin SDK - Models and Typed Contracts."""
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class PluginException(Exception):
     """Base exception for all plugin errors."""
-    def __init__(self, message: str, code: int = -32603, data: Optional[Any] = None) -> None:
+    def __init__(self, message: str, code: int = -32603, data: Any | None = None) -> None:
         super().__init__(message)
         self.message = message
         self.code = code
@@ -21,7 +21,7 @@ class PluginConfigError(PluginException):
 
 class PluginExecutionError(PluginException):
     """Raised when query execution fails on the database."""
-    def __init__(self, message: str, data: Optional[Any] = None) -> None:
+    def __init__(self, message: str, data: Any | None = None) -> None:
         super().__init__(message, code=-32000, data=data)
 
 
@@ -37,13 +37,14 @@ class CatalogColumn:
 class CatalogTable:
     name: str
     schema: str = "dbo"
-    columns: List[CatalogColumn] = field(default_factory=list)
-    indexes: List[str] = field(default_factory=list)
+    columns: list[CatalogColumn] = field(default_factory=list)
+    indexes: list[str] = field(default_factory=list)
 
 
 @dataclass
 class KnowledgeCatalog:
-    schemas: List[str] = field(default_factory=list)
-    tables: List[Dict[str, Any]] = field(default_factory=list)
-    views: List[Dict[str, Any]] = field(default_factory=list)
-    extra_metadata: Dict[str, Any] = field(default_factory=dict)
+    schemas: list[str] = field(default_factory=list)
+    tables: list[dict[str, Any]] = field(default_factory=list)
+    views: list[dict[str, Any]] = field(default_factory=list)
+    extra_metadata: dict[str, Any] = field(default_factory=dict)
+

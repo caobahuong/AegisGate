@@ -222,3 +222,4 @@ def test_plugin_server_stream_run():
     assert res1["result"]["status"] == "pong"
     assert res2["id"] == 101
     assert res2["result"] is True
+

@@ -6,10 +6,15 @@ Strictly adheres to python_clean_code.md:
 - Database session dependency injection
 """
 
+from collections.abc import Generator
 from datetime import datetime, timezone
-from typing import Generator, Optional
+import logging
+
+logger = logging.getLogger("AegisGate.Database")
+
 from sqlalchemy import text
-from sqlmodel import Field, SQLModel, Session, create_engine, select
+from sqlmodel import Field, Session, SQLModel, create_engine, select
+
 from core.config import settings
 
 
@@ -36,7 +41,7 @@ class PluginProfile(SQLModel, table=True):
     latency_ms: float = Field(default=0.0, description="Average response latency in ms")
     active_sessions_count: int = Field(default=0, description="Current number of active sessions/SPIDs")
     is_certified: bool = Field(default=False, description="Whether plugin passed 4-stage sanity linter")
-    certification_report_json: Optional[str] = Field(default=None, description="Detailed 4-stage sanity check report in JSON")
+    certification_report_json: str | None = Field(default=None, description="Detailed 4-stage sanity check report in JSON")
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
 
@@ -51,8 +56,8 @@ class KnowledgeChunk(SQLModel, table=True):
     partition_key: str = Field(index=True, description="Partition name, e.g. Sales, Accounting")
     title: str = Field(description="Human readable partition title")
     catalog_json: str = Field(default="{}", description="JSON containing tables, columns, types, indexes")
-    doc_file: Optional[str] = Field(default=None, description="Filename in knowledge_docs storing doc.md")
-    skills_file: Optional[str] = Field(default=None, description="Filename in knowledge_docs storing skills.md")
+    doc_file: str | None = Field(default=None, description="Filename in knowledge_docs storing doc.md")
+    skills_file: str | None = Field(default=None, description="Filename in knowledge_docs storing skills.md")
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
 
@@ -64,7 +69,7 @@ class Rule(SQLModel, table=True):
 
     id: str = Field(primary_key=True, index=True, description="Rule key (e.g. rule_no_orders_audit_join)")
     name: str = Field(description="Human-readable rule name")
-    target_id: Optional[str] = Field(default=None, index=True, description="Target plugin ID or null for global")
+    target_id: str | None = Field(default=None, index=True, description="Target plugin ID or null for global")
     rule_type: str = Field(description="Rule type: FORBID_JOIN | FORBID_TABLE_SCAN | MAX_EXECUTION_TIME | CUSTOM")
     expression: str = Field(description="Rule parameter (e.g. 'Orders,AuditLogs' or '15')")
     description: str = Field(default="", description="Explanation of why this rule exists")
@@ -88,16 +93,16 @@ class ExecutionLog(SQLModel, table=True):
         index=True,
         description="DRY_RUN | PAUSED_FOR_REVIEW | EXECUTING | COMPLETED | REJECTED | TIMEOUT | ABORTED",
     )
-    explain_plan_json: Optional[str] = Field(default=None, description="Dry-run explain plan result")
-    violations_json: Optional[str] = Field(default="[]", description="JSON list of rule violations detected")
-    execution_time_ms: Optional[float] = Field(default=None, description="Actual execution duration in ms")
+    explain_plan_json: str | None = Field(default=None, description="Dry-run explain plan result")
+    violations_json: str | None = Field(default="[]", description="JSON list of rule violations detected")
+    execution_time_ms: float | None = Field(default=None, description="Actual execution duration in ms")
     auto_approved: bool = Field(default=False, description="Whether auto-approved without manual review")
-    approved_by: Optional[str] = Field(default=None, description="User or system entity that approved")
-    result_summary: Optional[str] = Field(default=None, description="Serialized sample data or affected rows")
-    error_message: Optional[str] = Field(default=None, description="Error message if failed or rejected")
-    spid: Optional[int] = Field(default=None, description="Database SPID assigned during execution")
+    approved_by: str | None = Field(default=None, description="User or system entity that approved")
+    result_summary: str | None = Field(default=None, description="Serialized sample data or affected rows")
+    error_message: str | None = Field(default=None, description="Error message if failed or rejected")
+    spid: int | None = Field(default=None, description="Database SPID assigned during execution")
     created_at: datetime = Field(default_factory=utc_now)
-    finished_at: Optional[datetime] = Field(default=None)
+    finished_at: datetime | None = Field(default=None)
 
 
 class SystemSetting(SQLModel, table=True):
@@ -107,7 +112,7 @@ class SystemSetting(SQLModel, table=True):
 
     key: str = Field(primary_key=True, index=True)
     value: str
-    description: Optional[str] = None
+    description: str | None = None
     updated_at: datetime = Field(default_factory=utc_now)
 
 
@@ -135,8 +140,9 @@ def init_db() -> None:
             try:
                 conn.execute(text(f"ALTER TABLE plugin_profiles ADD COLUMN {col_name} {col_type} DEFAULT {col_default}"))
                 conn.commit()
-            except Exception:
-                pass
+            except Exception as mig_err:
+                # Column already exists in SQLite schema
+                logger.debug("Column %s migration note: %s", col_name, mig_err)
 
     with Session(engine) as session:
         # 1. Initialize default auto_approval_mode setting if not present

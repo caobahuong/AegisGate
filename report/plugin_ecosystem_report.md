@@ -236,3 +236,4 @@ npm run start # hoặc npm run dev
 ---
 **Ký duyệt:** Senior Full-Stack Engineer & System Architect  
 **Tình trạng:** Sẵn sàng triển khai Production & Public Repository.
+

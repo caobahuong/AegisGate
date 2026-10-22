@@ -89,3 +89,4 @@ def test_plugin_linter_endpoint(db_session: Session):
         assert data["checks"]["sync_knowledge"]["status"] == "PASSED"
     finally:
         app.dependency_overrides.clear()
+

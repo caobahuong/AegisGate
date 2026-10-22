@@ -7,12 +7,14 @@ Adheres strictly to python_clean_code.md:
 - 100% Type Hints
 """
 
-from contextlib import asynccontextmanager
 import logging
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session
+
 from core.config import settings
 from core.database import engine, init_db
 from core.engine.plugin_registry import PluginRegistry

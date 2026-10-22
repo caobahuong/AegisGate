@@ -13,12 +13,13 @@ from .server import PluginServer
 
 __all__ = [
     "BasePlugin",
-    "PluginServer",
-    "PluginException",
-    "PluginConfigError",
-    "PluginExecutionError",
     "CatalogColumn",
     "CatalogTable",
     "KnowledgeCatalog",
+    "PluginConfigError",
+    "PluginException",
+    "PluginExecutionError",
+    "PluginServer",
 ]
 __version__ = "1.0.0"
+

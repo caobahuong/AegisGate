@@ -11,7 +11,8 @@ import asyncio
 import json
 import logging
 import os
-from typing import Any, Optional
+from typing import Any
+
 from core.config import settings
 from core.exceptions import JsonRpcProtocolError, PluginProcessError
 from plugins.plugin_contract import (
@@ -54,9 +55,9 @@ async def terminate_all_subprocesses() -> int:
 class PluginSubprocessClient:
     """Communicates with an isolated plugin child process using JSON-RPC over stdin/stdout."""
 
-    def __init__(self, entrypoint_cmd: str, working_dir: Optional[str] = None) -> None:
+    def __init__(self, entrypoint_cmd: str, working_dir: str | None = None) -> None:
         self.entrypoint_cmd: str = entrypoint_cmd
-        self.working_dir: Optional[str] = working_dir
+        self.working_dir: str | None = working_dir
         self._request_counter: int = 0
 
     def _next_id(self) -> int:
@@ -67,7 +68,7 @@ class PluginSubprocessClient:
         self,
         method: str,
         params: dict[str, Any],
-        timeout: Optional[float] = None,
+        timeout: float | None = None,
     ) -> Any:
         """Execute a single JSON-RPC roundtrip with the plugin process.
         
@@ -77,7 +78,7 @@ class PluginSubprocessClient:
         rpc_req = JsonRpcRequest(method=method, params=params, id=request_id)
         payload = rpc_req.model_dump_json() + "\n"
 
-        proc: Optional[asyncio.subprocess.Process] = None
+        proc: asyncio.subprocess.Process | None = None
         try:
             logger.debug("Launching plugin subprocess: %s", self.entrypoint_cmd)
             sub_env = os.environ.copy()
@@ -121,7 +122,7 @@ class PluginSubprocessClient:
                 raise PluginProcessError("Plugin returned empty response over stdout")
 
             # Parse JSON-RPC line (take the last valid JSON line in case of debug logs)
-            json_line: Optional[str] = None
+            json_line: str | None = None
             for line in reversed(raw_response.splitlines()):
                 line = line.strip()
                 if line.startswith("{") and line.endswith("}"):
@@ -172,7 +173,7 @@ class PluginSubprocessClient:
         raw = await self.send_rpc_command("dry_run", params.model_dump(), timeout=15.0)
         return DryRunResult.model_validate(raw)
 
-    async def execute(self, params: ExecuteParams, timeout: Optional[float] = None) -> ExecuteResult:
+    async def execute(self, params: ExecuteParams, timeout: float | None = None) -> ExecuteResult:
         """Call plugin execute method."""
         call_timeout = timeout or params.timeout_seconds + 5.0
         raw = await self.send_rpc_command("execute", params.model_dump(), timeout=call_timeout)
@@ -183,7 +184,7 @@ class PluginSubprocessClient:
         raw = await self.send_rpc_command("abort", params.model_dump(), timeout=10.0)
         return AbortResult.model_validate(raw)
 
-    async def reinit(self, params: ReinitParams, timeout: Optional[float] = None) -> ReinitResult:
+    async def reinit(self, params: ReinitParams, timeout: float | None = None) -> ReinitResult:
         """Call plugin reinit method with updated configuration."""
         raw = await self.send_rpc_command("reinit", params.model_dump(), timeout=timeout or 10.0)
         return ReinitResult.model_validate(raw)

@@ -9,12 +9,14 @@ Provides 4 standard MCP tools for AI Agents per plan.md & tech.md:
 
 import json
 import sys
-from typing import Any, Optional
+from typing import Any
+
 try:
     from mcp.server.fastmcp import FastMCP
 except Exception:
-    from mcp.server.mcpserver import MCPServer as FastMCP
+    from mcp.server.mcpserver import MCPServer as FastMCP  # type: ignore[no-redef]
 from sqlmodel import Session
+
 from core.database import engine
 from core.engine.state_machine import ExecutionStateMachine
 from core.storage.knowledge_store import KnowledgeStore
@@ -22,7 +24,7 @@ from core.storage.log_store import LogStore
 from core.storage.rule_store import RuleStore
 
 # Parse optional --plugin from command line
-DEFAULT_TARGET_ID: Optional[str] = None
+DEFAULT_TARGET_ID: str | None = None
 for idx, arg in enumerate(sys.argv):
     if arg == "--plugin" and idx + 1 < len(sys.argv):
         DEFAULT_TARGET_ID = sys.argv[idx + 1]
@@ -33,7 +35,7 @@ mcp_app = FastMCP(name=server_name)
 
 
 @mcp_app.tool()
-def get_catalog(target_id: Optional[str] = None, partition_key: Optional[str] = None) -> str:
+def get_catalog(target_id: str | None = None, partition_key: str | None = None) -> str:
     """Retrieve database schema and structural catalog without touching the target system.
     
     Returns table definitions, columns, data types, and indexes cached in AegisGate.
@@ -76,7 +78,7 @@ def get_catalog(target_id: Optional[str] = None, partition_key: Optional[str] = 
 
 
 @mcp_app.tool()
-def get_knowledge(target_id: Optional[str] = None, partition_key: Optional[str] = None) -> str:
+def get_knowledge(target_id: str | None = None, partition_key: str | None = None) -> str:
     """Retrieve business documentation (doc.md), query skills, and active rules for a target.
     
     Args:
@@ -135,7 +137,7 @@ def get_knowledge(target_id: Optional[str] = None, partition_key: Optional[str] 
 
 
 @mcp_app.tool()
-async def submit_execution(query: str, target_id: Optional[str] = None, reasoning: str = "") -> str:
+async def submit_execution(query: str, target_id: str | None = None, reasoning: str = "") -> str:
     """Submit a SQL query or command to AegisGate for Dry-Run and Execution control.
     
     If Auto Approval is ON, AegisGate executes automatically if valid.

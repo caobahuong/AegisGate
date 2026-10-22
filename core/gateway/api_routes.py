@@ -7,10 +7,12 @@ Adheres strictly to python_clean_code.md:
 - Zero generic `except Exception:`, proper status codes
 """
 
-from typing import Annotated, Any, Optional
+from typing import Annotated, Any
+
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlmodel import Session
+
 from core.database import get_session
 from core.exceptions import (
     ExecutionStateError,
@@ -24,11 +26,11 @@ from core.gateway.schemas import (
     AutoModeResponse,
     CreateRuleRequest,
     ExecutionResponse,
+    InstallGitPluginRequest,
     KnowledgeChunkResponse,
     McpConfigResponse,
-    PluginProfileResponse,
-    InstallGitPluginRequest,
     PluginCertificationResponse,
+    PluginProfileResponse,
     PluginSchemaResponse,
     RegisterPluginRequest,
     RejectExecutionRequest,
@@ -70,8 +72,8 @@ async def sse_events() -> StreamingResponse:
 def list_executions(
     service: Annotated[GatewayService, Depends(get_service)],
     limit: int = Query(default=50, ge=1, le=500),
-    target_id: Optional[str] = Query(default=None),
-    status_filter: Optional[str] = Query(default=None, alias="status"),
+    target_id: str | None = Query(default=None),
+    status_filter: str | None = Query(default=None, alias="status"),
 ) -> list[ExecutionResponse]:
     """List execution logs with optional filtering."""
     return service.list_executions(limit=limit, target_id=target_id, status=status_filter)
@@ -286,7 +288,7 @@ async def sync_plugin_catalog(
 @router.get("/knowledge", response_model=list[KnowledgeChunkResponse])
 def list_knowledge(
     service: Annotated[GatewayService, Depends(get_service)],
-    target_id: Optional[str] = Query(default=None),
+    target_id: str | None = Query(default=None),
 ) -> list[KnowledgeChunkResponse]:
     """List structural catalog partitions."""
     return service.list_knowledge_chunks(target_id=target_id)
@@ -320,7 +322,7 @@ def update_knowledge_docs(
 @router.get("/skills")
 def list_skills(
     service: Annotated[GatewayService, Depends(get_service)],
-    target_id: Optional[str] = Query(default=None, description="Filter skills by target plugin ID"),
+    target_id: str | None = Query(default=None, description="Filter skills by target plugin ID"),
 ) -> list[dict[str, Any]]:
     """List query skills and templates, optionally filtered by target plugin."""
     return service.list_skills(target_id=target_id)
@@ -329,7 +331,7 @@ def list_skills(
 @router.get("/rules", response_model=list[RuleResponse])
 def list_rules(
     service: Annotated[GatewayService, Depends(get_service)],
-    target_id: Optional[str] = Query(default=None, description="Filter rules by target plugin ID or 'global'"),
+    target_id: str | None = Query(default=None, description="Filter rules by target plugin ID or 'global'"),
     exact: bool = Query(default=False, description="Exact target match without global fallback"),
 ) -> list[RuleResponse]:
     """List governance rules optionally filtered by target plugin or global scope."""
@@ -396,8 +398,8 @@ def set_auto_mode(
 def list_logs(
     service: Annotated[GatewayService, Depends(get_service)],
     limit: int = Query(default=100, ge=1, le=1000),
-    target_id: Optional[str] = Query(default=None),
-    status_filter: Optional[str] = Query(default=None, alias="status"),
+    target_id: str | None = Query(default=None),
+    status_filter: str | None = Query(default=None, alias="status"),
 ) -> list[ExecutionResponse]:
     """List historical audit logs."""
     return service.list_executions(limit=limit, target_id=target_id, status=status_filter)

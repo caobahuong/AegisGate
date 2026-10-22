@@ -137,3 +137,4 @@ def test_api_install_plugin_zip_endpoint(installer_db_session: Session):
         assert data["status"] == "active"
     finally:
         app.dependency_overrides.clear()
+

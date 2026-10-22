@@ -6,7 +6,8 @@ Adheres strictly to python_clean_code.md:
 """
 
 import re
-from typing import Any, Optional
+from typing import Any
+
 from core.database import Rule
 
 
@@ -17,7 +18,7 @@ class GovernanceEngine:
     def inspect_query_and_plan(
         query: str,
         rules: list[Rule],
-        explain_plan: Optional[Any] = None,
+        explain_plan: Any | None = None,
     ) -> list[str]:
         """Check query text and explain plan against active governance rules.
         

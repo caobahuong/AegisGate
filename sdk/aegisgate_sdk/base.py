@@ -7,7 +7,7 @@ Strictly follows python_clean_code.md:
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 class BasePlugin(ABC):
@@ -18,7 +18,7 @@ class BasePlugin(ABC):
     """
 
     @abstractmethod
-    def sync_knowledge(self, config: Dict[str, Any]) -> Dict[str, Any]:
+    def sync_knowledge(self, config: dict[str, Any]) -> dict[str, Any]:
         """Extract database catalog, schemas, tables, columns, types, and indexes.
 
         Args:
@@ -28,10 +28,9 @@ class BasePlugin(ABC):
             Dictionary containing schema metadata:
             {"schemas": [...], "tables": [...], "views": [...]}
         """
-        pass
 
     @abstractmethod
-    def dry_run(self, query: str, config: Dict[str, Any]) -> Dict[str, Any]:
+    def dry_run(self, query: str, config: dict[str, Any]) -> dict[str, Any]:
         """Perform dry-run inspection and produce execution explain plan without mutating state.
 
         Args:
@@ -42,10 +41,9 @@ class BasePlugin(ABC):
             Dictionary containing explain plan and risk metrics:
             {"explain_plan": {...}, "risk_score": 0, "operation": "SELECT"}
         """
-        pass
 
     @abstractmethod
-    def execute(self, query: str, config: Dict[str, Any]) -> Dict[str, Any]:
+    def execute(self, query: str, config: dict[str, Any]) -> dict[str, Any]:
         """Execute the query on the target database and return results.
 
         Args:
@@ -56,10 +54,9 @@ class BasePlugin(ABC):
             Dictionary containing query results:
             {"rows_affected": int, "data": list[dict], "spid": Optional[int]}
         """
-        pass
 
     @abstractmethod
-    def abort(self, spid: Optional[int], config: Dict[str, Any]) -> bool:
+    def abort(self, spid: int | None, config: dict[str, Any]) -> bool:
         """Emergency kill/abort command for a running query or connection.
 
         Args:
@@ -69,12 +66,12 @@ class BasePlugin(ABC):
         Returns:
             True if session was terminated successfully, False otherwise.
         """
-        pass
 
-    def ping(self, config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def ping(self, config: dict[str, Any] | None = None) -> dict[str, Any]:
         """Optional health check and handshake method.
 
         Default implementation returns pong status. Subclasses may override
         to test actual socket connectivity.
         """
         return {"status": "pong", "protocol": "JSON-RPC 2.0", "sdk": "aegisgate-sdk/1.0"}
+

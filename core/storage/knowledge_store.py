@@ -8,8 +8,10 @@ Adheres strictly to python_clean_code.md:
 
 import json
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
+
 from sqlmodel import Session, select
+
 from core.config import settings
 from core.database import KnowledgeChunk, utc_now
 from core.exceptions import StorageError
@@ -18,12 +20,12 @@ from core.exceptions import StorageError
 class KnowledgeStore:
     """Manages structural catalog in SQLite and markdown docs on filesystem."""
 
-    def __init__(self, session: Session, docs_dir: Optional[Path] = None) -> None:
+    def __init__(self, session: Session, docs_dir: Path | None = None) -> None:
         self.session: Session = session
         self.docs_dir: Path = docs_dir or settings.KNOWLEDGE_DOCS_DIR
         self.docs_dir.mkdir(parents=True, exist_ok=True)
 
-    def _read_file_safe(self, filename: Optional[str]) -> str:
+    def _read_file_safe(self, filename: str | None) -> str:
         """Safely read text from a markdown doc file."""
         if not filename:
             return ""
@@ -46,8 +48,8 @@ class KnowledgeStore:
     def save_chunk(
         self,
         chunk: KnowledgeChunk,
-        doc_content: Optional[str] = None,
-        skills_content: Optional[str] = None,
+        doc_content: str | None = None,
+        skills_content: str | None = None,
     ) -> KnowledgeChunk:
         """Save or update a knowledge chunk and its associated markdown files."""
         # Ensure filenames exist if content is provided
@@ -67,7 +69,7 @@ class KnowledgeStore:
         self.session.refresh(chunk)
         return chunk
 
-    def get_chunk(self, chunk_id: str) -> Optional[dict[str, Any]]:
+    def get_chunk(self, chunk_id: str) -> dict[str, Any] | None:
         """Retrieve chunk with hydrated doc and skill markdown contents."""
         statement = select(KnowledgeChunk).where(KnowledgeChunk.id == chunk_id)
         chunk = self.session.exec(statement).first()
@@ -94,7 +96,7 @@ class KnowledgeStore:
             "updated_at": chunk.updated_at.isoformat(),
         }
 
-    def list_chunks(self, target_id: Optional[str] = None) -> list[dict[str, Any]]:
+    def list_chunks(self, target_id: str | None = None) -> list[dict[str, Any]]:
         """List all chunks with summary info."""
         statement = select(KnowledgeChunk)
         if target_id:
@@ -127,8 +129,8 @@ class KnowledgeStore:
     def update_docs(
         self,
         chunk_id: str,
-        doc_content: Optional[str] = None,
-        skills_content: Optional[str] = None,
+        doc_content: str | None = None,
+        skills_content: str | None = None,
     ) -> bool:
         """Update markdown contents for a chunk."""
         statement = select(KnowledgeChunk).where(KnowledgeChunk.id == chunk_id)
@@ -195,22 +197,24 @@ class KnowledgeStore:
                 self.session.add(existing)
                 saved_chunks.append(existing)
             else:
+                doc_filename = f"{chunk_id}_doc.md"
+                skills_filename = f"{chunk_id}_skills.md"
                 new_chunk = KnowledgeChunk(
                     id=chunk_id,
                     target_id=target_id,
                     partition_key=partition_key,
                     title=title,
                     catalog_json=schema_json,
-                    doc_file=f"{chunk_id}_doc.md",
-                    skills_file=f"{chunk_id}_skills.md",
+                    doc_file=doc_filename,
+                    skills_file=skills_filename,
                     created_at=utc_now(),
                     updated_at=utc_now(),
                 )
                 # Initialize default documentation template
                 default_doc = f"# {title} Documentation\n\nOverview of tables and business rules for {partition_key}."
                 default_skills = f"# {title} Query Skills\n\nStandard query templates and performance guidelines."
-                self._write_file_safe(new_chunk.doc_file, default_doc)
-                self._write_file_safe(new_chunk.skills_file, default_skills)
+                self._write_file_safe(doc_filename, default_doc)
+                self._write_file_safe(skills_filename, default_skills)
                 self.session.add(new_chunk)
                 saved_chunks.append(new_chunk)
 

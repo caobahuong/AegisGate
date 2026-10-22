@@ -9,8 +9,10 @@ Adheres strictly to python_clean_code.md:
 import json
 import logging
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
+
 from sqlmodel import Session, select
+
 from core.config import settings
 from core.database import PluginProfile, utc_now
 from core.engine.plugin_client import PluginSubprocessClient
@@ -98,9 +100,9 @@ class PluginRegistry:
     def update_metrics(
         self,
         plugin_id: str,
-        latency_ms: Optional[float] = None,
-        active_sessions_count: Optional[int] = None,
-        status: Optional[str] = None,
+        latency_ms: float | None = None,
+        active_sessions_count: int | None = None,
+        status: str | None = None,
     ) -> PluginProfile:
         """Update live operational telemetry and health metrics."""
         profile = self.get_profile(plugin_id)
@@ -124,7 +126,7 @@ class PluginRegistry:
             working_dir=str(settings.BASE_DIR),
         )
 
-    def scan_and_load_manifests(self, plugins_dir: Optional[Path] = None) -> list[PluginProfile]:
+    def scan_and_load_manifests(self, plugins_dir: Path | None = None) -> list[PluginProfile]:
         """Scan plugins directory for plugin_manifest.json files and register them."""
         target_dir = plugins_dir or settings.PLUGINS_DIR
         if not target_dir.exists():

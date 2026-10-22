@@ -17,9 +17,10 @@ import asyncio
 import json
 import logging
 import time
-from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from typing import Any
+
 from sqlmodel import Session, select
+
 from core.database import PluginProfile, utc_now
 from core.engine.plugin_client import PluginSubprocessClient
 
@@ -34,7 +35,7 @@ class PluginLinter:
     def __init__(self, session: Session) -> None:
         self.session = session
 
-    async def verify_plugin(self, plugin_id: str) -> Dict[str, Any]:
+    async def verify_plugin(self, plugin_id: str) -> dict[str, Any]:
         """Execute 4-stage sanity checks against a registered plugin."""
         statement = select(PluginProfile).where(PluginProfile.id == plugin_id)
         profile = self.session.exec(statement).first()
@@ -48,9 +49,9 @@ class PluginLinter:
             config = {}
 
         client = PluginSubprocessClient(profile.entrypoint)
-        checks: Dict[str, Any] = {}
+        checks: dict[str, Any] = {}
         all_passed = True
-        overall_error: Optional[str] = None
+        overall_error: str | None = None
 
         # ---------------------------------------------------------
         # Stage 1: Handshake & RPC Ping
@@ -91,7 +92,7 @@ class PluginLinter:
                 "latency_ms": latency_ms,
                 "error": str(exc),
             }
-            overall_error = f"Stage 1 Handshake failed: {str(exc)}"
+            overall_error = f"Stage 1 Handshake failed: {exc!s}"
 
         # ---------------------------------------------------------
         # Stage 2: Sync Knowledge Schema
@@ -142,7 +143,7 @@ class PluginLinter:
                 "error": str(exc),
             }
             if not overall_error:
-                overall_error = f"Stage 2 sync_knowledge failed: {str(exc)}"
+                overall_error = f"Stage 2 sync_knowledge failed: {exc!s}"
 
         # ---------------------------------------------------------
         # Stage 3: Dry-Run Analysis
@@ -188,7 +189,7 @@ class PluginLinter:
                 "error": str(exc),
             }
             if not overall_error:
-                overall_error = f"Stage 3 dry_run failed: {str(exc)}"
+                overall_error = f"Stage 3 dry_run failed: {exc!s}"
 
         # ---------------------------------------------------------
         # Stage 4: Abort Hook Protocol
@@ -223,7 +224,7 @@ class PluginLinter:
                 "error": str(exc),
             }
             if not overall_error:
-                overall_error = f"Stage 4 abort failed: {str(exc)}"
+                overall_error = f"Stage 4 abort failed: {exc!s}"
 
         # ---------------------------------------------------------
         # Consolidate and Save Certification Report

@@ -9,7 +9,8 @@ Adheres to typescript_clean_code.md & python_clean_code.md:
 import asyncio
 import json
 import logging
-from typing import Any, AsyncGenerator
+from collections.abc import AsyncGenerator
+from typing import Any
 
 logger = logging.getLogger(__name__)
 

@@ -4,8 +4,9 @@ Adheres strictly to python_clean_code.md:
 - Full type hinting
 """
 
-from typing import Optional
+
 from sqlmodel import Session, select
+
 from core.database import SystemSetting, utc_now
 
 
@@ -23,7 +24,7 @@ class SettingStore:
             return default
         return setting.value
 
-    def set_setting(self, key: str, value: str, description: Optional[str] = None) -> str:
+    def set_setting(self, key: str, value: str, description: str | None = None) -> str:
         """Set or update setting value."""
         statement = select(SystemSetting).where(SystemSetting.key == key)
         setting = self.session.exec(statement).first()

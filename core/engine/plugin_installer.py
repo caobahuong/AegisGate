@@ -13,7 +13,6 @@ Features:
 - Real-time SSE broadcasting (`plugin_installed`)
 """
 
-import asyncio
 import io
 import json
 import logging
@@ -24,8 +23,10 @@ import sys
 import venv
 import zipfile
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
+
 from sqlmodel import Session, select
+
 from core.config import settings
 from core.database import PluginProfile, utc_now
 from core.engine.plugin_linter import PluginLinter
@@ -37,7 +38,6 @@ logger = logging.getLogger(__name__)
 
 class PluginInstallerError(Exception):
     """Raised when plugin installation fails."""
-    pass
 
 
 class PluginInstaller:
@@ -48,7 +48,7 @@ class PluginInstaller:
         self.plugins_dir: Path = settings.BASE_DIR / "plugins"
         self.plugins_dir.mkdir(parents=True, exist_ok=True)
 
-    def _find_manifest(self, root_dir: Path) -> Tuple[Path, Dict[str, Any]]:
+    def _find_manifest(self, root_dir: Path) -> tuple[Path, dict[str, Any]]:
         """Locate manifest.json directly or in the single top-level directory of extracted archive."""
         direct_manifest = root_dir / "manifest.json"
         if direct_manifest.is_file():
@@ -56,7 +56,7 @@ class PluginInstaller:
                 with open(direct_manifest, "r", encoding="utf-8") as f:
                     return direct_manifest, json.load(f)
             except Exception as exc:
-                raise PluginInstallerError(f"Failed to read manifest.json: {str(exc)}") from exc
+                raise PluginInstallerError(f"Failed to read manifest.json: {exc!s}") from exc
 
         # Check subdirectories
         subdirs = [p for p in root_dir.iterdir() if p.is_dir() and not p.name.startswith(".")]
@@ -67,11 +67,11 @@ class PluginInstaller:
                     with open(nested_manifest, "r", encoding="utf-8") as f:
                         return nested_manifest, json.load(f)
                 except Exception as exc:
-                    raise PluginInstallerError(f"Failed to read nested manifest.json: {str(exc)}") from exc
+                    raise PluginInstallerError(f"Failed to read nested manifest.json: {exc!s}") from exc
 
         raise PluginInstallerError(f"No valid manifest.json found in {root_dir}")
 
-    def _validate_manifest(self, manifest: Dict[str, Any]) -> None:
+    def _validate_manifest(self, manifest: dict[str, Any]) -> None:
         """Validate required manifest schema fields."""
         required_fields = ["id", "name", "driver", "entrypoint"]
         missing = [field for field in required_fields if field not in manifest or not str(manifest[field]).strip()]
@@ -92,7 +92,8 @@ class PluginInstaller:
             req_lines = [l.strip() for l in requirements_file.read_text(encoding="utf-8").splitlines() if l.strip() and not l.strip().startswith("#")]
             if not req_lines:
                 return sys.executable
-        except Exception:
+        except (OSError, UnicodeDecodeError) as req_err:
+            logger.debug("Requirements read exception: %s", req_err)
             return sys.executable
 
         venv_dir = plugin_dir / ".venv"
@@ -106,7 +107,7 @@ class PluginInstaller:
 
             logger.info("Installing requirements from %s into %s", requirements_file, venv_dir)
             cmd = [str(python_bin), "-m", "pip", "install", "-r", str(requirements_file), "--quiet"]
-            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=120, check=False)
             if proc.returncode != 0:
                 logger.warning("pip install warning/failure in plugin venv: %s", proc.stderr)
         except Exception as exc:
@@ -118,8 +119,8 @@ class PluginInstaller:
     def register_installed_plugin(
         self,
         manifest_file: Path,
-        manifest: Dict[str, Any],
-        resolved_python_bin: Optional[str] = None,
+        manifest: dict[str, Any],
+        resolved_python_bin: str | None = None,
     ) -> PluginProfile:
         """Save plugin metadata in DB, adjust entrypoint, and ingest knowledge catalog."""
         plugin_id = manifest["id"].strip()
@@ -137,7 +138,7 @@ class PluginInstaller:
             first_cmd = parts[0]
             rest = parts[1] if len(parts) > 1 else ""
             if (plugin_dir / first_cmd).exists():
-                entrypoint = f'"{str((plugin_dir / first_cmd).resolve())}" {rest}'.strip()
+                entrypoint = f'"{(plugin_dir / first_cmd).resolve()!s}" {rest}'.strip()
 
         # Check existing or create new PluginProfile
         statement = select(PluginProfile).where(PluginProfile.id == plugin_id)
@@ -181,18 +182,21 @@ class PluginInstaller:
         if catalog:
             try:
                 store = KnowledgeStore(self.session)
+                partitions = (
+                    catalog
+                    if isinstance(catalog, list)
+                    else [{"partition_key": "Default", "title": f"{profile.name} Catalog", "catalog": catalog}]
+                )
                 store.ingest_plugin_catalog(
                     target_id=plugin_id,
-                    partition_key="Default",
-                    title=f"{profile.name} Catalog",
-                    catalog=catalog,
+                    catalog_partitions=partitions,
                 )
             except Exception as exc:
                 logger.warning("Failed to auto-ingest catalog for %s: %s", plugin_id, exc)
 
         return profile
 
-    async def install_from_zip(self, zip_content: bytes, filename: Optional[str] = None) -> PluginProfile:
+    async def install_from_zip(self, zip_content: bytes, filename: str | None = None) -> PluginProfile:
         """Install a plugin from an uploaded ZIP archive."""
         try:
             zip_file = zipfile.ZipFile(io.BytesIO(zip_content))
@@ -254,20 +258,20 @@ class PluginInstaller:
                         "is_certified": profile.is_certified,
                     },
                 )
-            except Exception:
-                pass
+            except Exception as sse_err:
+                logger.debug("SSE notification failed: %s", sse_err)
 
             return profile
 
         except Exception as exc:
             shutil.rmtree(staging_dir, ignore_errors=True)
-            raise PluginInstallerError(f"Failed to install plugin from ZIP: {str(exc)}") from exc
+            raise PluginInstallerError(f"Failed to install plugin from ZIP: {exc!s}") from exc
 
     async def install_from_git(
         self,
         git_url: str,
-        branch: Optional[str] = None,
-        plugin_id_override: Optional[str] = None,
+        branch: str | None = None,
+        plugin_id_override: str | None = None,
     ) -> PluginProfile:
         """Clone and install a plugin from a remote Git repository."""
         staging_id = f"git_plugin_{int(utc_now().timestamp())}"
@@ -281,7 +285,7 @@ class PluginInstaller:
 
         try:
             logger.info("Cloning Git repository: %s", " ".join(cmd))
-            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=60, check=False)
             if proc.returncode != 0:
                 raise PluginInstallerError(f"git clone failed: {proc.stderr}")
 
@@ -341,4 +345,4 @@ class PluginInstaller:
 
         except Exception as exc:
             shutil.rmtree(staging_dir, ignore_errors=True)
-            raise PluginInstallerError(f"Failed to install plugin from Git: {str(exc)}") from exc
+            raise PluginInstallerError(f"Failed to install plugin from Git: {exc!s}") from exc

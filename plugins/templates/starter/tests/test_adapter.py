@@ -48,3 +48,4 @@ if __name__ == "__main__":
     test_starter_plugin_execute()
     test_starter_plugin_abort()
     print("All Starter Plugin tests passed successfully!")
+

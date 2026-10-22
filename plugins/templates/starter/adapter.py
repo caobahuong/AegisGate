@@ -116,3 +116,4 @@ class StarterDatabasePlugin(BasePlugin):
 
 if __name__ == "__main__":
     PluginServer(StarterDatabasePlugin()).run()
+

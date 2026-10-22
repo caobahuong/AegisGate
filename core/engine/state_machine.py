@@ -8,8 +8,10 @@ Strictly adheres to python_clean_code.md:
 
 import json
 import logging
-from typing import Any, Optional
+from typing import Any
+
 from sqlmodel import Session
+
 from core.database import ExecutionLog, utc_now
 from core.engine.governance import GovernanceEngine
 from core.engine.plugin_registry import PluginRegistry
@@ -17,7 +19,6 @@ from core.engine.timeout_guard import TimeoutGuard
 from core.exceptions import (
     ExecutionStateError,
     ExecutionTimeoutError,
-    PluginExecutionError,
 )
 from core.gateway.sse_broadcaster import sse_broadcaster
 from core.storage.log_store import LogStore
@@ -43,7 +44,7 @@ class ExecutionStateMachine:
         target_id: str,
         query: str,
         reasoning: str = "",
-        execution_id: Optional[str] = None,
+        execution_id: str | None = None,
     ) -> ExecutionLog:
         """Step 1 & 2: Ingest query, perform Dry-Run, evaluate Rules, transition to Pause or Execute."""
         if not execution_id:

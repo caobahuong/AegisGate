@@ -8,24 +8,26 @@ Adheres strictly to python_clean_code.md:
 
 import json
 import logging
-from typing import Any, Optional
+from typing import Any
+
 from sqlmodel import Session
+
 from core.database import ExecutionLog, PluginProfile, Rule, utc_now
 from core.engine.plugin_client import terminate_all_subprocesses
-from core.engine.plugin_registry import PluginRegistry
 from core.engine.plugin_installer import PluginInstaller
 from core.engine.plugin_linter import PluginLinter
+from core.engine.plugin_registry import PluginRegistry
 from core.engine.state_machine import ExecutionStateMachine
-from core.exceptions import PluginExecutionError, PluginNotFoundError
+from core.exceptions import PluginExecutionError
 from core.gateway.schemas import (
     ApproveExecutionRequest,
     CreateRuleRequest,
     ExecutionResponse,
+    InstallGitPluginRequest,
     KnowledgeChunkResponse,
     McpConfigResponse,
-    PluginProfileResponse,
-    InstallGitPluginRequest,
     PluginCertificationResponse,
+    PluginProfileResponse,
     PluginSchemaResponse,
     RegisterPluginRequest,
     RejectExecutionRequest,
@@ -50,21 +52,21 @@ def format_execution_response(log: ExecutionLog) -> ExecutionResponse:
     if log.explain_plan_json:
         try:
             plan_data = json.loads(log.explain_plan_json)
-        except Exception:
+        except (json.JSONDecodeError, TypeError):
             plan_data = log.explain_plan_json
 
     violations = []
     if log.violations_json:
         try:
             violations = json.loads(log.violations_json)
-        except Exception:
+        except (json.JSONDecodeError, TypeError):
             violations = []
 
     res_summary = None
     if log.result_summary:
         try:
             res_summary = json.loads(log.result_summary)
-        except Exception:
+        except (json.JSONDecodeError, TypeError):
             res_summary = log.result_summary
 
     return ExecutionResponse(
@@ -136,7 +138,7 @@ class GatewayService:
         """Alias for abort_execution."""
         return await self.abort_execution(execution_id)
 
-    def get_execution(self, execution_id: str) -> Optional[ExecutionResponse]:
+    def get_execution(self, execution_id: str) -> ExecutionResponse | None:
         """Fetch execution state by ID."""
         log = self.log_store.get_log(execution_id)
         if not log:
@@ -145,8 +147,8 @@ class GatewayService:
 
     def list_executions(
         self,
-        target_id: Optional[str] = None,
-        status: Optional[str] = None,
+        target_id: str | None = None,
+        status: str | None = None,
         limit: int = 50,
     ) -> list[ExecutionResponse]:
         """List execution audit logs."""
@@ -164,28 +166,29 @@ class GatewayService:
         cfg = {}
         try:
             cfg = json.loads(p.config_json)
-        except Exception:
+        except (json.JSONDecodeError, TypeError):
             cfg = {}
 
         ui_schema = []
         try:
             ui_schema = json.loads(p.ui_schema_json)
-        except Exception:
+        except (json.JSONDecodeError, TypeError):
             ui_schema = []
 
         custom_card = None
         try:
             if p.custom_card_json and p.custom_card_json != "{}":
                 custom_card = json.loads(p.custom_card_json)
-        except Exception:
+        except (json.JSONDecodeError, TypeError):
             custom_card = None
 
         cert_report = None
-        try:
-            if getattr(p, "certification_report_json", None):
-                cert_report = json.loads(p.certification_report_json)
-        except Exception:
-            cert_report = None
+        cert_json = getattr(p, "certification_report_json", None)
+        if cert_json and isinstance(cert_json, str):
+            try:
+                cert_report = json.loads(cert_json)
+            except (json.JSONDecodeError, TypeError):
+                cert_report = None
 
         return PluginProfileResponse(
             id=p.id,
@@ -217,21 +220,21 @@ class GatewayService:
         cfg = {}
         try:
             cfg = json.loads(p.config_json)
-        except Exception:
+        except (json.JSONDecodeError, TypeError):
             cfg = {}
 
         ui_schema = []
         try:
             ui_schema = json.loads(p.ui_schema_json)
-        except Exception:
+        except (json.JSONDecodeError, TypeError):
             ui_schema = []
 
         custom_card = None
         try:
             if p.custom_card_json and p.custom_card_json != "{}":
                 custom_card = json.loads(p.custom_card_json)
-        except Exception:
-            pass
+        except (json.JSONDecodeError, TypeError):
+            custom_card = None
 
         return PluginSchemaResponse(
             plugin_id=p.id,
@@ -295,7 +298,7 @@ class GatewayService:
     async def delete_plugin(self, plugin_id: str, hard_delete: bool = False) -> dict[str, Any]:
         """Uninstall or disable a plugin, disconnect active subprocesses, and abort running tasks."""
         # Check if profile exists (raises PluginNotFoundError if not found)
-        p = self.plugin_registry.get_profile(plugin_id)
+        self.plugin_registry.get_profile(plugin_id)
 
         # 1. Terminate any running plugin subprocesses
         await terminate_all_subprocesses()
@@ -327,7 +330,7 @@ class GatewayService:
         cfg: dict[str, Any] = {}
         try:
             cfg = json.loads(profile.config_json)
-        except Exception:
+        except (json.JSONDecodeError, TypeError):
             cfg = {}
 
         try:
@@ -343,7 +346,7 @@ class GatewayService:
 
     # --- Knowledge & Rules Services ---
 
-    def list_knowledge_chunks(self, target_id: Optional[str] = None) -> list[KnowledgeChunkResponse]:
+    def list_knowledge_chunks(self, target_id: str | None = None) -> list[KnowledgeChunkResponse]:
         """List knowledge chunks."""
         chunks = self.knowledge_store.list_chunks(target_id=target_id)
         return [
@@ -359,7 +362,7 @@ class GatewayService:
             for c in chunks
         ]
 
-    def get_knowledge_chunk(self, chunk_id: str) -> Optional[KnowledgeChunkResponse]:
+    def get_knowledge_chunk(self, chunk_id: str) -> KnowledgeChunkResponse | None:
         """Get knowledge chunk with hydrated markdown docs."""
         data = self.knowledge_store.get_chunk(chunk_id)
         if not data:
@@ -386,7 +389,7 @@ class GatewayService:
 
     def list_rules(
         self,
-        target_id: Optional[str] = None,
+        target_id: str | None = None,
         exact_target: bool = False,
     ) -> list[RuleResponse]:
         """List governance rules, optionally filtered by target plugin or global scope."""
@@ -406,7 +409,7 @@ class GatewayService:
             for r in rules
         ]
 
-    def list_skills(self, target_id: Optional[str] = None) -> list[dict[str, Any]]:
+    def list_skills(self, target_id: str | None = None) -> list[dict[str, Any]]:
         """List query skills and templates, optionally filtered by target plugin."""
         chunks = self.list_knowledge_chunks(target_id=target_id)
         skills: list[dict[str, Any]] = []
@@ -418,7 +421,7 @@ class GatewayService:
                     "target_id": c.target_id,
                     "partition_key": c.partition_key,
                     "title": f"{c.title} Skills",
-                    "skills_file": c.skills_file,
+                    "skills_file": f"{c.id}_skills.md",
                     "skills_content": c.skills_content,
                 }
             )
@@ -449,7 +452,7 @@ class GatewayService:
             created_at=saved.created_at.isoformat(),
         )
 
-    def update_rule(self, rule_id: str, req: UpdateRuleRequest) -> Optional[RuleResponse]:
+    def update_rule(self, rule_id: str, req: UpdateRuleRequest) -> RuleResponse | None:
         """Update an existing rule."""
         raw_dump = req.model_dump(exclude_unset=True)
         updates = {}
@@ -528,7 +531,7 @@ class GatewayService:
         )
 
 
-    async def install_plugin_zip(self, file_content: bytes, filename: Optional[str] = None) -> PluginProfileResponse:
+    async def install_plugin_zip(self, file_content: bytes, filename: str | None = None) -> PluginProfileResponse:
         """Install, build, and certify an external plugin from an uploaded ZIP archive."""
         installer = PluginInstaller(self.session)
         profile = await installer.install_from_zip(file_content, filename=filename)

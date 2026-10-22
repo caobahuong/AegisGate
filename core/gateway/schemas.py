@@ -5,9 +5,9 @@ Adheres to python_clean_code.md:
 - Strict validation models
 """
 
-from typing import Any, Optional, Union
-from pydantic import BaseModel, Field
+from typing import Any
 
+from pydantic import BaseModel, Field
 
 # --- Monitor & Execution Schemas ---
 
@@ -26,16 +26,16 @@ class ExecutionResponse(BaseModel):
     query_type: str
     reasoning: str
     status: str
-    explain_plan: Optional[Any] = None
+    explain_plan: Any | None = None
     violations: list[str] = Field(default_factory=list)
-    execution_time_ms: Optional[float] = None
+    execution_time_ms: float | None = None
     auto_approved: bool = False
-    approved_by: Optional[str] = None
-    result_summary: Optional[Any] = None
-    error_message: Optional[str] = None
-    spid: Optional[int] = None
+    approved_by: str | None = None
+    result_summary: Any | None = None
+    error_message: str | None = None
+    spid: int | None = None
     created_at: str
-    finished_at: Optional[str] = None
+    finished_at: str | None = None
 
 
 class ApproveExecutionRequest(BaseModel):
@@ -60,18 +60,18 @@ class RegisterPluginRequest(BaseModel):
     dry_run_command: str = Field(default="SET SHOWPLAN_XML ON")
     abort_command: str = Field(default="KILL {spid}")
     config: dict[str, Any] = Field(default_factory=dict)
-    ui_schema: Optional[list[dict[str, Any]]] = None
-    custom_card: Optional[dict[str, Any]] = None
+    ui_schema: list[dict[str, Any]] | None = None
+    custom_card: dict[str, Any] | None = None
 
 
 class UpdatePluginConfigRequest(BaseModel):
     """Payload for updating a plugin's configuration via Edit Modal."""
-    name: Optional[str] = None
+    name: str | None = None
     config: dict[str, Any] = Field(description="Updated connection configuration")
-    driver: Optional[str] = None
-    entrypoint: Optional[str] = None
-    dry_run_command: Optional[str] = None
-    abort_command: Optional[str] = None
+    driver: str | None = None
+    entrypoint: str | None = None
+    dry_run_command: str | None = None
+    abort_command: str | None = None
 
 
 class PluginProfileResponse(BaseModel):
@@ -84,12 +84,12 @@ class PluginProfileResponse(BaseModel):
     abort_command: str
     config: dict[str, Any]
     ui_schema: list[dict[str, Any]] = Field(default_factory=list)
-    custom_card: Optional[dict[str, Any]] = None
+    custom_card: dict[str, Any] | None = None
     status: str
     latency_ms: float
     active_sessions_count: int
     is_certified: bool = False
-    certification_report: Optional[dict[str, Any]] = None
+    certification_report: dict[str, Any] | None = None
     created_at: str
     updated_at: str
 
@@ -99,8 +99,8 @@ class PluginProfileResponse(BaseModel):
 class InstallGitPluginRequest(BaseModel):
     """Payload for installing a plugin directly from a remote Git repository."""
     git_url: str = Field(description="Remote Git URL e.g. https://github.com/org/plugin.git")
-    branch: Optional[str] = Field(default=None, description="Optional branch or tag name")
-    plugin_id: Optional[str] = Field(default=None, description="Optional override for plugin ID")
+    branch: str | None = Field(default=None, description="Optional branch or tag name")
+    plugin_id: str | None = Field(default=None, description="Optional override for plugin ID")
 
 
 class PluginCertificationResponse(BaseModel):
@@ -110,7 +110,7 @@ class PluginCertificationResponse(BaseModel):
     badge: str
     checks: dict[str, Any]
     verified_at: str
-    error: Optional[str] = None
+    error: str | None = None
 
 class PluginSchemaResponse(BaseModel):
     """Response containing plugin dynamic UI schema and current config."""
@@ -119,7 +119,7 @@ class PluginSchemaResponse(BaseModel):
     driver: str
     ui_schema: list[dict[str, Any]] = Field(default_factory=list)
     current_config: dict[str, Any] = Field(default_factory=dict)
-    custom_card: Optional[dict[str, Any]] = None
+    custom_card: dict[str, Any] | None = None
 
 
 # --- Knowledge Schemas ---
@@ -130,17 +130,17 @@ class KnowledgeChunkResponse(BaseModel):
     target_id: str
     partition_key: str
     title: str
-    catalog: Union[dict[str, Any], list[Any], Any]
-    doc_content: Optional[str] = None
-    skills_content: Optional[str] = None
+    catalog: dict[str, Any] | list[Any] | Any
+    doc_content: str | None = None
+    skills_content: str | None = None
     created_at: str
     updated_at: str
 
 
 class UpdateDocsRequest(BaseModel):
     """Payload for updating doc.md and skills.md markdown text."""
-    doc_content: Optional[str] = None
-    skills_content: Optional[str] = None
+    doc_content: str | None = None
+    skills_content: str | None = None
 
 
 # --- Rule Schemas ---
@@ -149,7 +149,7 @@ class CreateRuleRequest(BaseModel):
     """Payload for creating a governance rule."""
     id: str
     name: str
-    target_id: Optional[str] = None
+    target_id: str | None = None
     rule_type: str = Field(description="FORBID_JOIN | FORBID_TABLE_SCAN | MAX_EXECUTION_TIME | CUSTOM")
     expression: str
     description: str = ""
@@ -159,20 +159,20 @@ class CreateRuleRequest(BaseModel):
 
 class UpdateRuleRequest(BaseModel):
     """Payload for updating an existing rule."""
-    name: Optional[str] = None
-    target_id: Optional[str] = None
-    rule_type: Optional[str] = None
-    expression: Optional[str] = None
-    description: Optional[str] = None
-    severity: Optional[str] = None
-    is_active: Optional[bool] = None
+    name: str | None = None
+    target_id: str | None = None
+    rule_type: str | None = None
+    expression: str | None = None
+    description: str | None = None
+    severity: str | None = None
+    is_active: bool | None = None
 
 
 class RuleResponse(BaseModel):
     """Governance rule representation."""
     id: str
     name: str
-    target_id: Optional[str] = None
+    target_id: str | None = None
     rule_type: str
     expression: str
     description: str
@@ -205,7 +205,7 @@ class McpServerDefinition(BaseModel):
 class McpConfigResponse(BaseModel):
     """Response containing standard MCP JSON configuration for AI clients."""
     server_name: str
-    plugin_id: Optional[str] = None
+    plugin_id: str | None = None
     command: str = "python"
     args: list[str] = Field(default_factory=list)
     env: dict[str, str] = Field(default_factory=dict)

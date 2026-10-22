@@ -7,7 +7,8 @@ BasePlugin implementation, and writes responses to stdout.
 import json
 import logging
 import sys
-from typing import Any, Dict, Optional, TextIO
+from typing import Any, TextIO
+
 from .base import BasePlugin
 from .models import PluginException
 
@@ -20,27 +21,27 @@ class PluginServer:
     def __init__(
         self,
         plugin: BasePlugin,
-        stdin_stream: Optional[TextIO] = None,
-        stdout_stream: Optional[TextIO] = None,
+        stdin_stream: TextIO | None = None,
+        stdout_stream: TextIO | None = None,
     ) -> None:
         self.plugin = plugin
         self.stdin = stdin_stream if stdin_stream is not None else sys.stdin
         self.stdout = stdout_stream if stdout_stream is not None else sys.stdout
 
-    def handle_request(self, raw_line: str) -> Optional[str]:
+    def handle_request(self, raw_line: str) -> str | None:
         """Parse a single JSON-RPC line, execute the method, and format response string."""
         line = raw_line.strip()
         if not line:
             return None
 
-        req_id: Optional[Any] = None
+        req_id: Any | None = None
         try:
             req = json.loads(line)
         except json.JSONDecodeError as exc:
             return json.dumps({
                 "jsonrpc": "2.0",
                 "id": None,
-                "error": {"code": -32700, "message": f"Parse error: {str(exc)}"}
+                "error": {"code": -32700, "message": f"Parse error: {exc!s}"}
             })
 
         if not isinstance(req, dict) or req.get("jsonrpc") != "2.0" or "method" not in req:
@@ -51,12 +52,14 @@ class PluginServer:
             })
 
         req_id = req.get("id")
-        method = req.get("method")
+        method = str(req.get("method") or "")
         params = req.get("params") or {}
+        if not isinstance(params, dict):
+            params = {}
 
         try:
             result = self._dispatch(method, params)
-            response: Dict[str, Any] = {
+            response: dict[str, Any] = {
                 "jsonrpc": "2.0",
                 "id": req_id,
                 "result": result
@@ -78,13 +81,13 @@ class PluginServer:
                 "id": req_id,
                 "error": {
                     "code": -32603,
-                    "message": f"Internal plugin error: {str(exc)}"
+                    "message": f"Internal plugin error: {exc!s}"
                 }
             }
 
         return json.dumps(response)
 
-    def _dispatch(self, method: str, params: Dict[str, Any]) -> Any:
+    def _dispatch(self, method: str, params: dict[str, Any]) -> Any:
         """Route method to plugin implementation."""
         config = params.get("config", {})
 
@@ -117,3 +120,4 @@ class PluginServer:
                     self.stdout.flush()
         except KeyboardInterrupt:
             pass
+
