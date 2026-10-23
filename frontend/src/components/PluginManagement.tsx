@@ -360,7 +360,7 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
             <span>Pluggable Targets & Connectors</span>
           </h1>
           <p className="text-xs text-slate-400 mt-1">
-            Quản trị các kết nối cơ sở dữ liệu qua giao thức chuẩn JSON-RPC 2.0 Stdio
+            Manage database connectors via standardized JSON-RPC 2.0 Stdio protocol
           </p>
         </div>
 

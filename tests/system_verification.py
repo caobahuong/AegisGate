@@ -118,29 +118,29 @@ def run_anti_gravity_browser_qa() -> None:
         print("   PASS: Dark theme (#020617) and Header typography verified.")
 
         # Test Sidebar User Guide Modal
-        print("2.0 Testing Sidebar 'Hướng dẫn sử dụng' Modal...")
+        print("2.0 Testing Sidebar 'User Guide & Docs' Modal...")
         user_guide_btn = page.locator("[data-testid='sidebar-user-guide-btn']")
-        assert user_guide_btn.is_visible(), "Sidebar 'Hướng dẫn sử dụng' button not visible"
+        assert user_guide_btn.is_visible(), "Sidebar 'User Guide & Docs' button not visible"
         user_guide_btn.click()
-        page.wait_for_selector("text=Hướng dẫn Sử dụng Hệ thống AegisGate", timeout=4000)
-        assert page.locator("text=1. Tổng quan Kiến trúc Zero-Trust Database Gateway").is_visible()
+        page.wait_for_selector("text=AegisGate System User Guide", timeout=4000)
+        assert page.locator("text=1. Zero-Trust Database Gateway Architecture").is_visible()
         page.screenshot(path=str(SCREENSHOTS_DIR / "qa_00_user_guide_modal.png"))
 
         # Switch to MCP section in User Guide
-        page.click("button:has-text('2. Kết nối AI qua MCP')")
-        assert page.locator("text=2. Hướng dẫn Kết nối AI Clients qua giao thức MCP").is_visible()
+        page.click("button:has-text('2. AI Connection via MCP')")
+        assert page.locator("text=2. Connecting AI Clients via MCP Protocol").is_visible()
         time.sleep(0.3)
 
-        # Switch to Section 5: Live Monitor & Phê duyệt
-        page.click("button:has-text('5. Live Monitor & Phê duyệt')")
-        page.wait_for_selector("text=Manual Review Mode (Mặc định)", timeout=3000)
-        assert page.locator("text=Auto Approval Mode (Tự động)").is_visible()
+        # Switch to Section 5: Live Monitor & Approvals
+        page.click("button:has-text('5. Live Monitor & Approvals')")
+        page.wait_for_selector("text=Manual Review Mode (Default)", timeout=3000)
+        assert page.locator("text=Auto Approval Mode").is_visible()
         page.screenshot(path=str(SCREENSHOTS_DIR / "qa_00b_user_guide_section5.png"))
         time.sleep(0.3)
 
         page.click("[data-testid='close-user-guide-btn']")
         time.sleep(0.5)
-        print("   PASS: Sidebar User Guide modal opened, section 5 (Live Monitor & Phê duyệt) verified, and closed cleanly.")
+        print("   PASS: Sidebar User Guide modal opened, section 5 (Live Monitor & Approvals) verified, and closed cleanly.")
 
         # Test Header MCP Config Modal & Snippet Copy
         print("2.1 Testing Header MCP Config Modal & Snippet Copy...")

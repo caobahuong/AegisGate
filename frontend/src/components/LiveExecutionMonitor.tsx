@@ -191,28 +191,28 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
         return (
           <span className="flex items-center text-amber-400 font-semibold text-[11px]">
             <Clock className="h-3 w-3 mr-1 animate-pulse" />
-            Chờ duyệt (Review)
+            Pending Review
           </span>
         );
       case "EXECUTING":
         return (
           <span className="flex items-center text-indigo-400 font-semibold text-[11px]">
             <RotateCw className="h-3 w-3 mr-1 animate-spin" />
-            Đang chạy (Running)
+            Running
           </span>
         );
       case "COMPLETED":
         return (
           <span className="flex items-center text-emerald-400 font-semibold text-[11px]">
             <CheckCircle2 className="h-3 w-3 mr-1" />
-            Hoàn thành
+            Completed
           </span>
         );
       case "REJECTED":
         return (
           <span className="flex items-center text-red-400 font-semibold text-[11px]">
             <XCircle className="h-3 w-3 mr-1" />
-            Bị chặn (Rejected)
+            Rejected
           </span>
         );
       case "TIMEOUT":
@@ -226,7 +226,7 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
         return (
           <span className="flex items-center text-slate-400 font-semibold text-[11px]">
             <StopCircle className="h-3 w-3 mr-1" />
-            Đã dừng (Aborted)
+            Aborted
           </span>
         );
       default:
@@ -258,7 +258,7 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
                 </span>
               </h2>
               <p className="text-[11px] text-slate-400">
-                Bảng điều khiển tác chiến giám sát và can thiệp phiên truy vấn theo thời gian thực
+                Real-time operational cockpit for monitoring and intercepting active query sessions
               </p>
             </div>
           </div>
@@ -278,7 +278,7 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
               )}
             >
               <Database className="h-3 w-3" />
-              <span>Tất cả</span>
+              <span>All</span>
               <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-slate-800 text-slate-300 font-mono">
                 {executions.length}
               </span>
@@ -299,7 +299,7 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
               )}
             >
               <Clock className={cn("h-3 w-3", pendingSessions.length > 0 && "animate-pulse text-amber-400")} />
-              <span>Chờ duyệt</span>
+              <span>Pending Review</span>
               <span
                 className={cn(
                   "ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-mono",
@@ -327,7 +327,7 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
               )}
             >
               <RotateCw className={cn("h-3 w-3", runningSessions.length > 0 && "animate-spin text-indigo-400")} />
-              <span>Đang chạy</span>
+              <span>Running</span>
               <span
                 className={cn(
                   "ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-mono",
@@ -355,7 +355,7 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
               )}
             >
               <ShieldAlert className="h-3 w-3" />
-              <span>Bị chặn / Lỗi</span>
+              <span>Blocked / Failed</span>
               <span
                 className={cn(
                   "ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-mono",
@@ -383,7 +383,7 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
               )}
             >
               <CheckCircle2 className="h-3 w-3" />
-              <span>Hoàn tất</span>
+              <span>Completed</span>
               <span
                 className={cn(
                   "ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-mono",
@@ -405,45 +405,45 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
               {sessionFilter === "PENDING" && (
                 <div className="flex flex-col items-center space-y-1">
                   <CheckCircle2 className="h-5 w-5 text-emerald-400/80 mb-1" />
-                  <span className="font-semibold text-slate-200">Không có truy vấn nào đang chờ duyệt</span>
+                  <span className="font-semibold text-slate-200">No queries awaiting review</span>
                   <span className="text-[11px] text-slate-500">
-                    Mọi truy vấn AI đều đã được xử lý hoặc hệ thống đang ở trạng thái an toàn.
+                    All AI queries have been processed or the gateway is currently idle.
                   </span>
                 </div>
               )}
               {sessionFilter === "RUNNING" && (
                 <div className="flex flex-col items-center space-y-1">
                   <Activity className="h-5 w-5 text-slate-500 mb-1" />
-                  <span className="font-semibold text-slate-200">Không có session nào đang chạy trong background</span>
+                  <span className="font-semibold text-slate-200">No active sessions running in background</span>
                   <span className="text-[11px] text-slate-500">
-                    Hệ thống sẵn sàng tiếp nhận các truy vấn mới từ AI Client qua FastMCP.
+                    Gateway is ready to accept incoming queries from AI Clients via FastMCP.
                   </span>
                 </div>
               )}
               {sessionFilter === "BLOCKED" && (
                 <div className="flex flex-col items-center space-y-1">
                   <ShieldAlert className="h-5 w-5 text-emerald-400/80 mb-1" />
-                  <span className="font-semibold text-slate-200">Không có truy vấn nào bị chặn</span>
+                  <span className="font-semibold text-slate-200">No blocked or rejected queries</span>
                   <span className="text-[11px] text-slate-500">
-                    Chưa ghi nhận vi phạm chính sách bảo mật hoặc timeout nào trong danh sách.
+                    Zero governance policy violations or execution timeouts recorded.
                   </span>
                 </div>
               )}
               {sessionFilter === "COMPLETED" && (
                 <div className="flex flex-col items-center space-y-1">
                   <Database className="h-5 w-5 text-slate-500 mb-1" />
-                  <span className="font-semibold text-slate-200">Chưa có session hoàn tất</span>
+                  <span className="font-semibold text-slate-200">No completed sessions yet</span>
                   <span className="text-[11px] text-slate-500">
-                    Gửi truy vấn thử nghiệm bên dưới để kiểm tra chu trình hoàn chỉnh.
+                    Submit a test query below to verify the full execution lifecycle.
                   </span>
                 </div>
               )}
               {sessionFilter === "ALL" && (
                 <div className="flex flex-col items-center space-y-1">
                   <Activity className="h-5 w-5 text-slate-500 mb-1" />
-                  <span className="font-semibold text-slate-200">Chưa có phiên thực thi nào</span>
+                  <span className="font-semibold text-slate-200">No execution sessions recorded</span>
                   <span className="text-[11px] text-slate-500">
-                    Gửi truy vấn từ form bên dưới hoặc kết nối AI agent (Claude, Cursor, Cline) qua MCP.
+                    Submit a query from the simulator below or connect an AI agent (Claude, Cursor, Cline) via MCP.
                   </span>
                 </div>
               )}
@@ -503,7 +503,7 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
                       </span>
                       {isPending && (
                         <span className="text-amber-400 font-bold flex items-center animate-pulse">
-                          Cần duyệt
+                          Action Required
                         </span>
                       )}
                       {isRunning && (
@@ -518,7 +518,7 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
                       )}
                       {isBlocked && (
                         <span className="text-red-400 font-medium">
-                          {ex.status === "TIMEOUT" ? "Timeout" : "Vi phạm"}
+                          {ex.status === "TIMEOUT" ? "Timeout" : "Violation"}
                         </span>
                       )}
                     </div>

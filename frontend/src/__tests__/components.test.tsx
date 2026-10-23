@@ -567,30 +567,30 @@ describe("Frontend Component Tests", () => {
     });
 
     render(<UserGuideModal isOpen={true} onClose={handleClose} />);
-    expect(screen.getByText("Hướng dẫn Sử dụng Hệ thống AegisGate")).toBeDefined();
-    expect(screen.getByText("1. Tổng quan Kiến trúc Zero-Trust Database Gateway")).toBeDefined();
+    expect(screen.getByText("AegisGate System User Guide")).toBeDefined();
+    expect(screen.getByText("1. Zero-Trust Database Gateway Architecture")).toBeDefined();
 
-    // Click section 2: Kết nối AI qua MCP
-    fireEvent.click(screen.getByText("2. Kết nối AI qua MCP"));
-    expect(screen.getByText("2. Hướng dẫn Kết nối AI Clients qua giao thức MCP")).toBeDefined();
+    // Click section 2: AI Connection via MCP
+    fireEvent.click(screen.getByText("2. AI Connection via MCP"));
+    expect(screen.getByText("2. Connecting AI Clients via MCP Protocol")).toBeDefined();
 
-    // Click section 3: Quản lý Pluggable Targets
-    fireEvent.click(screen.getByText("3. Quản lý Pluggable Targets"));
-    expect(screen.getByText("3. Quản lý Pluggable Targets (Database Connectors)")).toBeDefined();
+    // Click section 3: Pluggable Targets
+    fireEvent.click(screen.getByText("3. Pluggable Targets"));
+    expect(screen.getByText("3. Managing Pluggable Targets (Database Connectors)")).toBeDefined();
 
     // Click section 4: Governance Rules & Scope
     fireEvent.click(screen.getByText("4. Governance Rules & Scope"));
-    expect(screen.getByText(/4\. Quản trị Governance Rules/i)).toBeDefined();
+    expect(screen.getByText(/4\. Governance Rules & Target Scoping/i)).toBeDefined();
 
-    // Click section 5: Live Monitor & Phê duyệt
-    fireEvent.click(screen.getByText("5. Live Monitor & Phê duyệt"));
+    // Click section 5: Live Monitor & Approvals
+    fireEvent.click(screen.getByText("5. Live Monitor & Approvals"));
     expect(screen.getByText(/5\. Live Execution Monitor/i)).toBeDefined();
-    expect(screen.getByText("Manual Review Mode (Mặc định)")).toBeDefined();
-    expect(screen.getByText("Auto Approval Mode (Tự động)")).toBeDefined();
+    expect(screen.getByText("Manual Review Mode (Default)")).toBeDefined();
+    expect(screen.getByText("Auto Approval Mode")).toBeDefined();
 
-    // Click section 6: Sổ cái Kiểm toán (Audit Logs)
+    // Click section 6: Audit Logs Input / Output
     fireEvent.click(screen.getByText("6. Audit Logs Input / Output"));
-    expect(screen.getByText(/6\. Sổ cái Kiểm toán/i)).toBeDefined();
+    expect(screen.getByText("6. Audit Logs & Detailed Input / Output Inspection")).toBeDefined();
 
     // Click copy snippet button
     const copyBtns = screen.getAllByRole("button");
@@ -828,24 +828,24 @@ describe("Frontend Component Tests", () => {
     const filterCompletedBtn = screen.getByTestId("filter-completed-btn");
 
     expect(filterAllBtn).toBeDefined();
-    expect(filterPendingBtn.textContent).toContain("Chờ duyệt");
-    expect(filterRunningBtn.textContent).toContain("Đang chạy");
-    expect(filterBlockedBtn.textContent).toContain("Bị chặn / Lỗi");
-    expect(filterCompletedBtn.textContent).toContain("Hoàn tất");
+    expect(filterPendingBtn.textContent).toContain("Pending Review");
+    expect(filterRunningBtn.textContent).toContain("Running");
+    expect(filterBlockedBtn.textContent).toContain("Blocked / Failed");
+    expect(filterCompletedBtn.textContent).toContain("Completed");
 
-    // 3. Test Filter: Clicking 'Chờ duyệt' shows only pending sessions
+    // 3. Test Filter: Clicking 'Pending Review' shows only pending sessions
     fireEvent.click(filterPendingBtn);
     expect(screen.getByTestId("session-pill-exec_pending_1")).toBeDefined();
     expect(screen.queryByTestId("session-pill-exec_running_1")).toBeNull();
     expect(screen.queryByTestId("session-pill-exec_blocked_1")).toBeNull();
     expect(screen.queryByTestId("session-pill-exec_completed_1")).toBeNull();
 
-    // 4. Test Filter: Clicking 'Đang chạy' shows only running sessions
+    // 4. Test Filter: Clicking 'Running' shows only running sessions
     fireEvent.click(filterRunningBtn);
     expect(screen.getByTestId("session-pill-exec_running_1")).toBeDefined();
     expect(screen.queryByTestId("session-pill-exec_pending_1")).toBeNull();
 
-    // 5. Switch back to 'Tất cả' and select a session
+    // 5. Switch back to 'All' and select a session
     fireEvent.click(filterAllBtn);
     const sessionCard = screen.getByTestId("session-pill-exec_running_1");
     fireEvent.click(sessionCard);
