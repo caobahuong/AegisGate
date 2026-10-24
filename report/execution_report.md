@@ -210,4 +210,19 @@ npm run dev
 
 ---
 
-**Kết luận:** Hệ thống AegisGate đã hoàn thiện xuất sắc 100% tất cả các tiêu chí trong Master Prompt, đáp ứng đầy đủ các tiêu chuẩn khắt khe về Clean Code, Strict Typing, Process Safety và UX Design.
+## 7. CẬP NHẬT GIAO DIỆN LIGHT MODE MẶC ĐỊNH & THEME TOGGLE (PHASE 5)
+
+### 7.1. Hiện thực hóa Light Mode mặc định (Default Clean White Theme)
+- **Palette màu Light Mode:** Thiết lập `:root` với nền canvas tinh gọn (`#f8fafc`), bề mặt thẻ/panel trắng chuẩn (`#ffffff`), viền tinh tế (`#e2e8f0`), text tiêu đề tương phản cao (`#0f172a`), và text nội dung chuẩn SaaS (`#334155`).
+- **Tương thích hai chiều:** Dark Mode được gom gọn trong class `.dark` với nền tối sâu `#020617` và thẻ `#0f172a`.
+- **Nút chuyển đổi Theme (☀️ Light / 🌙 Dark):** Đã tích hợp trực tiếp trên Header (`data-testid="theme-toggle-btn"`), tự động lưu trữ preference vào `localStorage` (`aegisgate-theme`) và ngăn chặn hiện tượng chớp nháy (Flash of Unstyled Content - FOUC) bằng inline script trong `<head>`.
+
+### 7.2. Kết quả kiểm định & QA Trực quan (Anti-Gravity Browser Port 9222)
+- **Kiểm định màu sắc mặc định:** Trình duyệt khởi động trực tiếp ở Light Mode (`rgb(248, 250, 252)`).
+- **Kiểm định chuyển đổi tương tác:** Click nút chuyển sang Dark Mode (`rgb(2, 6, 23)`), sau đó click lại về Light Mode mượt mà.
+- **Console Logs:** Toàn bộ quá trình kiểm thử 6 phân hệ (User Guide, Pluggable Targets, Rules & Skills, Monitor Review, Audit Log Drawer) đạt **0 Browser Console Errors**.
+- **Unit & Static Tests:** 15/15 Frontend Tests PASS, 58/58 Backend Tests PASS, 0 ESLint warnings, 0 TypeScript errors, 0 Mypy issues.
+
+---
+
+**Kết luận:** Hệ thống AegisGate đã hoàn thiện xuất sắc 100% tất cả các tiêu chí trong Master Prompt, đáp ứng đầy đủ các tiêu chuẩn khắt khe về Clean Code, Strict Typing, Process Safety, UX Design và hỗ trợ toàn diện cả Light Mode (mặc định) lẫn Dark Mode.

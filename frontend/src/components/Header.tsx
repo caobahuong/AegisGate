@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Shield, Zap, Server, Terminal } from "lucide-react";
+import { Shield, Zap, Server, Terminal, Sun, Moon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface HeaderProps {
@@ -9,6 +9,8 @@ interface HeaderProps {
   onToggleAutoMode: () => void;
   mcpOnline?: boolean;
   onOpenMcpModal?: () => void;
+  theme?: "light" | "dark";
+  onToggleTheme?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -16,6 +18,8 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleAutoMode,
   mcpOnline = true,
   onOpenMcpModal,
+  theme = "light",
+  onToggleTheme,
 }) => {
   return (
     <header className="h-16 flex-shrink-0 w-full bg-slate-900 border-b border-slate-800 px-6 flex items-center justify-between sticky top-0 z-50">
@@ -32,13 +36,13 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
           </div>
           <p className="text-[11px] text-slate-400 hidden sm:block">
-            AI Execution Proxy & Pluggable Harness Platform
+            AI Execution Proxy &amp; Pluggable Harness Platform
           </p>
         </div>
       </div>
 
       {/* Center / Status */}
-      <div className="flex items-center space-x-4 sm:space-x-6">
+      <div className="flex items-center space-x-3 sm:space-x-4">
         {/* MCP Server Status Indicator & Snippet Button */}
         <div className="flex items-center space-x-2.5 px-3 py-1.5 rounded-full bg-slate-950/60 border border-slate-800">
           <Server className="h-3.5 w-3.5 text-slate-400" />
@@ -80,11 +84,33 @@ export const Header: React.FC<HeaderProps> = ({
           title="Toggle Auto Approval Mode"
         >
           <Zap className={cn("h-3.5 w-3.5", autoMode ? "text-emerald-400" : "text-amber-400")} />
-          <span>Auto Mode:</span>
+          <span className="hidden sm:inline">Auto Mode:</span>
           <span className="font-bold tracking-wide">
             {autoMode ? "ON" : "OFF (Manual Review)"}
           </span>
         </button>
+
+        {/* Theme Switcher Button (Light Default / Dark) */}
+        {onToggleTheme && (
+          <button
+            onClick={onToggleTheme}
+            data-testid="theme-toggle-btn"
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-slate-700 hover:border-slate-600 bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs font-semibold transition-all shadow-sm"
+            title={`Current theme: ${theme}. Click to switch to ${theme === "light" ? "Dark" : "Light"} Mode`}
+          >
+            {theme === "light" ? (
+              <>
+                <Moon className="h-3.5 w-3.5 text-indigo-400" />
+                <span className="hidden sm:inline">Dark</span>
+              </>
+            ) : (
+              <>
+                <Sun className="h-3.5 w-3.5 text-amber-400" />
+                <span className="hidden sm:inline">Light</span>
+              </>
+            )}
+          </button>
+        )}
       </div>
     </header>
   );

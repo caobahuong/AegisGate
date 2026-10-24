@@ -364,6 +364,37 @@ describe("Frontend Component Tests", () => {
     expect(handleMcpOpen).toHaveBeenCalledTimes(1);
   });
 
+  it("renders Header Theme Toggle button and toggles between Light and Dark mode", () => {
+    const handleToggleTheme = vi.fn();
+    const { rerender } = render(
+      <Header
+        autoMode={false}
+        onToggleAutoMode={vi.fn()}
+        mcpOnline={true}
+        theme="light"
+        onToggleTheme={handleToggleTheme}
+      />
+    );
+
+    const themeBtn = screen.getByTestId("theme-toggle-btn");
+    expect(themeBtn).toBeDefined();
+    expect(themeBtn.textContent).toContain("Dark");
+    fireEvent.click(themeBtn);
+    expect(handleToggleTheme).toHaveBeenCalledTimes(1);
+
+    // Rerender with dark mode
+    rerender(
+      <Header
+        autoMode={false}
+        onToggleAutoMode={vi.fn()}
+        mcpOnline={true}
+        theme="dark"
+        onToggleTheme={handleToggleTheme}
+      />
+    );
+    expect(screen.getByTestId("theme-toggle-btn").textContent).toContain("Light");
+  });
+
   it("renders McpConfigModal, switches client tabs, and copies JSON snippet", async () => {
     const handleClose = vi.fn();
     const writeTextMock = vi.fn().mockResolvedValue(undefined);

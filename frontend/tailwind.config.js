@@ -9,9 +9,36 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        background: "#020617", // bg-slate-950
-        surface: "#0f172a",    // bg-slate-900
-        border: "#1e293b",     // border-slate-800
+        background: "rgb(var(--color-background) / <alpha-value>)",
+        surface: "rgb(var(--color-surface) / <alpha-value>)",
+        border: "rgb(var(--color-border) / <alpha-value>)",
+        slate: {
+          50: "rgb(var(--color-slate-50) / <alpha-value>)",
+          100: "rgb(var(--color-slate-100) / <alpha-value>)",
+          200: "rgb(var(--color-slate-200) / <alpha-value>)",
+          300: "rgb(var(--color-slate-300) / <alpha-value>)",
+          400: "rgb(var(--color-slate-400) / <alpha-value>)",
+          500: "rgb(var(--color-slate-500) / <alpha-value>)",
+          600: "rgb(var(--color-slate-600) / <alpha-value>)",
+          700: "rgb(var(--color-slate-700) / <alpha-value>)",
+          750: "rgb(var(--color-slate-750) / <alpha-value>)",
+          800: "rgb(var(--color-slate-800) / <alpha-value>)",
+          850: "rgb(var(--color-slate-850) / <alpha-value>)",
+          900: "rgb(var(--color-slate-900) / <alpha-value>)",
+          950: "rgb(var(--color-slate-950) / <alpha-value>)",
+        },
+        emerald: {
+          400: "rgb(var(--color-emerald-400) / <alpha-value>)",
+        },
+        amber: {
+          400: "rgb(var(--color-amber-400) / <alpha-value>)",
+        },
+        rose: {
+          400: "rgb(var(--color-rose-400) / <alpha-value>)",
+        },
+        indigo: {
+          400: "rgb(var(--color-indigo-400) / <alpha-value>)",
+        },
         brand: {
           500: "#6366f1",
           600: "#4f46e5",
@@ -26,4 +53,3 @@ module.exports = {
   },
   plugins: [],
 };
-

@@ -75,6 +75,38 @@ export default function DashboardPage() {
   );
   const [isMcpLoading, setIsMcpLoading] = useState<boolean>(false);
 
+  // Theme State: Light Mode is DEFAULT
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+
+  useEffect(() => {
+    try {
+      const savedTheme = localStorage.getItem("aegisgate-theme") as "light" | "dark" | null;
+      if (savedTheme === "dark") {
+        setTheme("dark");
+        document.documentElement.classList.add("dark");
+      } else {
+        setTheme("light");
+        document.documentElement.classList.remove("dark");
+      }
+    } catch {
+      setTheme("light");
+      document.documentElement.classList.remove("dark");
+    }
+  }, []);
+
+  const handleToggleTheme = () => {
+    const nextTheme = theme === "light" ? "dark" : "light";
+    setTheme(nextTheme);
+    if (nextTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+    try {
+      localStorage.setItem("aegisgate-theme", nextTheme);
+    } catch {}
+  };
+
   // 1. Initial Data Load
   useEffect(() => {
     let isMounted = true;
@@ -347,6 +379,8 @@ export default function DashboardPage() {
         onToggleAutoMode={handleToggleAutoMode}
         mcpOnline={mcpOnline}
         onOpenMcpModal={handleOpenGlobalMcp}
+        theme={theme}
+        onToggleTheme={handleToggleTheme}
       />
 
       {/* Main Grid: Sidebar + Dynamic Tabbed Views */}

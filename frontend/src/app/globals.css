@@ -2,33 +2,97 @@
 @tailwind components;
 @tailwind utilities;
 
+/* =========================================================================
+   LIGHT MODE (DEFAULT)
+   Crisp, clean, professional SaaS theme with high contrast and subtle borders
+   ========================================================================= */
 :root {
+  color-scheme: light;
+
+  /* App Canvas & Card Surfaces */
+  --color-background: 248 250 252;  /* #f8fafc (slate-50 canvas) */
+  --color-surface: 255 255 255;     /* #ffffff (pure white card/sidebar) */
+  --color-border: 226 232 240;      /* #e2e8f0 (subtle card border) */
+
+  /* Slate Scale (Inverted for Light Mode) */
+  --color-slate-950: 248 250 252;   /* Main page background: #f8fafc */
+  --color-slate-900: 255 255 255;   /* Surface/Cards/Sidebar/Header: #ffffff */
+  --color-slate-850: 241 245 249;   /* Inner table row hover: #f1f5f9 */
+  --color-slate-800: 226 232 240;   /* Card & panel borders: #e2e8f0 */
+  --color-slate-750: 218 226 237;   /* Button hover: #dae2ed */
+  --color-slate-700: 203 213 225;   /* Input borders / secondary borders: #cbd5e1 */
+  --color-slate-600: 148 163 184;   /* Placeholder / disabled text: #94a3b8 */
+  --color-slate-500: 100 116 139;   /* Muted captions: #64748b */
+  --color-slate-400: 71 85 105;     /* Subtitle / secondary text: #475569 */
+  --color-slate-300: 51 65 85;      /* Body text: #334155 */
+  --color-slate-200: 30 41 59;      /* Prominent text & field labels: #1e293b */
+  --color-slate-100: 15 23 42;      /* Primary headings / brand title: #0f172a */
+  --color-slate-50: 2 6 23;         /* Deepest text: #020617 */
+
+  /* High-Contrast Colored Accents for Light Backgrounds */
+  --color-emerald-400: 5 150 105;   /* #059669 (emerald-600) */
+  --color-amber-400: 217 119 6;     /* #d97706 (amber-600) */
+  --color-rose-400: 225 29 72;      /* #e11d48 (rose-600) */
+  --color-indigo-400: 79 70 229;    /* #4f46e5 (indigo-600) */
+}
+
+/* =========================================================================
+   DARK MODE (.dark class)
+   Deep Slate-950 night theme with glowing status badges
+   ========================================================================= */
+.dark {
   color-scheme: dark;
+
+  /* App Canvas & Card Surfaces */
+  --color-background: 2 6 23;       /* #020617 (slate-950) */
+  --color-surface: 15 23 42;        /* #0f172a (slate-900) */
+  --color-border: 30 41 59;         /* #1e293b (slate-800) */
+
+  /* Slate Scale (Native Dark Mode) */
+  --color-slate-950: 2 6 23;        /* #020617 */
+  --color-slate-900: 15 23 42;       /* #0f172a */
+  --color-slate-850: 23 32 51;       /* #172033 */
+  --color-slate-800: 30 41 59;       /* #1e293b */
+  --color-slate-750: 40 53 74;       /* #28354a */
+  --color-slate-700: 51 65 85;       /* #334155 */
+  --color-slate-600: 71 85 105;      /* #475569 */
+  --color-slate-500: 100 116 139;    /* #64748b */
+  --color-slate-400: 148 163 184;    /* #94a3b8 */
+  --color-slate-300: 203 213 225;    /* #cbd5e1 */
+  --color-slate-200: 226 232 240;    /* #e2e8f0 */
+  --color-slate-100: 241 245 249;    /* #f1f5f9 */
+  --color-slate-50: 248 250 252;     /* #f8fafc */
+
+  /* Glowing Accent Colors for Dark Backgrounds */
+  --color-emerald-400: 52 211 153;   /* #34d399 */
+  --color-amber-400: 251 191 36;     /* #fbbf24 */
+  --color-rose-400: 251 113 133;     /* #fb7185 */
+  --color-indigo-400: 129 140 248;   /* #818cf8 */
 }
 
 body {
-  background-color: #020617; /* bg-slate-950 */
-  color: #f8fafc;            /* text-slate-100 */
+  background-color: rgb(var(--color-slate-950));
+  color: rgb(var(--color-slate-100));
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   overflow-x: hidden;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* Custom scrollbars for code and logs */
+/* Custom scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: rgb(var(--color-slate-900));
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: rgb(var(--color-slate-700));
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: rgb(var(--color-slate-600));
 }
-

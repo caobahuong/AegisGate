@@ -101,12 +101,14 @@ def run_anti_gravity_browser_qa() -> None:
         page.goto("http://localhost:3000", wait_until="networkidle")
         time.sleep(1.0)
 
-        # Visual Verification: Computed Styles & Dark Theme
-        print("2. Verifying Visual Theme & Typography (design.md compliance)...")
+        # Visual Verification: Computed Styles & Light Theme Default
+        print("2. Verifying Visual Theme & Typography (Light Mode Default)...")
         body_bg = page.evaluate("window.getComputedStyle(document.body).backgroundColor")
-        print(f"   Body Computed Background: {body_bg}")
-        # RGB for #020617 is rgb(2, 6, 23)
-        assert "rgb(2, 6, 23)" in body_bg or "2, 6, 23" in body_bg, f"Expected bg-slate-950, got {body_bg}"
+        print(f"   Body Computed Background (Default): {body_bg}")
+        # RGB for light mode default #f8fafc is rgb(248, 250, 252)
+        assert "rgb(248, 250, 252)" in body_bg or "248, 250, 252" in body_bg, f"Expected default Light Mode rgb(248, 250, 252), got {body_bg}"
+        page.screenshot(path=str(SCREENSHOTS_DIR / "qa_00_light_mode_default.png"))
+        print("   PASS: Light Mode default (#f8fafc) verified.")
 
         # Header Title
         title_el = page.locator("h1:has-text('AEGISGATE')")
@@ -114,8 +116,27 @@ def run_anti_gravity_browser_qa() -> None:
 
         # MCP Status & Header MCP Config Button
         assert page.locator("text=MCP Server:").is_visible(), "MCP Server label not visible"
-        assert page.locator("text=Active").is_visible(), "MCP Server Active badge not visible"
-        print("   PASS: Dark theme (#020617) and Header typography verified.")
+        assert page.locator("header span:has-text('Active')").is_visible(), "MCP Server Active badge not visible"
+
+        # Test Theme Toggle to Dark Mode
+        print("2.0b Testing Theme Toggle (Light -> Dark -> Light)...")
+        theme_toggle_btn = page.locator("[data-testid='theme-toggle-btn']")
+        assert theme_toggle_btn.is_visible(), "Theme Toggle button not visible"
+        theme_toggle_btn.click()
+        time.sleep(0.5)
+        dark_bg = page.evaluate("window.getComputedStyle(document.body).backgroundColor")
+        print(f"   Body Computed Background (Dark Mode): {dark_bg}")
+        assert "rgb(2, 6, 23)" in dark_bg or "2, 6, 23" in dark_bg, f"Expected Dark Mode rgb(2, 6, 23), got {dark_bg}"
+        page.screenshot(path=str(SCREENSHOTS_DIR / "qa_00_dark_mode_toggled.png"))
+        print("   PASS: Switched to Dark Mode (#020617) successfully.")
+
+        # Toggle back to Light Mode
+        theme_toggle_btn.click()
+        time.sleep(0.5)
+        light_restored_bg = page.evaluate("window.getComputedStyle(document.body).backgroundColor")
+        print(f"   Body Computed Background (Restored Light): {light_restored_bg}")
+        assert "rgb(248, 250, 252)" in light_restored_bg or "248, 250, 252" in light_restored_bg, f"Expected Light Mode restored, got {light_restored_bg}"
+        print("   PASS: Switched back to Light Mode default successfully.")
 
         # Test Sidebar User Guide Modal
         print("2.0 Testing Sidebar 'User Guide & Docs' Modal...")
