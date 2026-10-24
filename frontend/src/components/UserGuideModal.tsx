@@ -240,7 +240,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                       </button>
                     </div>
 
-                    <pre className="p-3 bg-slate-950 border border-slate-800 rounded-xl font-mono text-[11px] text-slate-300 overflow-x-auto">
+                    <pre className="p-3 bg-[#090d16] border border-slate-700/80 rounded-xl font-mono text-[11px] text-indigo-200 overflow-x-auto shadow-sm">
 {`{
   "mcpServers": {
     "aegisgate": {

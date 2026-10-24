@@ -66,15 +66,15 @@ const DynamicFormField: React.FC<DynamicFormFieldProps> = ({ field, value, onCha
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between">
-        <label className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider flex items-center space-x-1">
+        <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center space-x-1">
           <span>{field.label}</span>
-          {field.required && <span className="text-amber-400 font-bold">*</span>}
+          {field.required && <span className="text-amber-500 font-bold">*</span>}
         </label>
         {field.type === "password" && (
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="text-[10px] text-slate-400 hover:text-slate-200 flex items-center space-x-1 focus:outline-none"
+            className="text-[10px] text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 flex items-center space-x-1 focus:outline-none"
           >
             {showPassword ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
             <span>{showPassword ? "Hide" : "Show"}</span>
@@ -87,7 +87,7 @@ const DynamicFormField: React.FC<DynamicFormFieldProps> = ({ field, value, onCha
           value={stringVal}
           onChange={(e) => onChange(e.target.value)}
           required={field.required}
-          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500 font-sans"
+          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500 font-sans shadow-xs"
         >
           {field.options?.map((opt) => (
             <option key={opt} value={opt} className="bg-slate-900 text-slate-100">
@@ -102,7 +102,7 @@ const DynamicFormField: React.FC<DynamicFormFieldProps> = ({ field, value, onCha
           onChange={(e) => onChange(e.target.value)}
           placeholder={field.placeholder || "••••••••"}
           required={field.required}
-          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
+          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500 shadow-xs"
         />
       ) : field.type === "number" ? (
         <input
@@ -111,7 +111,7 @@ const DynamicFormField: React.FC<DynamicFormFieldProps> = ({ field, value, onCha
           onChange={(e) => onChange(e.target.value === "" ? "" : Number(e.target.value))}
           placeholder={field.placeholder}
           required={field.required}
-          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
+          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500 shadow-xs"
         />
       ) : field.type === "textarea" ? (
         <textarea
@@ -120,7 +120,7 @@ const DynamicFormField: React.FC<DynamicFormFieldProps> = ({ field, value, onCha
           onChange={(e) => onChange(e.target.value)}
           placeholder={field.placeholder}
           required={field.required}
-          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500 resize-y"
+          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500 resize-y shadow-xs"
         />
       ) : (
         <input
@@ -129,12 +129,12 @@ const DynamicFormField: React.FC<DynamicFormFieldProps> = ({ field, value, onCha
           onChange={(e) => onChange(e.target.value)}
           placeholder={field.placeholder}
           required={field.required}
-          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
+          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500 shadow-xs"
         />
       )}
 
       {field.description && (
-        <p className="text-[10px] text-slate-500 leading-tight">{field.description}</p>
+        <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">{field.description}</p>
       )}
     </div>
   );
@@ -382,7 +382,7 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
           <div
             key={plugin.id}
             data-testid={`plugin-card-${plugin.id}`}
-            className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4 shadow-sm hover:border-slate-700 transition-all flex flex-col justify-between"
+            className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4 shadow-sm hover:border-slate-700 hover:shadow-md transition-all flex flex-col justify-between"
           >
             {/* Top Meta Area */}
             <div className="space-y-3">
@@ -440,7 +440,7 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
               </div>
 
               {/* Dynamic Connection Parameter Summary */}
-              <div className="bg-slate-950 border border-slate-800 rounded-lg p-3 space-y-1.5 text-xs">
+              <div className="bg-slate-850 border border-slate-800 rounded-lg p-3 space-y-1.5 text-xs shadow-xs">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block border-b border-slate-800/80 pb-1">
                   Active Connection Parameters
                 </span>
@@ -450,7 +450,7 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
                   Object.entries(plugin.config).map(([k, v]) => (
                     <div key={k} className="flex justify-between items-center text-[11px]">
                       <span className="text-slate-400 capitalize">{k}:</span>
-                      <span className="font-mono text-slate-200 truncate max-w-[200px]">
+                      <span className="font-mono text-slate-100 font-medium truncate max-w-[200px]">
                         {k.toLowerCase().includes("password") ? "••••••••" : String(v)}
                       </span>
                     </div>
@@ -460,14 +460,14 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
 
               {/* Custom Plugin Card Table */}
               {plugin.custom_card && (
-                <div className="bg-slate-950/70 border border-slate-800/80 rounded-lg p-3 space-y-2">
+                <div className="bg-slate-850 border border-slate-800 rounded-lg p-3 space-y-2 shadow-xs">
                   <div className="flex items-center justify-between border-b border-slate-800/80 pb-1">
                     <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider flex items-center space-x-1">
                       <Terminal className="h-3 w-3" />
                       <span>{plugin.custom_card.title}</span>
                     </span>
                     {plugin.custom_card.badge ? (
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-semibold">
                         {plugin.custom_card.badge}
                       </span>
                     ) : (
@@ -480,7 +480,7 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
                       {plugin.custom_card.badges.map((b, i) => (
                         <span
                           key={i}
-                          className="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-900 border border-slate-800 text-slate-300"
+                          className="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-900 border border-slate-800 text-slate-200 shadow-xs"
                         >
                           <strong className="text-slate-400">{b.label}:</strong> {b.value}
                         </span>
@@ -502,11 +502,11 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
                             )}
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-850">
+                        <tbody className="divide-y divide-slate-800/60">
                           {plugin.custom_card.sample_data.map((row, idx) => (
-                            <tr key={idx} className="hover:bg-slate-900/50">
+                            <tr key={idx} className="hover:bg-slate-800/40">
                               {(plugin.custom_card?.columns || Object.keys(row)).map((col) => (
-                                <td key={col} className="py-1 px-1.5 font-mono text-slate-300">
+                                <td key={col} className="py-1 px-1.5 font-mono text-slate-200">
                                   {String(row[col] ?? "")}
                                 </td>
                               ))}
@@ -520,23 +520,23 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
               )}
 
               {/* Operational Metrics */}
-              <div className="bg-slate-950/40 border border-slate-800/50 rounded-lg p-3 space-y-1 text-xs">
+              <div className="bg-slate-850 border border-slate-800 rounded-lg p-3 space-y-1 text-xs shadow-xs">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block border-b border-slate-800/60 pb-1">
                   Live Operational Metrics &amp; Pool
                 </span>
                 <div className="flex justify-between text-[11px] pt-1">
                   <span className="text-slate-400">Driver Identifier:</span>
-                  <span className="font-mono text-indigo-300">{plugin.driver}</span>
+                  <span className="font-mono text-indigo-400 font-semibold">{plugin.driver}</span>
                 </div>
                 <div className="flex justify-between text-[11px]">
                   <span className="text-slate-400">Active SPID Pool:</span>
-                  <span className="font-mono text-slate-200">
+                  <span className="font-mono text-slate-100 font-semibold">
                     {plugin.active_sessions_count} sessions
                   </span>
                 </div>
                 <div className="flex justify-between text-[11px]">
                   <span className="text-slate-400">Roundtrip Latency:</span>
-                  <span className="font-mono text-emerald-400">{plugin.latency_ms} ms</span>
+                  <span className="font-mono text-emerald-400 font-semibold">{plugin.latency_ms} ms</span>
                 </div>
               </div>
             </div>
@@ -550,7 +550,7 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
                   data-testid={`sanity-check-btn-${plugin.id}`}
                   onClick={() => handleRunSanityCheck(plugin.id)}
                   disabled={verifyingId === plugin.id}
-                  className="flex items-center justify-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors disabled:opacity-50"
+                  className="flex items-center justify-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-750 text-slate-100 border border-slate-700 transition-colors disabled:opacity-50 shadow-xs"
                   title="Run 4-stage automated compatibility & sanity check"
                 >
                   <RefreshCw
@@ -567,9 +567,9 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
                   type="button"
                   data-testid={`edit-btn-${plugin.id}`}
                   onClick={() => handleOpenEdit(plugin)}
-                  className="flex items-center justify-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 transition-colors"
+                  className="flex items-center justify-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 dark:bg-indigo-600/20 dark:hover:bg-indigo-600/30 dark:text-indigo-300 dark:border-indigo-500/30 transition-colors shadow-xs"
                 >
-                  <Sliders className="h-3.5 w-3.5" />
+                  <Sliders className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
                   <span>Edit Configuration</span>
                 </button>
               </div>
@@ -580,7 +580,7 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
                   type="button"
                   onClick={() => handleSync(plugin.id)}
                   disabled={syncingId === plugin.id}
-                  className="flex items-center justify-center space-x-1 bg-slate-800 hover:bg-slate-750 text-slate-200 px-2 py-1.5 rounded-lg text-[11px] font-semibold border border-slate-700 transition-colors disabled:opacity-50"
+                  className="flex items-center justify-center space-x-1 bg-slate-800 hover:bg-slate-750 text-slate-100 border border-slate-700 px-2 py-1.5 rounded-lg text-[11px] font-semibold transition-colors disabled:opacity-50 shadow-xs"
                   title="Sync database tables and structural schema into Knowledge Store"
                 >
                   <RefreshCw
@@ -597,9 +597,9 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
                   type="button"
                   data-testid={`mcp-btn-${plugin.id}`}
                   onClick={() => onViewMcpConfig && onViewMcpConfig(plugin)}
-                  className="flex items-center justify-center space-x-1 bg-indigo-950/60 hover:bg-indigo-900/60 text-indigo-300 border border-indigo-800/80 px-2 py-1.5 rounded-lg text-[11px] font-semibold transition-colors"
+                  className="flex items-center justify-center space-x-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 dark:text-indigo-300 dark:border-indigo-800/80 px-2 py-1.5 rounded-lg text-[11px] font-semibold transition-colors shadow-xs"
                 >
-                  <Zap className="h-3 w-3 text-indigo-400" />
+                  <Zap className="h-3 w-3 text-indigo-600 dark:text-indigo-400" />
                   <span>MCP Config</span>
                 </button>
 
@@ -608,7 +608,7 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
                   type="button"
                   data-testid={`uninstall-btn-${plugin.id}`}
                   onClick={() => setUninstallingPlugin(plugin)}
-                  className="flex items-center justify-center space-x-1 bg-slate-800/80 hover:bg-red-950/60 text-slate-400 hover:text-red-300 border border-slate-700 hover:border-red-800/80 px-2 py-1.5 rounded-lg text-[11px] font-semibold transition-colors"
+                  className="flex items-center justify-center space-x-1 bg-slate-800 hover:bg-rose-500/10 text-slate-300 hover:text-rose-500 border border-slate-700 hover:border-rose-500/30 px-2 py-1.5 rounded-lg text-[11px] font-semibold transition-colors shadow-xs"
                 >
                   <Trash2 className="h-3 w-3" />
                   <span>Uninstall</span>
@@ -642,7 +642,7 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
               </div>
               <button
                 onClick={() => setInspectCertPlugin(null)}
-                className="text-slate-400 hover:text-slate-200 p-1"
+                className="text-slate-400 hover:text-slate-100 p-1"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -710,10 +710,10 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
                 return (
                   <div
                     key={stage.key}
-                    className="p-3 rounded-lg bg-slate-950 border border-slate-800 space-y-1 text-xs"
+                    className="p-3 rounded-lg bg-slate-850 border border-slate-800 space-y-1 text-xs"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-slate-200">{stage.name}</span>
+                      <span className="font-bold text-slate-100">{stage.name}</span>
                       <span
                         className={cn(
                           "px-2 py-0.5 rounded text-[10px] font-bold uppercase",
@@ -727,9 +727,9 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
                     </div>
                     <p className="text-[11px] text-slate-400">{stage.desc}</p>
                     {check && (
-                      <div className="text-[10px] font-mono text-slate-500 pt-1 flex justify-between">
+                      <div className="text-[10px] font-mono text-slate-400 pt-1 flex justify-between">
                         <span>Latency: {check.latency_ms ?? "N/A"} ms</span>
-                        <span className="text-slate-400 truncate max-w-[200px]">
+                        <span className="text-slate-300 truncate max-w-[200px]">
                           {check.details || check.error || "Verified"}
                         </span>
                       </div>
@@ -743,7 +743,7 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
               <button
                 type="button"
                 onClick={() => setInspectCertPlugin(null)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold transition-colors"
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-750 text-slate-100 border border-slate-700 rounded-lg text-xs font-semibold transition-colors shadow-xs"
               >
                 Close Report
               </button>
@@ -765,14 +765,14 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
               </h3>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="text-slate-400 hover:text-slate-200 text-xs"
+                className="text-slate-400 hover:text-slate-100 text-xs"
               >
                 Cancel
               </button>
             </div>
 
             {/* 3 Installation Tabs */}
-            <div className="grid grid-cols-3 gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
+            <div className="grid grid-cols-3 gap-1 bg-slate-850 p-1 rounded-lg border border-slate-800">
               <button
                 type="button"
                 data-testid="tab-add-preset"
@@ -780,8 +780,8 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
                 className={cn(
                   "py-1.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center space-x-1.5",
                   addTab === "preset"
-                    ? "bg-slate-800 text-slate-100 shadow-sm"
-                    : "text-slate-400 hover:text-slate-200"
+                    ? "bg-slate-900 text-indigo-400 shadow-xs border border-slate-750"
+                    : "text-slate-400 hover:text-slate-100"
                 )}
               >
                 <Sliders className="h-3 w-3" />
@@ -794,8 +794,8 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
                 className={cn(
                   "py-1.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center space-x-1.5",
                   addTab === "zip"
-                    ? "bg-slate-800 text-slate-100 shadow-sm"
-                    : "text-slate-400 hover:text-slate-200"
+                    ? "bg-slate-900 text-indigo-400 shadow-xs border border-slate-750"
+                    : "text-slate-400 hover:text-slate-100"
                 )}
               >
                 <UploadCloud className="h-3 w-3" />
@@ -808,8 +808,8 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
                 className={cn(
                   "py-1.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center space-x-1.5",
                   addTab === "git"
-                    ? "bg-slate-800 text-slate-100 shadow-sm"
-                    : "text-slate-400 hover:text-slate-200"
+                    ? "bg-slate-900 text-indigo-400 shadow-xs border border-slate-750"
+                    : "text-slate-400 hover:text-slate-100"
                 )}
               >
                 <GitBranch className="h-3 w-3" />
@@ -837,8 +837,8 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
                         className={cn(
                           "py-1.5 px-2 rounded-lg text-xs font-medium border text-center transition-colors",
                           addPreset === p.id
-                            ? "bg-indigo-600/20 border-indigo-500 text-indigo-200"
-                            : "bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700"
+                            ? "bg-indigo-50 border-indigo-500 text-indigo-700 font-semibold dark:bg-indigo-600/20 dark:border-indigo-500 dark:text-indigo-200"
+                            : "bg-slate-850 border-slate-800 text-slate-400 hover:border-slate-700"
                         )}
                       >
                         {p.label}
@@ -857,7 +857,7 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
                     value={addId}
                     onChange={(e) => setAddId(e.target.value)}
                     placeholder="e.g. mongodb_prod"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500 shadow-xs"
                   />
                 </div>
 
@@ -871,7 +871,7 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
                     value={addName}
                     onChange={(e) => setAddName(e.target.value)}
                     placeholder="e.g. MongoDB Analytics Cluster"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-indigo-500 shadow-xs"
                   />
                 </div>
 
@@ -886,7 +886,7 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
                       value={addDriver}
                       onChange={(e) => setAddDriver(e.target.value)}
                       placeholder="e.g. pymongo/mongodb"
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500 shadow-xs"
                     />
                   </div>
                   <div>
@@ -899,7 +899,7 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
                       value={addDryRunCmd}
                       onChange={(e) => setAddDryRunCmd(e.target.value)}
                       placeholder="e.g. db.runCommand({explain})"
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500 shadow-xs"
                     />
                   </div>
                 </div>
@@ -914,7 +914,7 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
                     value={addEntrypoint}
                     onChange={(e) => setAddEntrypoint(e.target.value)}
                     placeholder="e.g. python plugins/mongodb_plugin/adapter.py"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500 shadow-xs"
                   />
                 </div>
 
@@ -922,7 +922,7 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowAddModal(false)}
-                    className="w-1/2 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 rounded-lg text-xs font-semibold transition-colors"
+                    className="w-1/2 bg-slate-800 hover:bg-slate-750 text-slate-100 border border-slate-700 py-2 rounded-lg text-xs font-semibold transition-colors"
                   >
                     Cancel
                   </button>
@@ -940,12 +940,12 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
             {/* TAB 2: UPLOAD ZIP PACKAGE */}
             {addTab === "zip" && (
               <form onSubmit={handleUploadZip} className="space-y-4">
-                <div className="border-2 border-dashed border-slate-800 hover:border-indigo-500/50 rounded-xl p-6 text-center space-y-2 bg-slate-950/50 transition-colors">
+                <div className="border-2 border-dashed border-slate-800 hover:border-indigo-500 rounded-xl p-6 text-center space-y-2 bg-slate-850 transition-colors">
                   <FileArchive className="h-8 w-8 text-indigo-400 mx-auto" />
                   <div>
                     <label
                       htmlFor="zip-upload-input"
-                      className="cursor-pointer text-xs font-bold text-indigo-400 hover:text-indigo-300 underline"
+                      className="cursor-pointer text-xs font-bold text-indigo-400 hover:underline"
                     >
                       Choose ZIP file
                     </label>
@@ -965,14 +965,14 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
                     Package must contain manifest.json, adapter.py, and optional requirements.txt
                   </p>
                   {selectedZipFile && (
-                    <div className="pt-2 text-xs font-mono text-emerald-400 bg-emerald-500/10 py-1 px-2 rounded border border-emerald-500/20 inline-block">
+                    <div className="pt-2 text-xs font-mono text-emerald-400 bg-emerald-500/10 py-1 px-2 rounded border border-emerald-500/20 inline-block font-semibold">
                       {selectedZipFile.name} ({(selectedZipFile.size / 1024).toFixed(1)} KB)
                     </div>
                   )}
                 </div>
 
                 {zipMessage && (
-                  <p className="text-xs text-indigo-300 font-medium text-center animate-pulse">
+                  <p className="text-xs text-indigo-400 font-semibold text-center animate-pulse">
                     {zipMessage}
                   </p>
                 )}
@@ -981,7 +981,7 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowAddModal(false)}
-                    className="w-1/2 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 rounded-lg text-xs font-semibold transition-colors"
+                    className="w-1/2 bg-slate-800 hover:bg-slate-750 text-slate-100 border border-slate-700 py-2 rounded-lg text-xs font-semibold transition-colors"
                   >
                     Cancel
                   </button>
@@ -1021,7 +1021,7 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
                     value={gitUrl}
                     onChange={(e) => setGitUrl(e.target.value)}
                     placeholder="https://github.com/my-org/aegisgate-plugin-postgres.git"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500 shadow-xs"
                   />
                 </div>
 
@@ -1035,7 +1035,7 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
                       value={gitBranch}
                       onChange={(e) => setGitBranch(e.target.value)}
                       placeholder="main"
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500 shadow-xs"
                     />
                   </div>
                   <div>
@@ -1047,13 +1047,13 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
                       value={gitPluginId}
                       onChange={(e) => setGitPluginId(e.target.value)}
                       placeholder="e.g. postgres_prod"
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500 shadow-xs"
                     />
                   </div>
                 </div>
 
                 {gitMessage && (
-                  <p className="text-xs text-indigo-300 font-medium text-center animate-pulse">
+                  <p className="text-xs text-indigo-400 font-semibold text-center animate-pulse">
                     {gitMessage}
                   </p>
                 )}
@@ -1062,7 +1062,7 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowAddModal(false)}
-                    className="w-1/2 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 rounded-lg text-xs font-semibold transition-colors"
+                    className="w-1/2 bg-slate-800 hover:bg-slate-750 text-slate-100 border border-slate-700 py-2 rounded-lg text-xs font-semibold transition-colors"
                   >
                     Cancel
                   </button>
@@ -1105,7 +1105,7 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
               </h3>
               <button
                 onClick={() => setEditingPlugin(null)}
-                className="text-slate-400 hover:text-slate-200 text-xs"
+                className="text-slate-400 hover:text-slate-100 text-xs"
               >
                 Cancel
               </button>
@@ -1135,7 +1135,7 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
                 <button
                   type="button"
                   onClick={() => setEditingPlugin(null)}
-                  className="w-1/2 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 rounded-lg text-xs font-semibold transition-colors"
+                  className="w-1/2 bg-slate-800 hover:bg-slate-750 text-slate-100 border border-slate-700 py-2 rounded-lg text-xs font-semibold transition-colors"
                 >
                   Cancel
                 </button>
@@ -1179,21 +1179,21 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
 
               <p className="text-xs text-slate-300 leading-relaxed">
                 Are you sure you want to uninstall connector{" "}
-                <strong className="text-white font-semibold">{uninstallingPlugin.name}</strong>?
+                <strong className="text-slate-100 font-semibold">{uninstallingPlugin.name}</strong>?
               </p>
 
               <div className="space-y-2">
-                <label className="flex items-start space-x-2.5 p-2.5 rounded-lg border border-slate-800 bg-slate-950 cursor-pointer">
+                <label className="flex items-start space-x-2.5 p-2.5 rounded-lg border border-slate-800 bg-slate-850 cursor-pointer">
                   <input
                     type="radio"
                     name="uninstall-mode"
                     data-testid="mode-soft-deactivate"
                     checked={!uninstallHardDelete}
                     onChange={() => setUninstallHardDelete(false)}
-                    className="mt-0.5 text-indigo-500 focus:ring-0"
+                    className="mt-0.5 text-indigo-400 focus:ring-0"
                   />
                   <div>
-                    <span className="text-xs font-semibold text-slate-200 block">
+                    <span className="text-xs font-semibold text-slate-100 block">
                       Soft Deactivate (Recommended)
                     </span>
                     <span className="text-[11px] text-slate-400">
@@ -1202,20 +1202,20 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
                   </div>
                 </label>
 
-                <label className="flex items-start space-x-2.5 p-2.5 rounded-lg border border-rose-950/40 bg-slate-950 cursor-pointer">
+                <label className="flex items-start space-x-2.5 p-2.5 rounded-lg border border-rose-200 dark:border-rose-950/40 bg-rose-50/50 dark:bg-slate-950 cursor-pointer">
                   <input
                     type="radio"
                     name="uninstall-mode"
                     data-testid="mode-hard-delete"
                     checked={uninstallHardDelete}
                     onChange={() => setUninstallHardDelete(true)}
-                    className="mt-0.5 text-rose-500 focus:ring-0"
+                    className="mt-0.5 text-rose-600 focus:ring-0"
                   />
                   <div>
-                    <span className="text-xs font-semibold text-rose-400 block">
+                    <span className="text-xs font-semibold text-rose-700 dark:text-rose-400 block">
                       Permanent Hard Delete
                     </span>
-                    <span className="text-[11px] text-slate-400">
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400">
                       Permanently remove plugin configuration and metadata from SQLite database.
                     </span>
                   </div>
@@ -1223,12 +1223,12 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
               </div>
             </div>
 
-            <div className="p-5 border-t border-slate-800 bg-slate-950/50 flex items-center justify-end space-x-3">
+            <div className="p-5 border-t border-slate-800 bg-slate-850 flex items-center justify-end space-x-3">
               <button
                 type="button"
                 onClick={() => setUninstallingPlugin(null)}
                 disabled={isUninstalling}
-                className="px-4 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 transition-colors"
+                className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-100 bg-slate-800 hover:bg-slate-750 border border-slate-700 transition-colors shadow-xs"
               >
                 Cancel
               </button>

@@ -63,10 +63,10 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={onOpenMcpModal}
               data-testid="header-mcp-btn"
-              className="flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-indigo-600/20 hover:bg-indigo-600/35 text-indigo-400 hover:text-indigo-300 border border-indigo-500/30 text-[11px] font-semibold transition-all shadow-sm"
+              className="flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 dark:bg-indigo-600/20 dark:hover:bg-indigo-600/35 dark:text-indigo-400 dark:hover:text-indigo-300 dark:border-indigo-500/30 text-[11px] font-semibold transition-all shadow-xs"
               title="View and Copy MCP JSON for Claude, Cursor, and Cline"
             >
-              <Terminal className="h-3 w-3" />
+              <Terminal className="h-3 w-3 text-indigo-600 dark:text-indigo-400" />
               <span>MCP Config</span>
             </button>
           )}

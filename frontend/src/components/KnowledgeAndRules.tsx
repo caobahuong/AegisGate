@@ -176,22 +176,22 @@ export const KnowledgeAndRules: React.FC<KnowledgeAndRulesProps> = ({
           <button
             onClick={() => setActiveSubTab("knowledge")}
             className={cn(
-              "flex items-center space-x-2 text-xs font-semibold px-3.5 py-2 rounded-lg transition-colors shadow-sm",
+              "flex items-center space-x-2 text-xs font-semibold px-3.5 py-2 rounded-lg transition-colors shadow-xs",
               activeSubTab === "knowledge"
-                ? "bg-indigo-600/20 text-indigo-400 border border-indigo-500/30"
-                : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"
+                ? "bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-600/20 dark:text-indigo-400 dark:border-indigo-500/30"
+                : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/40"
             )}
           >
             <BookOpen className="h-4 w-4" />
-            <span>Knowledge Chunks & Skills ({filteredChunks.length})</span>
+            <span>Knowledge Chunks &amp; Skills ({filteredChunks.length})</span>
           </button>
           <button
             onClick={() => setActiveSubTab("rules")}
             className={cn(
-              "flex items-center space-x-2 text-xs font-semibold px-3.5 py-2 rounded-lg transition-colors shadow-sm",
+              "flex items-center space-x-2 text-xs font-semibold px-3.5 py-2 rounded-lg transition-colors shadow-xs",
               activeSubTab === "rules"
-                ? "bg-indigo-600/20 text-indigo-400 border border-indigo-500/30"
-                : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"
+                ? "bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-600/20 dark:text-indigo-400 dark:border-indigo-500/30"
+                : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/40"
             )}
           >
             <Shield className="h-4 w-4" />

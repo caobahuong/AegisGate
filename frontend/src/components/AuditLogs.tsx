@@ -368,8 +368,8 @@ export const AuditLogs: React.FC<AuditLogsProps> = ({ logs, executions, plugins 
                   <h3 className="text-sm font-bold text-slate-100 flex items-center space-x-2">
                     <span>Execution Audit Detail: #{selectedLog.id}</span>
                   </h3>
-                  <div className="flex items-center space-x-2 text-xs text-slate-400 pt-0.5">
-                    <span className="font-mono text-indigo-300">{getPluginName(selectedLog.target_id)}</span>
+                  <div className="flex items-center space-x-2 text-xs text-slate-500 dark:text-slate-400 pt-0.5">
+                    <span className="font-mono text-indigo-700 dark:text-indigo-300 font-semibold">{getPluginName(selectedLog.target_id)}</span>
                     <span>•</span>
                     <span>{new Date(selectedLog.created_at).toLocaleString()}</span>
                   </div>
@@ -429,36 +429,36 @@ export const AuditLogs: React.FC<AuditLogsProps> = ({ logs, executions, plugins 
                 className={cn(
                   "flex items-center space-x-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors",
                   modalTab === "output"
-                    ? "bg-indigo-600/20 text-indigo-300 border border-indigo-500/30"
-                    : "text-slate-400 hover:text-slate-200"
+                    ? "bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-600/20 dark:text-indigo-300 dark:border-indigo-500/30 shadow-xs"
+                    : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
                 )}
               >
                 <Database className="h-3.5 w-3.5" />
-                <span>Execution Output & Results</span>
+                <span>Execution Output &amp; Results</span>
               </button>
               <button
                 onClick={() => setModalTab("input")}
                 className={cn(
                   "flex items-center space-x-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors",
                   modalTab === "input"
-                    ? "bg-indigo-600/20 text-indigo-300 border border-indigo-500/30"
-                    : "text-slate-400 hover:text-slate-200"
+                    ? "bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-600/20 dark:text-indigo-300 dark:border-indigo-500/30 shadow-xs"
+                    : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
                 )}
               >
                 <Code2 className="h-3.5 w-3.5" />
-                <span>Input Statement & Intent</span>
+                <span>Input Statement &amp; Intent</span>
               </button>
               <button
                 onClick={() => setModalTab("governance")}
                 className={cn(
                   "flex items-center space-x-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors",
                   modalTab === "governance"
-                    ? "bg-indigo-600/20 text-indigo-300 border border-indigo-500/30"
-                    : "text-slate-400 hover:text-slate-200"
+                    ? "bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-600/20 dark:text-indigo-300 dark:border-indigo-500/30 shadow-xs"
+                    : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
                 )}
               >
                 <Layers className="h-3.5 w-3.5" />
-                <span>Dry-Run & Governance Plan</span>
+                <span>Dry-Run &amp; Governance Plan</span>
               </button>
             </div>
 

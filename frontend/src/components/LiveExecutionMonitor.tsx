@@ -320,20 +320,20 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
               className={cn(
                 "px-2.5 py-1 rounded-lg text-xs font-medium transition-all flex items-center space-x-1.5 border",
                 sessionFilter === "RUNNING"
-                  ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/50 shadow-sm shadow-indigo-500/10"
+                  ? "bg-indigo-50 text-indigo-700 border-indigo-300 dark:bg-indigo-500/20 dark:text-indigo-300 dark:border-indigo-500/50 shadow-xs"
                   : runningSessions.length > 0
-                  ? "bg-indigo-500/10 text-indigo-400 border-indigo-500/30 hover:bg-indigo-500/15"
-                  : "bg-slate-950/60 text-slate-400 border-slate-800/80 hover:text-slate-200"
+                  ? "bg-indigo-50/80 text-indigo-700 border-indigo-200 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/30 dark:hover:bg-indigo-500/15"
+                  : "bg-slate-850 text-slate-400 border border-slate-800 hover:text-slate-100"
               )}
             >
-              <RotateCw className={cn("h-3 w-3", runningSessions.length > 0 && "animate-spin text-indigo-400")} />
+              <RotateCw className={cn("h-3 w-3", runningSessions.length > 0 && "animate-spin text-indigo-600 dark:text-indigo-400")} />
               <span>Running</span>
               <span
                 className={cn(
                   "ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-mono",
                   runningSessions.length > 0
-                    ? "bg-indigo-500/30 text-indigo-300 font-bold"
-                    : "bg-slate-800 text-slate-400"
+                    ? "bg-indigo-100 text-indigo-700 font-bold dark:bg-indigo-500/30 dark:text-indigo-300"
+                    : "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-400"
                 )}
               >
                 {runningSessions.length}
