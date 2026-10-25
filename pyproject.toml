@@ -64,6 +64,7 @@ addopts = "-q -m 'not integration and not e2e and not load' --cov=core --cov=plu
 [tool.ruff]
 target-version = "py311"
 line-length = 120
+extend-exclude = ["docs/archive", "report", "data"]
 
 [tool.ruff.lint]
 select = [
@@ -92,6 +93,8 @@ ignore = [
 "plugins/mongodb_plugin/adapter.py" = ["E402"]
 "plugins/sqlserver_plugin/adapter.py" = ["E402"]
 "plugins/templates/starter/tests/test_adapter.py" = ["E402"]
+"scripts/*" = ["E402"]
+"backend/*" = ["E402"]
 
 [tool.ruff.format]
 quote-style = "double"
