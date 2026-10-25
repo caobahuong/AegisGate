@@ -17,6 +17,7 @@ Adheres strictly to python_clean_code.md:
 """
 
 import argparse
+import contextlib
 import os
 import shutil
 import signal
@@ -25,7 +26,7 @@ import sys
 import threading
 import time
 from pathlib import Path
-from typing import Any, NoReturn
+from typing import Any
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -58,20 +59,17 @@ def terminate_process_tree(proc: subprocess.Popen[str] | None) -> None:
     pid = proc.pid
     try:
         import psutil  # type: ignore[import-untyped]
+
         parent = psutil.Process(pid)
         children = parent.children(recursive=True)
         for child in children:
-            try:
+            with contextlib.suppress(psutil.NoSuchProcess, psutil.AccessDenied):
                 child.terminate()
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                pass
         parent.terminate()
         _, still_alive = psutil.wait_procs(children + [parent], timeout=3.0)
         for p in still_alive:
-            try:
+            with contextlib.suppress(psutil.NoSuchProcess, psutil.AccessDenied):
                 p.kill()
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                pass
     except Exception:
         # Fallback for Windows without psutil or unexpected exceptions
         if sys.platform == "win32":
@@ -306,10 +304,8 @@ def run_clean() -> None:
             shutil.rmtree(p, ignore_errors=True)
         elif p.is_file():
             print(f"Removing file: {p.relative_to(BASE_DIR)}")
-            try:
+            with contextlib.suppress(Exception):
                 p.unlink()
-            except Exception:
-                pass
 
     # Remove all __pycache__ and *.egg-info recursively
     removed_pycache = 0

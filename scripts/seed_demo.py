@@ -21,9 +21,8 @@ import json
 import logging
 import random
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 from pathlib import Path
-from typing import Any
 
 # Ensure project root is on sys.path
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -117,22 +116,31 @@ async def seed_data(count: int = 0, force: bool = False) -> None:
         read_log.query_type = "READ"
         read_log.reasoning = "Retrieve recent ledger transactions to audit quarterly cash-flow statements."
         read_log.status = "COMPLETED"
-        read_log.explain_plan_json = json.dumps({
-            "estimated_rows": 10,
-            "strategy": "Clustered Index Scan on PK_Transactions",
-            "cost": 0.00328,
-            "compile_time_cpu_ms": 1.2,
-        })
+        read_log.explain_plan_json = json.dumps(
+            {
+                "estimated_rows": 10,
+                "strategy": "Clustered Index Scan on PK_Transactions",
+                "cost": 0.00328,
+                "compile_time_cpu_ms": 1.2,
+            }
+        )
         read_log.violations_json = "[]"
         read_log.execution_time_ms = 14.2
         read_log.auto_approved = True
         read_log.approved_by = "System Auto-Approval"
         read_log.spid = 54
-        read_log.result_summary = json.dumps([
-            {"TransactionID": 1001, "AccountID": "ACC-902", "Amount": 12500.0, "Description": "Supplier settlement"},
-            {"TransactionID": 1002, "AccountID": "ACC-411", "Amount": 420.50, "Description": "Cloud subscription"},
-            {"TransactionID": 1003, "AccountID": "ACC-108", "Amount": 3890.0, "Description": "Server rack lease"},
-        ])
+        read_log.result_summary = json.dumps(
+            [
+                {
+                    "TransactionID": 1001,
+                    "AccountID": "ACC-902",
+                    "Amount": 12500.0,
+                    "Description": "Supplier settlement",
+                },
+                {"TransactionID": 1002, "AccountID": "ACC-411", "Amount": 420.50, "Description": "Cloud subscription"},
+                {"TransactionID": 1003, "AccountID": "ACC-108", "Amount": 3890.0, "Description": "Server rack lease"},
+            ]
+        )
         read_log.created_at = now - timedelta(minutes=15)
         read_log.finished_at = now - timedelta(minutes=15) + timedelta(milliseconds=14)
         session.add(read_log)
@@ -150,14 +158,18 @@ async def seed_data(count: int = 0, force: bool = False) -> None:
         join_log.query_type = "READ"
         join_log.reasoning = "Correlate customer sales orders directly with raw unindexed security audit logs."
         join_log.status = "REJECTED"
-        join_log.explain_plan_json = json.dumps({
-            "estimated_rows": 500000,
-            "strategy": "Hash Match (Inner Join) - Cross Partition",
-            "cost": 84.62,
-        })
-        join_log.violations_json = json.dumps([
-            "Rule Violation [rule_no_join_orders_auditlogs]: Query violates forbidden entity join on Orders, AuditLogs"
-        ])
+        join_log.explain_plan_json = json.dumps(
+            {
+                "estimated_rows": 500000,
+                "strategy": "Hash Match (Inner Join) - Cross Partition",
+                "cost": 84.62,
+            }
+        )
+        join_log.violations_json = json.dumps(
+            [
+                "Rule Violation [rule_no_join_orders_auditlogs]: Query violates forbidden entity join on Orders, AuditLogs"
+            ]
+        )
         join_log.error_message = (
             "Execution blocked by Governance Engine: Forbidden entity join between 'Orders' and 'AuditLogs'."
         )
@@ -180,12 +192,14 @@ async def seed_data(count: int = 0, force: bool = False) -> None:
         paused_log.query_type = "WRITE"
         paused_log.reasoning = "Bulk update stock inventory levels following shipment arrival at central depot."
         paused_log.status = "PAUSED_FOR_REVIEW"
-        paused_log.explain_plan_json = json.dumps({
-            "estimated_rows": 24,
-            "strategy": "Clustered Index Update on IX_Products_Category",
-            "cost": 0.0184,
-            "tables_affected": ["Inventory.Products"],
-        })
+        paused_log.explain_plan_json = json.dumps(
+            {
+                "estimated_rows": 24,
+                "strategy": "Clustered Index Update on IX_Products_Category",
+                "cost": 0.0184,
+                "tables_affected": ["Inventory.Products"],
+            }
+        )
         paused_log.violations_json = "[]"
         paused_log.auto_approved = False
         paused_log.approved_by = None
@@ -200,11 +214,31 @@ async def seed_data(count: int = 0, force: bool = False) -> None:
         if count > 0:
             logger.info("Generating %d synthetic historical executions...", count)
             templates = [
-                ("READ", "SELECT COUNT(*) FROM Inventory.Products WHERE StockQuantity < 10;", "Check low stock items.", "COMPLETED"),
-                ("READ", "SELECT TOP 5 * FROM Finance.BudgetForecast WHERE FiscalYear = 2026;", "Query current fiscal year budget forecast.", "COMPLETED"),
+                (
+                    "READ",
+                    "SELECT COUNT(*) FROM Inventory.Products WHERE StockQuantity < 10;",
+                    "Check low stock items.",
+                    "COMPLETED",
+                ),
+                (
+                    "READ",
+                    "SELECT TOP 5 * FROM Finance.BudgetForecast WHERE FiscalYear = 2026;",
+                    "Query current fiscal year budget forecast.",
+                    "COMPLETED",
+                ),
                 ("READ", "SELECT * FROM LargeTableScan WITHOUT INDEX;", "Unbounded table scan test.", "REJECTED"),
-                ("WRITE", "UPDATE Inventory.Suppliers SET ContactEmail = 'ops@vendor.com' WHERE SupplierID = 4;", "Update vendor primary contact email.", "COMPLETED"),
-                ("READ", "SELECT TransactionID, Amount FROM Finance.Transactions WHERE Amount > 50000;", "Identify high-value financial transfers.", "COMPLETED"),
+                (
+                    "WRITE",
+                    "UPDATE Inventory.Suppliers SET ContactEmail = 'ops@vendor.com' WHERE SupplierID = 4;",
+                    "Update vendor primary contact email.",
+                    "COMPLETED",
+                ),
+                (
+                    "READ",
+                    "SELECT TransactionID, Amount FROM Finance.Transactions WHERE Amount > 50000;",
+                    "Identify high-value financial transfers.",
+                    "COMPLETED",
+                ),
             ]
             for i in range(count):
                 qtype, qstr, qreason, qstatus = random.choice(templates)
@@ -213,7 +247,7 @@ async def seed_data(count: int = 0, force: bool = False) -> None:
                 latency = round(random.uniform(5.0, 180.0), 2) if qstatus == "COMPLETED" else None
 
                 syn_log = ExecutionLog(
-                    id=f"syn_exec_{i+1:05d}",
+                    id=f"syn_exec_{i + 1:05d}",
                     target_id=target_id,
                     query=qstr,
                     query_type=qtype,
@@ -253,4 +287,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
