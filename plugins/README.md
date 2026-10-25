@@ -101,3 +101,42 @@ To add a new plugin:
 # Run unit tests and Subprocess Stdio IPC tests
 python -m pytest tests/test_phase3.py -v
 ```
+
+---
+
+## Persistent workers (`--serve`) and real Stop/Kill
+
+If a plugin entrypoint contains `--serve` (e.g. `python plugins/sqlserver_plugin/adapter.py --serve`),
+the Core starts **one long-lived process** per plugin instead of one process per call:
+
+- newline-delimited JSON-RPC over stdio, multiplexed by request `id`;
+- the Core pushes the plugin configuration with `reinit` on start (and again after a restart or a config change);
+  a `--serve` plugin must refuse to work until it received it;
+- requests must be handled concurrently (threads/async): `abort` arrives while `execute` is still running;
+- a client-side timeout never kills the worker, so the running query stays abortable;
+- on stdin EOF the plugin must cancel whatever it is still running.
+
+Plugins without `--serve` keep the legacy one-shot behaviour (read one request, answer, exit).
+
+### SQL Server plugin
+
+`use_simulation = "false"` connects through pyodbc (ODBC Driver 17/18). `"true"` serves demo data only.
+
+| Port | Real implementation |
+|---|---|
+| `dry_run` | `SET SHOWPLAN_XML ON` - the statement is compiled, never executed (needs `SHOWPLAN` permission) |
+| `execute` | One connection per execution, `@@SPID` recorded, server-side query timeout, row cap (`max_rows`), READ queries are rolled back and use `readonly_username` if configured |
+| `abort` | `SQLCancel` on the running cursor, then `KILL <spid>` from a second connection after verifying `spid` + `login_time` |
+| `sync_knowledge` | `sys.tables / columns / indexes / partition_stats / extended_properties`, split into partitions per schema |
+
+Extra config keys: `driver`, `encrypt`, `trust_server_certificate`, `readonly_username`, `readonly_password`,
+`max_rows`, `max_cell_chars`, `max_tables`, `max_estimated_cost`, `kill_on_abort`, `login_timeout`.
+
+Integration tests against a real server are opt-in: see the header of `tests/test_sqlserver_integration.py`.
+
+### Installing plugins (ZIP / Git)
+
+The installer enforces: `^[a-z0-9][a-z0-9_-]{0,63}$` plugin ids, safe ZIP extraction (no `..`, absolute paths,
+symlinks, ADS, size/entry limits), entrypoint `python <relative.py> [--flags]` only, plain `requirements.txt`
+(no pip options/URLs), HTTPS Git URLs on `PLUGIN_GIT_ALLOWED_HOSTS` only, and rollback if replacing a plugin fails.
+A plugin is still arbitrary Python running with the Core's privileges - install only code you trust.

@@ -16,7 +16,13 @@ export type ExecutionStatus =
 
 export type QueryType = "READ" | "WRITE";
 
-export type RuleType = "FORBID_JOIN" | "FORBID_TABLE_SCAN" | "MAX_EXECUTION_TIME" | "CUSTOM";
+export type RuleType =
+  | "FORBID_JOIN"
+  | "FORBID_TABLE_SCAN"
+  | "MAX_EXECUTION_TIME"
+  | "CUSTOM"
+  | "REDACT_FIELD"
+  | "REMOVE_FIELD";
 
 export type RuleSeverity = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
 

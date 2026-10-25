@@ -7,6 +7,7 @@ Adheres strictly to python_clean_code.md:
 
 from typing import Any
 
+from sqlalchemy import update as sa_update
 from sqlmodel import Session, desc, select
 
 from core.database import ExecutionLog
@@ -44,6 +45,26 @@ class LogStore:
         self.session.commit()
         self.session.refresh(log)
         return log
+
+    def transition_status(
+        self,
+        log_id: str,
+        expected_statuses: tuple[str, ...],
+        updates: dict[str, Any],
+    ) -> bool:
+        """Atomically move a log out of ``expected_statuses`` (compare-and-set).
+
+        Issues a single conditional UPDATE so two concurrent callers (e.g. a double
+        click on Approve) cannot both win. Returns True only for the winner.
+        """
+        statement = (
+            sa_update(ExecutionLog)
+            .where(ExecutionLog.id == log_id, ExecutionLog.status.in_(expected_statuses))  # type: ignore[attr-defined]
+            .values(**updates)
+        )
+        result = self.session.exec(statement)  # type: ignore[call-overload]
+        self.session.commit()
+        return bool(result.rowcount)
 
     def list_logs(
         self,

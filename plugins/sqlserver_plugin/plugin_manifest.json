@@ -3,7 +3,7 @@
   "name": "SQL Server Enterprise Gateway",
   "version": "1.0.0",
   "driver": "pyodbc/mssql",
-  "entrypoint": "python plugins/sqlserver_plugin/adapter.py",
+  "entrypoint": "python plugins/sqlserver_plugin/adapter.py --serve",
   "dry_run_command": "SET SHOWPLAN_XML ON",
   "abort_command": "KILL {spid}",
   "default_config": {
@@ -13,7 +13,11 @@
     "username": "sa",
     "password": "",
     "auth_mode": "SQL Server Authentication",
-    "use_simulation": true
+    "trust_server_certificate": "false",
+    "readonly_username": "",
+    "readonly_password": "",
+    "max_rows": 1000,
+    "use_simulation": "true"
   },
   "supported_rules": [
     "FORBID_JOIN",
@@ -73,8 +77,43 @@
       "required": true
     },
     {
+      "key": "trust_server_certificate",
+      "label": "Trust Server Certificate (self-signed / dev)",
+      "type": "select",
+      "options": [
+        "false",
+        "true"
+      ],
+      "default": "false",
+      "required": false
+    },
+    {
+      "key": "readonly_username",
+      "label": "Read-only Login (used for READ queries, recommended)",
+      "type": "text",
+      "default": "",
+      "required": false,
+      "placeholder": "db_datareader login; empty = same login, READ is rolled back"
+    },
+    {
+      "key": "readonly_password",
+      "label": "Read-only Password",
+      "type": "password",
+      "default": "",
+      "required": false,
+      "placeholder": "••••••••"
+    },
+    {
+      "key": "max_rows",
+      "label": "Max Rows Returned per Query",
+      "type": "number",
+      "default": 1000,
+      "required": false,
+      "placeholder": "1000"
+    },
+    {
       "key": "use_simulation",
-      "label": "Simulation Mode (Mock Engine)",
+      "label": "Simulation Mode (Mock Engine, no real database)",
       "type": "select",
       "options": [
         "true",

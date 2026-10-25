@@ -8,8 +8,11 @@ Provides 4 standard MCP tools for AI Agents per plan.md & tech.md:
 """
 
 import json
+import os
 import sys
 from typing import Any
+
+import httpx
 
 try:
     from mcp.server.fastmcp import FastMCP
@@ -18,10 +21,12 @@ except Exception:
 from sqlmodel import Session
 
 from core.database import engine
-from core.engine.state_machine import ExecutionStateMachine
 from core.storage.knowledge_store import KnowledgeStore
 from core.storage.log_store import LogStore
 from core.storage.rule_store import RuleStore
+
+API_BASE_URL: str = os.environ.get("AEGISGATE_API_URL", "http://127.0.0.1:8000").rstrip("/")
+SUBMIT_TIMEOUT_SECONDS: float = 90.0  # covers dry-run + a 30s write + review pause
 
 # Parse optional --plugin from command line
 DEFAULT_TARGET_ID: str | None = None
@@ -154,46 +159,53 @@ async def submit_execution(query: str, target_id: str | None = None, reasoning: 
             indent=2,
         )
 
-    with Session(engine) as session:
-        state_machine = ExecutionStateMachine(session)
-        log = await state_machine.initiate_execution(
-            target_id=effective_target,
-            query=query,
-            reasoning=reasoning,
+    # The execution runs inside the AegisGate API process (not in this MCP process) so that
+    # its SSE events reach the dashboard in real time. This process is a thin gateway.
+    url = f"{API_BASE_URL}/api/monitor/executions"
+    payload = {"target_id": effective_target, "query": query, "reasoning": reasoning}
+    try:
+        async with httpx.AsyncClient(timeout=SUBMIT_TIMEOUT_SECONDS) as client:
+            resp = await client.post(url, json=payload)
+    except httpx.ConnectError:
+        return json.dumps(
+            {
+                "error": f"AegisGate API is not reachable at {API_BASE_URL}. "
+                "Start it (python -m uvicorn core.main:app) or set AEGISGATE_API_URL."
+            },
+            indent=2,
+        )
+    except httpx.TimeoutException:
+        return json.dumps(
+            {"error": "AegisGate API timed out. The query may still be running; use check_execution_status."},
+            indent=2,
         )
 
-        response_dict: dict[str, Any] = {
-            "execution_id": log.id,
-            "target_id": log.target_id,
-            "query": log.query,
-            "query_type": log.query_type,
-            "status": log.status,
-            "auto_approved": log.auto_approved,
-        }
+    if resp.status_code >= 400:
+        try:
+            detail = resp.json().get("detail", resp.text)
+        except ValueError:
+            detail = resp.text
+        return json.dumps({"error": f"AegisGate rejected the request ({resp.status_code}): {detail}"}, indent=2)
 
-        if log.violations_json:
-            try:
-                response_dict["violations"] = json.loads(log.violations_json)
-            except Exception:
-                response_dict["violations"] = []
-
-        if log.explain_plan_json:
-            try:
-                response_dict["explain_plan"] = json.loads(log.explain_plan_json)
-            except Exception:
-                response_dict["explain_plan"] = log.explain_plan_json
-
-        if log.status == "COMPLETED" and log.result_summary:
-            try:
-                response_dict["result"] = json.loads(log.result_summary)
-            except Exception:
-                response_dict["result"] = log.result_summary
-            response_dict["execution_time_ms"] = log.execution_time_ms
-
-        if log.status in ("REJECTED", "TIMEOUT", "ABORTED"):
-            response_dict["error_message"] = log.error_message
-
-        return json.dumps(response_dict, indent=2)
+    ex = resp.json()
+    response_dict: dict[str, Any] = {
+        "execution_id": ex["id"],
+        "target_id": ex["target_id"],
+        "query": ex["query"],
+        "query_type": ex["query_type"],
+        "status": ex["status"],
+        "auto_approved": ex.get("auto_approved", False),
+    }
+    if ex.get("violations"):
+        response_dict["violations"] = ex["violations"]
+    if ex.get("explain_plan") is not None:
+        response_dict["explain_plan"] = ex["explain_plan"]
+    if ex["status"] == "COMPLETED" and ex.get("result_summary") is not None:
+        response_dict["result"] = ex["result_summary"]
+        response_dict["execution_time_ms"] = ex.get("execution_time_ms")
+    if ex["status"] in ("REJECTED", "TIMEOUT", "ABORTED"):
+        response_dict["error_message"] = ex.get("error_message")
+    return json.dumps(response_dict, indent=2)
 
 
 @mcp_app.tool()

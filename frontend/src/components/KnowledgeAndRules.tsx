@@ -579,6 +579,8 @@ export const KnowledgeAndRules: React.FC<KnowledgeAndRulesProps> = ({
                         <option value="FORBID_TABLE_SCAN">FORBID_TABLE_SCAN</option>
                         <option value="MAX_EXECUTION_TIME">MAX_EXECUTION_TIME</option>
                         <option value="CUSTOM">CUSTOM</option>
+                        <option value="REDACT_FIELD">REDACT_FIELD (blank output)</option>
+                        <option value="REMOVE_FIELD">REMOVE_FIELD (delete output)</option>
                       </select>
                     </div>
 
@@ -607,9 +609,20 @@ export const KnowledgeAndRules: React.FC<KnowledgeAndRulesProps> = ({
                       type="text"
                       value={expression}
                       onChange={(e) => setExpression(e.target.value)}
-                      placeholder="e.g. Orders,AuditLogs"
+                      placeholder={
+                        ruleType === "REDACT_FIELD" || ruleType === "REMOVE_FIELD"
+                          ? "e.g. Password,Salary,SSN (comma-separated field names)"
+                          : "e.g. Orders,AuditLogs"
+                      }
                       className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
                     />
+                    {(ruleType === "REDACT_FIELD" || ruleType === "REMOVE_FIELD") && (
+                      <p className="text-[10px] text-slate-500 mt-1">
+                        {ruleType === "REDACT_FIELD"
+                          ? "Matching fields stay in the result but their value is set to null before it is stored or sent to the AI."
+                          : "Matching fields are deleted from the result before it is stored or sent to the AI."}
+                      </p>
+                    )}
                   </div>
 
                   <div>

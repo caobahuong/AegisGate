@@ -354,7 +354,10 @@ def update_rule(
     service: Annotated[GatewayService, Depends(get_service)],
 ) -> RuleResponse:
     """Update an existing governance rule."""
-    updated = service.update_rule(rule_id, req)
+    try:
+        updated = service.update_rule(rule_id, req)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
     if not updated:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rule not found.")
     return updated

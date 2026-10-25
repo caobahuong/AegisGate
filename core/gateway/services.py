@@ -13,6 +13,7 @@ from typing import Any
 from sqlmodel import Session
 
 from core.database import ExecutionLog, PluginProfile, Rule, utc_now
+from core.engine.governance import validate_rule_definition
 from core.engine.plugin_client import terminate_all_subprocesses
 from core.engine.plugin_installer import PluginInstaller
 from core.engine.plugin_linter import PluginLinter
@@ -462,6 +463,16 @@ class GatewayService:
                 updates[k] = None if v in (None, "", "global") else v
             elif v is not None:
                 updates[k] = v
+
+        existing = self.rule_store.get_rule(rule_id)
+        if not existing:
+            return None
+        problem = validate_rule_definition(
+            updates.get("rule_type", existing.rule_type),
+            updates.get("expression", existing.expression),
+        )
+        if problem:
+            raise ValueError(problem)
 
         updated = self.rule_store.update_rule(rule_id, updates)
         if not updated:

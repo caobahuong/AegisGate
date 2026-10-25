@@ -106,6 +106,9 @@ class ExecuteParams(BaseModel):
     execution_id: str
     query: str
     timeout_seconds: float = 15.0
+    # True for READ queries: plugins should open a read-only transaction/connection
+    # so the target itself rejects writes even if the core classifier is fooled.
+    read_only: bool = False
 
 
 class ExecuteResult(BaseModel):
@@ -114,6 +117,8 @@ class ExecuteResult(BaseModel):
     rows_affected: int = 0
     execution_time_ms: float = 0.0
     spid: Optional[int] = None
+    # True when the plugin stopped reading rows at its configured row cap
+    truncated: bool = False
 
 
 # 4. Abort Port

@@ -48,7 +48,7 @@ class PluginLinter:
         except Exception:
             config = {}
 
-        client = PluginSubprocessClient(profile.entrypoint)
+        client = PluginSubprocessClient(profile.entrypoint, plugin_id=profile.id, config=config)
         checks: dict[str, Any] = {}
         all_passed = True
         overall_error: str | None = None

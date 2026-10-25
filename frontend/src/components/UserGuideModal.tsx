@@ -330,6 +330,8 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                         <li><code className="text-indigo-300 font-mono">FORBID_TABLE_SCAN</code>: Reject queries missing indexed WHERE clauses that cause full table scans.</li>
                         <li><code className="text-indigo-300 font-mono">MAX_EXECUTION_TIME</code>: Cap maximum allowed execution duration in seconds (e.g., 15s).</li>
                         <li><code className="text-indigo-300 font-mono">CUSTOM</code>: Custom regular expression matching for domain-specific policies.</li>
+                        <li><code className="text-indigo-300 font-mono">REDACT_FIELD</code>: Output masking. Listed fields (e.g., <code className="text-slate-200">Password,SSN</code>) stay in the result but their value becomes <code className="text-slate-200">null</code>.</li>
+                        <li><code className="text-indigo-300 font-mono">REMOVE_FIELD</code>: Output masking. Listed fields are deleted from the result entirely. Applied before the result is stored or returned to the AI.</li>
                       </ul>
                     </li>
                   </ul>

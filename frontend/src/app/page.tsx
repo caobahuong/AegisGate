@@ -149,12 +149,27 @@ export default function DashboardPage() {
     let eventSource: EventSource | null = null;
     let reconnectTimer: NodeJS.Timeout | null = null;
 
+    // Re-sync the execution list from the API. Used for every backend lifecycle event
+    // (execution_created / paused / completed / ...), on (re)connect, and as a safety-net poll.
+    const refreshExecutions = async () => {
+      try {
+        const list = await fetchExecutions();
+        setExecutions(list);
+        setSelectedExecution((current) =>
+          current ? list.find((e) => e.id === current.id) ?? current : list[0] ?? null
+        );
+      } catch (err) {
+        console.error("Failed to refresh executions:", err);
+      }
+    };
+
     const setupSSE = () => {
       try {
         eventSource = new EventSource(SSE_URL);
 
         eventSource.onopen = () => {
           setMcpOnline(true);
+          void refreshExecutions(); // catch up on anything missed while disconnected
         };
 
         eventSource.onmessage = (event) => {
@@ -181,6 +196,10 @@ export default function DashboardPage() {
               });
             } else if (rawData.event === "auto_mode_changed") {
               setAutoModeState(Boolean(rawData.data?.enabled));
+            } else if (typeof rawData.event === "string" && rawData.event.startsWith("execution_")) {
+              void refreshExecutions();
+            } else if (rawData.event === "plugin_installed") {
+              fetchPlugins().then(setPlugins).catch((err) => console.error("Failed to refresh plugins:", err));
             }
           } catch (err) {
             console.error("SSE parse error:", err);
@@ -200,8 +219,16 @@ export default function DashboardPage() {
 
     setupSSE();
 
+    // Safety net: poll while the tab is visible in case an event is dropped (full queue, proxy, etc.)
+    const pollTimer = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        void refreshExecutions();
+      }
+    }, 10000);
+
     // Mandatory cleanup per typescript_clean_code.md to prevent memory leaks
     return () => {
+      clearInterval(pollTimer);
       if (eventSource) {
         eventSource.close();
       }

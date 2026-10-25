@@ -7,6 +7,7 @@ Adheres strictly to python_clean_code.md:
 """
 
 import asyncio
+import logging
 from collections.abc import Awaitable, Callable
 from typing import Any, TypeVar
 
@@ -14,6 +15,7 @@ from core.config import settings
 from core.exceptions import ExecutionTimeoutError
 
 T = TypeVar("T")
+logger = logging.getLogger(__name__)
 
 
 class TimeoutGuard:
@@ -43,12 +45,17 @@ class TimeoutGuard:
         try:
             return await asyncio.wait_for(coro, timeout=timeout_seconds)
         except asyncio.TimeoutError as exc:
+            abort_failure: str | None = None
             if on_timeout_abort:
                 try:
                     await on_timeout_abort()
-                except Exception:
-                    pass
-            raise ExecutionTimeoutError(
-                f"Execution exceeded maximum allowed timeout of {timeout_seconds:.1f} seconds."
-            ) from exc
+                except Exception as abort_exc:
+                    # A failed kill means the query may still be running on the target:
+                    # never swallow it silently, surface it in the log and the error.
+                    logger.exception("Emergency abort hook failed after timeout")
+                    abort_failure = str(abort_exc) or type(abort_exc).__name__
+            message = f"Execution exceeded maximum allowed timeout of {timeout_seconds:.1f} seconds."
+            if abort_failure:
+                message += f" WARNING: emergency abort FAILED ({abort_failure}); the query may still be running on the target."
+            raise ExecutionTimeoutError(message, details={"abort_failed": abort_failure is not None}) from exc
 

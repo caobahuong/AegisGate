@@ -7,7 +7,9 @@ Adheres to python_clean_code.md:
 
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
+
+from core.engine.governance import validate_rule_definition
 
 # --- Monitor & Execution Schemas ---
 
@@ -150,11 +152,20 @@ class CreateRuleRequest(BaseModel):
     id: str
     name: str
     target_id: str | None = None
-    rule_type: str = Field(description="FORBID_JOIN | FORBID_TABLE_SCAN | MAX_EXECUTION_TIME | CUSTOM")
+    rule_type: str = Field(
+        description="FORBID_JOIN | FORBID_TABLE_SCAN | MAX_EXECUTION_TIME | CUSTOM | REDACT_FIELD | REMOVE_FIELD"
+    )
     expression: str
     description: str = ""
     severity: str = "HIGH"
     is_active: bool = True
+
+    @model_validator(mode="after")
+    def _validate_rule(self) -> "CreateRuleRequest":
+        problem = validate_rule_definition(self.rule_type, self.expression)
+        if problem:
+            raise ValueError(problem)
+        return self
 
 
 class UpdateRuleRequest(BaseModel):

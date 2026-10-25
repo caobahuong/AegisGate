@@ -23,7 +23,7 @@ def fixture_db_session(tmp_path: Path):
             name="SQL Server Enterprise",
             driver="pyodbc/mssql",
             entrypoint="python plugins/sqlserver_plugin/adapter.py",
-            config_json=json.dumps({"server": "localhost"}),
+            config_json=json.dumps({"server": "localhost", "use_simulation": "true"}),
             status="active",
         )
         session.add(profile)

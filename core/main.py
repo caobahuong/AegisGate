@@ -17,6 +17,7 @@ from sqlmodel import Session
 
 from core.config import settings
 from core.database import engine, init_db
+from core.engine.plugin_client import terminate_all_subprocesses
 from core.engine.plugin_registry import PluginRegistry
 from core.gateway.api_routes import router as api_router
 
@@ -41,6 +42,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     yield
     logger.info("Shutting down AegisGate Core Engine...")
+    stopped = await terminate_all_subprocesses()
+    logger.info("Stopped %d plugin worker process(es)", stopped)
 
 
 app = FastAPI(

@@ -121,9 +121,15 @@ class PluginRegistry:
     def get_client(self, plugin_id: str) -> PluginSubprocessClient:
         """Create a PluginSubprocessClient for the target plugin."""
         profile = self.get_profile(plugin_id)
+        try:
+            config = json.loads(profile.config_json or "{}")
+        except (json.JSONDecodeError, TypeError):
+            config = {}
         return PluginSubprocessClient(
             entrypoint_cmd=profile.entrypoint,
             working_dir=str(settings.BASE_DIR),
+            plugin_id=profile.id,
+            config=config,
         )
 
     def scan_and_load_manifests(self, plugins_dir: Path | None = None) -> list[PluginProfile]:
