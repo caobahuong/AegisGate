@@ -10,71 +10,59 @@ from plugins.sqlserver_plugin.adapter import SqlServerAdapter
 
 
 class TestSqlServerAdapterDirect:
-    """Test SqlServerAdapter simulated in-memory methods directly."""
+    """Direct method tests on SqlServerAdapter."""
 
     def test_sync_knowledge_partitions(self):
-        """Verify simulated schema partitions and tables."""
         adapter = SqlServerAdapter()
         res = adapter.sync_knowledge(SyncKnowledgeParams())
 
         assert res.target_id == "sqlserver_prod"
         assert len(res.partitions) == 3
 
-        part_keys = [p.partition_key for p in res.partitions]
+        part_keys = {p.partition_key for p in res.partitions}
         assert "Sales" in part_keys
-        assert "Audit" in part_keys
-        assert "Production" in part_keys
+        assert "Inventory" in part_keys
+        assert "Finance" in part_keys
 
-        # Check table schemas
-        sales_part = next(p for p in res.partitions if p.partition_key == "Sales")
-        tbl_names = [t.name for t in sales_part.tables]
-        assert "Orders" in tbl_names
-        assert "OrderDetails" in tbl_names
+        sales = next(p for p in res.partitions if p.partition_key == "Sales")
+        table_names = {t.name for t in sales.tables}
+        assert "Orders" in table_names
+        assert "OrderItems" in table_names
 
     def test_dry_run_safe_query(self):
-        """Verify dry run on safe query."""
         adapter = SqlServerAdapter()
         res = adapter.dry_run(
             DryRunParams(
-                query="SELECT OrderID, Amount FROM Orders WHERE OrderID = 101",
+                query="SELECT OrderID, TotalAmount FROM Orders WHERE OrderID = 1001",
                 rules=[],
             )
         )
         assert res.is_valid is True
         assert len(res.violations) == 0
         assert res.query_type == "READ"
-        assert res.explain_plan is not None
+        assert "StatementText" in res.explain_plan
 
     def test_dry_run_rule_violation_join(self):
-        """Verify dry run flags forbidden join violations."""
         adapter = SqlServerAdapter()
         rules = [
             {
-                "id": "rule_no_join_orders_audit",
                 "rule_type": "FORBID_JOIN",
                 "expression": "Orders,AuditLogs",
             }
         ]
         res = adapter.dry_run(
             DryRunParams(
-                query="SELECT * FROM Orders o JOIN AuditLogs a ON o.OrderID = a.OrderID",
+                query="SELECT * FROM Orders o JOIN AuditLogs a ON o.OrderID = a.LogID",
                 rules=rules,
             )
         )
         assert res.is_valid is False
         assert len(res.violations) == 1
-        assert "rule_no_join_orders_audit" in res.violations[0]
+        assert "ORDERS, AUDITLOGS" in res.violations[0].upper()
 
     def test_dry_run_rule_violation_table_scan(self):
-        """Verify dry run flags table scan violations."""
         adapter = SqlServerAdapter()
-        rules = [
-            {
-                "id": "rule_no_scan",
-                "rule_type": "FORBID_TABLE_SCAN",
-                "expression": "Orders",
-            }
-        ]
+        rules = [{"rule_type": "FORBID_TABLE_SCAN", "expression": ""}]
         res = adapter.dry_run(
             DryRunParams(
                 query="SELECT * FROM Orders",
@@ -86,7 +74,6 @@ class TestSqlServerAdapterDirect:
         assert "Table Scan" in res.violations[0]
 
     def test_execute_and_abort(self):
-        """Verify simulated execution and abort results."""
         adapter = SqlServerAdapter()
         exec_res = adapter.execute(
             ExecuteParams(
