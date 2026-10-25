@@ -279,7 +279,7 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
             >
               <Database className="h-3 w-3" />
               <span>All</span>
-              <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-slate-800 text-slate-300 font-mono">
+              <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-slate-700 text-slate-100 font-mono">
                 {executions.length}
               </span>
             </button>
@@ -304,7 +304,7 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
                 className={cn(
                   "ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-mono",
                   pendingSessions.length > 0
-                    ? "bg-amber-500/30 text-amber-300 font-bold animate-pulse"
+                    ? "bg-amber-600 text-white font-bold animate-pulse dark:bg-amber-500/30 dark:text-amber-300"
                     : "bg-slate-800 text-slate-400"
                 )}
               >
@@ -332,7 +332,7 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
                 className={cn(
                   "ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-mono",
                   runningSessions.length > 0
-                    ? "bg-indigo-100 text-indigo-700 font-bold dark:bg-indigo-500/30 dark:text-indigo-300"
+                    ? "bg-indigo-600 text-white font-bold dark:bg-indigo-500/30 dark:text-indigo-300"
                     : "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-400"
                 )}
               >
@@ -360,7 +360,7 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
                 className={cn(
                   "ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-mono",
                   blockedSessions.length > 0
-                    ? "bg-red-500/30 text-red-300 font-bold"
+                    ? "bg-red-600 text-white font-bold dark:bg-red-500/30 dark:text-red-300"
                     : "bg-slate-800 text-slate-400"
                 )}
               >
@@ -388,7 +388,7 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
                 className={cn(
                   "ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-mono",
                   completedSessions.length > 0
-                    ? "bg-emerald-500/30 text-emerald-300"
+                    ? "bg-emerald-600 text-white font-bold dark:bg-emerald-500/30 dark:text-emerald-300"
                     : "bg-slate-800 text-slate-400"
                 )}
               >
@@ -482,8 +482,8 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
                         className={cn(
                           "text-[10px] font-semibold px-1.5 py-0.5 rounded uppercase tracking-wider font-mono",
                           ex.query_type === "WRITE"
-                            ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
-                            : "bg-sky-500/20 text-sky-300 border border-sky-500/30"
+                            ? "bg-purple-100 text-purple-800 border border-purple-400 dark:bg-purple-500/20 dark:text-purple-300 dark:border-purple-500/30"
+                            : "bg-sky-100 text-sky-800 border border-sky-400 dark:bg-sky-500/20 dark:text-sky-300 dark:border-sky-500/30"
                         )}
                       >
                         {ex.query_type}
