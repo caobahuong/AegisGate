@@ -142,3 +142,4 @@ Before submitting a PR, ensure:
 - [ ] No database files (`*.db`) or credentials are staged.
 - [ ] Documentation (`docs/` and `README.md`) updated if relevant.
 - [ ] PR title follows Conventional Commits.
+

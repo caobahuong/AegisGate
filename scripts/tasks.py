@@ -100,8 +100,22 @@ def stream_output(pipe: Any, prefix: str, color: str) -> None:
         pass
 
 
+def ensure_frontend_deps() -> None:
+    """Automatically run npm install in frontend if node_modules is missing."""
+    if not (FRONTEND_DIR / "node_modules").exists():
+        print(f"\n{YELLOW}[frontend] node_modules not found. Running npm install...{RESET}", flush=True)
+        cmd = ["npm", "install"]
+        if sys.platform == "win32":
+            cmd = ["cmd", "/c", "npm", "install"]
+        res = subprocess.run(cmd, cwd=str(FRONTEND_DIR))
+        if res.returncode != 0:
+            print(f"{RED}[frontend] npm install failed!{RESET}", file=sys.stderr)
+            sys.exit(res.returncode)
+
+
 def run_dev(host: str = "127.0.0.1", port: int = 8000) -> None:
     """Run backend (uvicorn) and frontend (Next.js) concurrently with prefixed logs."""
+    ensure_frontend_deps()
     print_banner("Starting AegisGate Development Servers (Backend + Frontend)", CYAN)
 
     backend_cmd = [
@@ -185,6 +199,7 @@ def run_dev(host: str = "127.0.0.1", port: int = 8000) -> None:
 
 def run_test() -> None:
     """Run backend unit tests and frontend vitest."""
+    ensure_frontend_deps()
     print_banner("1/2 Running Backend Tests (pytest)", CYAN)
     pytest_cmd = [
         sys.executable,
@@ -214,6 +229,7 @@ def run_test() -> None:
 
 def run_check() -> None:
     """Run complete CI checks: ruff, mypy, pytest, eslint, tsc, vitest."""
+    ensure_frontend_deps()
     print_banner("1/6 Backend Linting (Ruff)", CYAN)
     res = subprocess.run([sys.executable, "-m", "ruff", "check", "core", "plugins", "sdk", "tests"], cwd=str(BASE_DIR))
     if res.returncode != 0:

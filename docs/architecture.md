@@ -235,3 +235,4 @@ AegisGate manages its state in SQLite (`data/aegisgate.db`) via SQLModel:
    - Add modular components in `frontend/src/components/`.
    - Connect to real-time events via `useSSE` hook in `frontend/src/lib/sse.ts`.
    - Ensure light-theme contrast adherence in `frontend/src/app/globals.css`.
+
