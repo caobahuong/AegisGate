@@ -5,6 +5,8 @@ node_modules/
 
 # Testing and Cache
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 __pycache__/
 *.py[cod]
 *$py.class
@@ -12,6 +14,11 @@ __pycache__/
 htmlcov/
 .vitest/
 *.tsbuildinfo
+
+# Python Packaging & Virtual Environments
+.venv/
+venv/
+*.egg-info/
 
 # Next.js
 .next/
@@ -27,10 +34,15 @@ dist/
 .env.production.local
 
 # Databases & Runtime Data
+*.db
+data/*.db
 *.sqlite3
 *.db-journal
 *.db-wal
 *.db-shm
+
+# Reports & Temporary Dirs
+report/tmp/
 
 # OS Files
 Thumbs.db
