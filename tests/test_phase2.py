@@ -6,9 +6,11 @@ Tests GovernanceEngine, TimeoutGuard, ExecutionStateMachine, and REST Endpoints.
 import asyncio
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
+
 from core.database import PluginProfile, Rule, get_session
 from core.engine.governance import GovernanceEngine
 from core.engine.state_machine import ExecutionStateMachine
@@ -63,9 +65,7 @@ class TestGovernanceEngine:
         )
 
         plan_with_scan = {"PhysicalOp": "Table Scan", "EstimateRows": 1000000}
-        violations = GovernanceEngine.inspect_query_and_plan(
-            "SELECT * FROM Users", [rule], plan_with_scan
-        )
+        violations = GovernanceEngine.inspect_query_and_plan("SELECT * FROM Users", [rule], plan_with_scan)
         assert len(violations) >= 1
 
     def test_query_type_determination(self):
@@ -294,4 +294,3 @@ class TestRestApiGateway:
         res = client.post("/api/settings/auto-mode", json={"enabled": False})
         assert res.status_code == 200
         assert res.json()["auto_approval_enabled"] is False
-

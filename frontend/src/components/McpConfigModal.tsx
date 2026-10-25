@@ -225,19 +225,29 @@ export const McpConfigModal: React.FC<McpConfigModalProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] font-mono">
                   <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 shadow-xs">
                     <span className="text-indigo-400 font-bold block">1. get_catalog</span>
-                    <span className="text-[10px] text-slate-400 block mt-0.5">Zero-touch cached schema retrieval</span>
+                    <span className="text-[10px] text-slate-400 block mt-0.5">
+                      Zero-touch cached schema retrieval
+                    </span>
                   </div>
                   <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 shadow-xs">
                     <span className="text-indigo-400 font-bold block">2. get_knowledge</span>
-                    <span className="text-[10px] text-slate-400 block mt-0.5">Retrieve doc.md, skills &amp; active rules</span>
+                    <span className="text-[10px] text-slate-400 block mt-0.5">
+                      Retrieve doc.md, skills &amp; active rules
+                    </span>
                   </div>
                   <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 shadow-xs">
                     <span className="text-indigo-400 font-bold block">3. submit_execution</span>
-                    <span className="text-[10px] text-slate-400 block mt-0.5">Dry-Run &amp; rule governance execution</span>
+                    <span className="text-[10px] text-slate-400 block mt-0.5">
+                      Dry-Run &amp; rule governance execution
+                    </span>
                   </div>
                   <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 shadow-xs">
-                    <span className="text-indigo-400 font-bold block">4. check_execution_status</span>
-                    <span className="text-[10px] text-slate-400 block mt-0.5">Poll query result or pause review</span>
+                    <span className="text-indigo-400 font-bold block">
+                      4. check_execution_status
+                    </span>
+                    <span className="text-[10px] text-slate-400 block mt-0.5">
+                      Poll query result or pause review
+                    </span>
                   </div>
                 </div>
               </div>

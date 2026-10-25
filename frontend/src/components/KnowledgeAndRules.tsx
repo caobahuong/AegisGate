@@ -63,8 +63,11 @@ export const KnowledgeAndRules: React.FC<KnowledgeAndRulesProps> = ({
   });
 
   // Knowledge State
-  const [selectedChunkId, setSelectedChunkId] = useState<string>(filteredChunks[0]?.id || chunks[0]?.id || "");
-  const selectedChunk = filteredChunks.find((c) => c.id === selectedChunkId) || filteredChunks[0] || chunks[0];
+  const [selectedChunkId, setSelectedChunkId] = useState<string>(
+    filteredChunks[0]?.id || chunks[0]?.id || ""
+  );
+  const selectedChunk =
+    filteredChunks.find((c) => c.id === selectedChunkId) || filteredChunks[0] || chunks[0];
   const [docContent, setDocContent] = useState<string>(selectedChunk?.doc_content || "");
   const [skillsContent, setSkillsContent] = useState<string>(selectedChunk?.skills_content || "");
   const [isSavingDocs, setIsSavingDocs] = useState<boolean>(false);
@@ -83,7 +86,9 @@ export const KnowledgeAndRules: React.FC<KnowledgeAndRulesProps> = ({
   const [editingRule, setEditingRule] = useState<RuleResponse | null>(null);
   const [ruleId, setRuleId] = useState<string>("");
   const [ruleName, setRuleName] = useState<string>("");
-  const [ruleTargetId, setRuleTargetId] = useState<string>(targetFilter !== "all" && targetFilter !== "global" ? targetFilter : "");
+  const [ruleTargetId, setRuleTargetId] = useState<string>(
+    targetFilter !== "all" && targetFilter !== "global" ? targetFilter : ""
+  );
   const [ruleType, setRuleType] = useState<RuleType>("FORBID_JOIN");
   const [expression, setExpression] = useState<string>("");
   const [description, setDescription] = useState<string>("");
@@ -202,15 +207,21 @@ export const KnowledgeAndRules: React.FC<KnowledgeAndRulesProps> = ({
         {/* Global Target Scope Filter Dropdown */}
         <div className="flex items-center space-x-2.5 bg-slate-900 border border-slate-800 px-3.5 py-1.5 rounded-xl shadow-sm">
           <Filter className="h-3.5 w-3.5 text-indigo-400 flex-shrink-0" />
-          <span className="text-xs text-slate-400 font-medium whitespace-nowrap">Target Scope:</span>
+          <span className="text-xs text-slate-400 font-medium whitespace-nowrap">
+            Target Scope:
+          </span>
           <select
             data-testid="target-filter-select"
             value={targetFilter}
             onChange={(e) => setTargetFilter(e.target.value)}
             className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-100 font-medium focus:outline-none focus:border-indigo-500 cursor-pointer"
           >
-            <option value="all">All Pluggable Targets ({chunks.length} chunks, {rules.length} rules)</option>
-            <option value="global">Global Scope Only ({rules.filter((r) => !r.target_id).length} rules)</option>
+            <option value="all">
+              All Pluggable Targets ({chunks.length} chunks, {rules.length} rules)
+            </option>
+            <option value="global">
+              Global Scope Only ({rules.filter((r) => !r.target_id).length} rules)
+            </option>
             {plugins.map((p) => (
               <option key={p.id} value={p.id}>
                 Target: {p.name} ({p.id})
@@ -240,8 +251,13 @@ export const KnowledgeAndRules: React.FC<KnowledgeAndRulesProps> = ({
             <div className="space-y-2">
               {filteredChunks.length === 0 ? (
                 <div className="p-4 text-center space-y-1 bg-slate-950/40 rounded-lg border border-slate-800/60">
-                  <p className="text-xs text-slate-400">No knowledge chunks found for this target scope.</p>
-                  <p className="text-[11px] text-slate-500">Go to Pluggable Targets and click &quot;Sync Catalog&quot; to extract schema partitions.</p>
+                  <p className="text-xs text-slate-400">
+                    No knowledge chunks found for this target scope.
+                  </p>
+                  <p className="text-[11px] text-slate-500">
+                    Go to Pluggable Targets and click &quot;Sync Catalog&quot; to extract schema
+                    partitions.
+                  </p>
                 </div>
               ) : (
                 filteredChunks.map((chunk) => (
@@ -402,8 +418,13 @@ export const KnowledgeAndRules: React.FC<KnowledgeAndRulesProps> = ({
             {filteredRules.length === 0 ? (
               <div className="col-span-2 p-8 text-center bg-slate-900 border border-slate-800 rounded-xl space-y-2">
                 <Shield className="h-8 w-8 text-slate-500 mx-auto" />
-                <p className="text-xs font-medium text-slate-300">No governance rules found for this target scope.</p>
-                <p className="text-[11px] text-slate-500">Click &quot;Create Rule&quot; to define query restrictions for this database target or globally.</p>
+                <p className="text-xs font-medium text-slate-300">
+                  No governance rules found for this target scope.
+                </p>
+                <p className="text-[11px] text-slate-500">
+                  Click &quot;Create Rule&quot; to define query restrictions for this database
+                  target or globally.
+                </p>
               </div>
             ) : (
               filteredRules.map((rule) => (
@@ -417,9 +438,12 @@ export const KnowledgeAndRules: React.FC<KnowledgeAndRulesProps> = ({
                       <span
                         className={cn(
                           "text-[10px] font-bold px-2 py-0.5 rounded",
-                          rule.severity === "CRITICAL" && "bg-red-500/20 text-red-400 border border-red-500/30",
-                          rule.severity === "HIGH" && "bg-amber-500/20 text-amber-400 border border-amber-500/30",
-                          rule.severity === "MEDIUM" && "bg-indigo-500/20 text-indigo-400 border border-indigo-500/30",
+                          rule.severity === "CRITICAL" &&
+                            "bg-red-500/20 text-red-400 border border-red-500/30",
+                          rule.severity === "HIGH" &&
+                            "bg-amber-500/20 text-amber-400 border border-amber-500/30",
+                          rule.severity === "MEDIUM" &&
+                            "bg-indigo-500/20 text-indigo-400 border border-indigo-500/30",
                           rule.severity === "LOW" && "bg-slate-800 text-slate-300"
                         )}
                       >
@@ -474,7 +498,9 @@ export const KnowledgeAndRules: React.FC<KnowledgeAndRulesProps> = ({
                       <span className="text-slate-500 text-[10px] font-semibold uppercase block">
                         Rule Type & Parameters
                       </span>
-                      <span className="font-mono text-indigo-400 font-semibold">{rule.rule_type}</span>
+                      <span className="font-mono text-indigo-400 font-semibold">
+                        {rule.rule_type}
+                      </span>
                       <span className="text-slate-400 mx-1.5">|</span>
                       <span className="font-mono text-slate-300 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800">
                         {rule.expression || "Global"}
@@ -494,7 +520,11 @@ export const KnowledgeAndRules: React.FC<KnowledgeAndRulesProps> = ({
                 <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                   <h3 className="text-sm font-bold text-slate-100 flex items-center space-x-2">
                     <Shield className="h-4 w-4 text-indigo-400" />
-                    <span>{editingRule ? `Edit Governance Rule: #${editingRule.id}` : "Create Governance Rule"}</span>
+                    <span>
+                      {editingRule
+                        ? `Edit Governance Rule: #${editingRule.id}`
+                        : "Create Governance Rule"}
+                    </span>
                   </h3>
                   <button
                     onClick={() => {
@@ -510,7 +540,10 @@ export const KnowledgeAndRules: React.FC<KnowledgeAndRulesProps> = ({
                 <form onSubmit={handleSubmitRule} className="space-y-3.5">
                   <div>
                     <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                      Rule ID {editingRule && <span className="text-[10px] text-slate-500 lowercase">(read-only)</span>}
+                      Rule ID{" "}
+                      {editingRule && (
+                        <span className="text-[10px] text-slate-500 lowercase">(read-only)</span>
+                      )}
                     </label>
                     <input
                       type="text"
@@ -561,7 +594,8 @@ export const KnowledgeAndRules: React.FC<KnowledgeAndRulesProps> = ({
                       ))}
                     </select>
                     <p className="text-[10px] text-slate-500 mt-1">
-                      Select &quot;Global Scope&quot; to enforce across all databases, or assign specifically to a database connector.
+                      Select &quot;Global Scope&quot; to enforce across all databases, or assign
+                      specifically to a database connector.
                     </p>
                   </div>
 

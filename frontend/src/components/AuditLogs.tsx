@@ -54,10 +54,10 @@ const parseResultSummary = (summary: Record<string, unknown> | string | null): E
   const data = Array.isArray(pObj.data)
     ? (pObj.data as Record<string, unknown>[])
     : Array.isArray(parsed)
-    ? (parsed as Record<string, unknown>[])
-    : null;
+      ? (parsed as Record<string, unknown>[])
+      : null;
 
-  const rows = typeof pObj.rows_affected === "number" ? pObj.rows_affected : data?.length ?? null;
+  const rows = typeof pObj.rows_affected === "number" ? pObj.rows_affected : (data?.length ?? null);
   const cols = data && data.length > 0 && typeof data[0] === "object" ? Object.keys(data[0]) : [];
 
   return {
@@ -225,7 +225,8 @@ export const AuditLogs: React.FC<AuditLogsProps> = ({ logs, executions, plugins 
             <span>Audit & Compliance Logs</span>
           </h2>
           <p className="text-xs text-slate-400">
-            Comprehensive ledger tracking detailed Input parameters, AI intent, governance checks, and concrete Output datasets.
+            Comprehensive ledger tracking detailed Input parameters, AI intent, governance checks,
+            and concrete Output datasets.
           </p>
         </div>
 
@@ -298,16 +299,22 @@ export const AuditLogs: React.FC<AuditLogsProps> = ({ logs, executions, plugins 
                     <td className="py-3 px-4 font-medium text-slate-300 whitespace-nowrap">
                       <div className="flex items-center space-x-1.5">
                         <Database className="h-3 w-3 text-indigo-400 flex-shrink-0" />
-                        <span className="truncate max-w-[120px]">{getPluginName(log.target_id)}</span>
+                        <span className="truncate max-w-[120px]">
+                          {getPluginName(log.target_id)}
+                        </span>
                       </div>
                     </td>
                     <td className="py-3 px-4 max-w-sm">
                       <div className="space-y-1">
                         <div className="flex items-center space-x-2">
-                          <span className={cn(
-                            "text-[9px] font-mono px-1.5 py-0.2 rounded font-bold",
-                            log.query_type === "WRITE" ? "bg-amber-500/20 text-amber-300 border border-amber-500/30" : "bg-slate-950 text-slate-400 border border-slate-800"
-                          )}>
+                          <span
+                            className={cn(
+                              "text-[9px] font-mono px-1.5 py-0.2 rounded font-bold",
+                              log.query_type === "WRITE"
+                                ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                                : "bg-slate-950 text-slate-400 border border-slate-800"
+                            )}
+                          >
                             {log.query_type}
                           </span>
                           <span className="font-mono text-slate-300 truncate text-[11px] block max-w-xs">
@@ -322,9 +329,7 @@ export const AuditLogs: React.FC<AuditLogsProps> = ({ logs, executions, plugins 
                         )}
                       </div>
                     </td>
-                    <td className="py-3 px-4 whitespace-nowrap">
-                      {renderOutputSummary(log)}
-                    </td>
+                    <td className="py-3 px-4 whitespace-nowrap">{renderOutputSummary(log)}</td>
                     <td className="py-3 px-4 whitespace-nowrap">{getStatusBadge(log.status)}</td>
                     <td className="py-3 px-4 font-mono text-slate-300 whitespace-nowrap">
                       {log.execution_time_ms !== null ? `${log.execution_time_ms} ms` : "-"}
@@ -357,7 +362,6 @@ export const AuditLogs: React.FC<AuditLogsProps> = ({ logs, executions, plugins 
       {selectedLog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in duration-150">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-3xl w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
-            
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-4 border-b border-slate-800">
               <div className="flex items-center space-x-3">
@@ -369,7 +373,9 @@ export const AuditLogs: React.FC<AuditLogsProps> = ({ logs, executions, plugins 
                     <span>Execution Audit Detail: #{selectedLog.id}</span>
                   </h3>
                   <div className="flex items-center space-x-2 text-xs text-slate-500 dark:text-slate-400 pt-0.5">
-                    <span className="font-mono text-indigo-700 dark:text-indigo-300 font-semibold">{getPluginName(selectedLog.target_id)}</span>
+                    <span className="font-mono text-indigo-700 dark:text-indigo-300 font-semibold">
+                      {getPluginName(selectedLog.target_id)}
+                    </span>
                     <span>•</span>
                     <span>{new Date(selectedLog.created_at).toLocaleString()}</span>
                   </div>
@@ -399,7 +405,9 @@ export const AuditLogs: React.FC<AuditLogsProps> = ({ logs, executions, plugins 
                   Execution Latency
                 </span>
                 <span className="font-mono text-emerald-400 font-bold">
-                  {selectedLog.execution_time_ms !== null ? `${selectedLog.execution_time_ms} ms` : "N/A"}
+                  {selectedLog.execution_time_ms !== null
+                    ? `${selectedLog.execution_time_ms} ms`
+                    : "N/A"}
                 </span>
               </div>
               <div>
@@ -410,15 +418,17 @@ export const AuditLogs: React.FC<AuditLogsProps> = ({ logs, executions, plugins 
                   {selectedResult?.dataRows
                     ? `${selectedResult.dataRows.length} rows`
                     : selectedResult && selectedResult.rowsAffected !== null
-                    ? `${selectedResult.rowsAffected} affected`
-                    : "0 rows"}
+                      ? `${selectedResult.rowsAffected} affected`
+                      : "0 rows"}
                 </span>
               </div>
               <div>
                 <span className="text-slate-500 block text-[10px] uppercase font-semibold">
                   Database SPID
                 </span>
-                <span className="font-mono text-slate-200">{selectedLog.spid || "Session clean"}</span>
+                <span className="font-mono text-slate-200">
+                  {selectedLog.spid || "Session clean"}
+                </span>
               </div>
             </div>
 
@@ -475,7 +485,8 @@ export const AuditLogs: React.FC<AuditLogsProps> = ({ logs, executions, plugins 
                     </span>
                     {selectedResult?.dataRows && (
                       <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        {selectedResult.dataRows.length} row{selectedResult.dataRows.length === 1 ? "" : "s"}
+                        {selectedResult.dataRows.length} row
+                        {selectedResult.dataRows.length === 1 ? "" : "s"}
                       </span>
                     )}
                   </div>
@@ -510,10 +521,16 @@ export const AuditLogs: React.FC<AuditLogsProps> = ({ logs, executions, plugins 
 
                     {selectedLog.result_summary && (
                       <button
-                        onClick={() => handleCopy(JSON.stringify(selectedLog.result_summary, null, 2), "result")}
+                        onClick={() =>
+                          handleCopy(JSON.stringify(selectedLog.result_summary, null, 2), "result")
+                        }
                         className="flex items-center space-x-1 bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 py-1 rounded-lg text-[11px] border border-slate-700 transition-colors"
                       >
-                        {copiedResult ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                        {copiedResult ? (
+                          <Check className="h-3 w-3 text-emerald-400" />
+                        ) : (
+                          <Copy className="h-3 w-3" />
+                        )}
                         <span>{copiedResult ? "Copied!" : "Copy Output"}</span>
                       </button>
                     )}
@@ -543,7 +560,10 @@ export const AuditLogs: React.FC<AuditLogsProps> = ({ logs, executions, plugins 
                             <tr>
                               <th className="py-2.5 px-3 text-slate-500 font-mono w-10">#</th>
                               {selectedResult.columns.map((col) => (
-                                <th key={col} className="py-2.5 px-3 font-mono font-bold text-slate-200 whitespace-nowrap">
+                                <th
+                                  key={col}
+                                  className="py-2.5 px-3 font-mono font-bold text-slate-200 whitespace-nowrap"
+                                >
                                   {col}
                                 </th>
                               ))}
@@ -554,8 +574,15 @@ export const AuditLogs: React.FC<AuditLogsProps> = ({ logs, executions, plugins 
                               <tr key={idx} className="hover:bg-slate-900/40 transition-colors">
                                 <td className="py-2.5 px-3 text-slate-500">{idx + 1}</td>
                                 {selectedResult.columns.map((col) => (
-                                  <td key={col} className="py-2.5 px-3 text-slate-300 whitespace-nowrap">
-                                    {row[col] !== null && row[col] !== undefined ? String(row[col]) : <span className="text-slate-600 italic">null</span>}
+                                  <td
+                                    key={col}
+                                    className="py-2.5 px-3 text-slate-300 whitespace-nowrap"
+                                  >
+                                    {row[col] !== null && row[col] !== undefined ? (
+                                      String(row[col])
+                                    ) : (
+                                      <span className="text-slate-600 italic">null</span>
+                                    )}
                                   </td>
                                 ))}
                               </tr>
@@ -566,7 +593,9 @@ export const AuditLogs: React.FC<AuditLogsProps> = ({ logs, executions, plugins 
                     ) : selectedLog.status === "COMPLETED" ? (
                       <div className="p-8 text-center text-slate-400 space-y-1">
                         <CheckCircle2 className="h-6 w-6 text-emerald-400 mx-auto" />
-                        <p className="text-xs font-medium">Query executed successfully with no data rows returned.</p>
+                        <p className="text-xs font-medium">
+                          Query executed successfully with no data rows returned.
+                        </p>
                         <p className="text-[11px] text-slate-500">
                           {selectedResult && selectedResult.rowsAffected !== null
                             ? `Affected ${selectedResult.rowsAffected} row(s) in target database.`
@@ -587,7 +616,11 @@ export const AuditLogs: React.FC<AuditLogsProps> = ({ logs, executions, plugins 
                     <pre className="whitespace-pre-wrap">
                       {selectedLog.result_summary
                         ? JSON.stringify(selectedLog.result_summary, null, 2)
-                        : JSON.stringify({ message: "No result payload returned", status: selectedLog.status }, null, 2)}
+                        : JSON.stringify(
+                            { message: "No result payload returned", status: selectedLog.status },
+                            null,
+                            2
+                          )}
                     </pre>
                   </div>
                 )}
@@ -606,7 +639,8 @@ export const AuditLogs: React.FC<AuditLogsProps> = ({ logs, executions, plugins 
                     <span>AI Intent & Purpose Reasoning</span>
                   </div>
                   <p className="text-xs text-slate-200 leading-relaxed pl-6">
-                    {selectedLog.reasoning || "Direct database execution requested without specific reasoning context."}
+                    {selectedLog.reasoning ||
+                      "Direct database execution requested without specific reasoning context."}
                   </p>
                 </div>
 
@@ -621,7 +655,11 @@ export const AuditLogs: React.FC<AuditLogsProps> = ({ logs, executions, plugins 
                       onClick={() => handleCopy(selectedLog.query, "query")}
                       className="flex items-center space-x-1 bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 py-1 rounded-lg text-[11px] border border-slate-700 transition-colors"
                     >
-                      {copiedQuery ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                      {copiedQuery ? (
+                        <Check className="h-3 w-3 text-emerald-400" />
+                      ) : (
+                        <Copy className="h-3 w-3" />
+                      )}
                       <span>{copiedQuery ? "Copied!" : "Copy SQL"}</span>
                     </button>
                   </div>
@@ -634,13 +672,21 @@ export const AuditLogs: React.FC<AuditLogsProps> = ({ logs, executions, plugins 
                 {/* Input Details Grid */}
                 <div className="grid grid-cols-2 gap-3 bg-slate-950 p-3 rounded-lg border border-slate-800 text-xs">
                   <div>
-                    <span className="text-slate-500 block text-[10px] uppercase font-semibold">Target Identifier</span>
+                    <span className="text-slate-500 block text-[10px] uppercase font-semibold">
+                      Target Identifier
+                    </span>
                     <span className="font-mono text-slate-200">{selectedLog.target_id}</span>
                   </div>
                   <div>
-                    <span className="text-slate-500 block text-[10px] uppercase font-semibold">Approval Route</span>
+                    <span className="text-slate-500 block text-[10px] uppercase font-semibold">
+                      Approval Route
+                    </span>
                     <span className="font-mono text-slate-200">
-                      {selectedLog.auto_approved ? "Auto Approval ON" : selectedLog.approved_by ? `Approved by ${selectedLog.approved_by}` : "Manual Approval Mode"}
+                      {selectedLog.auto_approved
+                        ? "Auto Approval ON"
+                        : selectedLog.approved_by
+                          ? `Approved by ${selectedLog.approved_by}`
+                          : "Manual Approval Mode"}
                     </span>
                   </div>
                 </div>
@@ -657,7 +703,9 @@ export const AuditLogs: React.FC<AuditLogsProps> = ({ logs, executions, plugins 
                   <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 space-y-1.5">
                     <div className="flex items-center space-x-2 text-xs font-bold">
                       <ShieldAlert className="h-4 w-4 text-red-400" />
-                      <span>Governance Rule Violations Detected ({selectedLog.violations.length})</span>
+                      <span>
+                        Governance Rule Violations Detected ({selectedLog.violations.length})
+                      </span>
                     </div>
                     <ul className="list-disc list-inside text-xs space-y-1 pl-4 text-red-300">
                       {selectedLog.violations.map((v, i) => (
@@ -668,7 +716,9 @@ export const AuditLogs: React.FC<AuditLogsProps> = ({ logs, executions, plugins 
                 ) : (
                   <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center space-x-2 text-xs font-medium">
                     <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
-                    <span>Passed all active governance policies. No forbidden joins or full table scans.</span>
+                    <span>
+                      Passed all active governance policies. No forbidden joins or full table scans.
+                    </span>
                   </div>
                 )}
 
@@ -690,7 +740,6 @@ export const AuditLogs: React.FC<AuditLogsProps> = ({ logs, executions, plugins 
                 </div>
               </div>
             )}
-
           </div>
         </div>
       )}

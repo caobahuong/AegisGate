@@ -7,17 +7,19 @@ The **Frontend Dashboard** is an enterprise management, real-time monitoring, an
 ## 🎨 Design System & Visual Identity
 
 ### 1. Dark-First Theme Palette
-| Token | Tailwind Class | Hex Value | Role |
-| :--- | :--- | :--- | :--- |
-| **Main Background** | `bg-slate-950` | `#020617` | Global dark background |
-| **Component Surface** | `bg-slate-900` | `#0f172a` | Cards, sidebar, header, and modal surfaces |
-| **Borders** | `border-slate-800` | `#1e293b` | Structural dividers and card borders |
-| **Brand / Primary** | `indigo-600` / `indigo-500` | `#4f46e5` | Primary buttons, active indicators |
-| **Success State** | `emerald-500` / `emerald-400` | `#10b981` | `COMPLETED` state, `Auto Mode ON`, successful dry-run |
-| **Warning / Paused** | `amber-500` / `amber-400` | `#f59e0b` | `PAUSED_FOR_REVIEW`, `Auto Mode OFF` |
-| **Danger / Rejected** | `red-500` / `red-400` | `#ef4444` | `REJECTED`, `TIMEOUT`, Kill/Stop buttons, rule violations |
+
+| Token                 | Tailwind Class                | Hex Value | Role                                                      |
+| :-------------------- | :---------------------------- | :-------- | :-------------------------------------------------------- |
+| **Main Background**   | `bg-slate-950`                | `#020617` | Global dark background                                    |
+| **Component Surface** | `bg-slate-900`                | `#0f172a` | Cards, sidebar, header, and modal surfaces                |
+| **Borders**           | `border-slate-800`            | `#1e293b` | Structural dividers and card borders                      |
+| **Brand / Primary**   | `indigo-600` / `indigo-500`   | `#4f46e5` | Primary buttons, active indicators                        |
+| **Success State**     | `emerald-500` / `emerald-400` | `#10b981` | `COMPLETED` state, `Auto Mode ON`, successful dry-run     |
+| **Warning / Paused**  | `amber-500` / `amber-400`     | `#f59e0b` | `PAUSED_FOR_REVIEW`, `Auto Mode OFF`                      |
+| **Danger / Rejected** | `red-500` / `red-400`         | `#ef4444` | `REJECTED`, `TIMEOUT`, Kill/Stop buttons, rule violations |
 
 ### 2. Typography
+
 - **UI Text:** `Inter` for headers, labels, buttons, and body.
 - **Monospace:** `JetBrains Mono` for all SQL queries, JSON payloads, execution plans, SPIDs, and Session IDs (`#exec_...`).
 
@@ -65,17 +67,21 @@ The **Frontend Dashboard** is an enterprise management, real-time monitoring, an
 ## 🚀 Getting Started
 
 ### 1. Install Dependencies
+
 ```bash
 npm install
 ```
 
 ### 2. Run Development Server
+
 ```bash
 npm run dev
 ```
+
 Dashboard opens at [http://localhost:3000](http://localhost:3000).
 
 ### 3. Production Build & Start
+
 ```bash
 npm run build
 npm run start
@@ -90,4 +96,5 @@ Frontend component tests are powered by **Vitest** and **React Testing Library**
 ```bash
 npm test
 ```
+
 Tests verify Header toggle behaviors, Sidebar navigation, and Audit Log table search/filtering.

@@ -84,6 +84,7 @@ def health_check() -> dict[str, str]:
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(
         "core.main:app",
         host=settings.API_HOST,

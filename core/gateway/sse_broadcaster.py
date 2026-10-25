@@ -59,4 +59,3 @@ class SSEBroadcaster:
 
 # Global singleton instance
 sse_broadcaster = SSEBroadcaster()
-

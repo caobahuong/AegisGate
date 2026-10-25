@@ -54,6 +54,7 @@ def get_service(session: Annotated[Session, Depends(get_session)]) -> GatewaySer
 
 # --- Live Monitor & Execution Endpoints ---
 
+
 @router.get("/monitor/events")
 async def sse_events() -> StreamingResponse:
     """Server-Sent Events endpoint streaming real-time execution states."""
@@ -150,6 +151,7 @@ async def abort_execution(
 
 # --- Pluggable Targets (Plugin Management) Endpoints ---
 
+
 @router.get("/plugins", response_model=list[PluginProfileResponse])
 def list_plugins(
     service: Annotated[GatewayService, Depends(get_service)],
@@ -166,7 +168,6 @@ def register_plugin(
 ) -> PluginProfileResponse:
     """Register a new plugin via Add Plugin Modal."""
     return service.register_plugin(req)
-
 
 
 @router.post("/plugins/install-zip", response_model=PluginProfileResponse, status_code=status.HTTP_201_CREATED)
@@ -206,6 +207,7 @@ async def verify_plugin(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=exc.message) from exc
     except Exception as exc:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
+
 
 @router.get("/plugins/{plugin_id}/schema", response_model=PluginSchemaResponse)
 def get_plugin_schema(
@@ -284,6 +286,7 @@ async def sync_plugin_catalog(
 
 
 # --- Knowledge & Rules Endpoints ---
+
 
 @router.get("/knowledge", response_model=list[KnowledgeChunkResponse])
 def list_knowledge(
@@ -377,6 +380,7 @@ def delete_rule(
 
 # --- Settings & Auto Mode Endpoints ---
 
+
 @router.get("/settings/auto-mode", response_model=AutoModeResponse)
 def get_auto_mode(
     service: Annotated[GatewayService, Depends(get_service)],
@@ -396,6 +400,7 @@ def set_auto_mode(
 
 
 # --- Audit Logs Endpoint ---
+
 
 @router.get("/logs", response_model=list[ExecutionResponse])
 def list_logs(

@@ -2,9 +2,11 @@
 
 import json
 from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine, select
+
 from core.database import PluginProfile, get_session
 from core.engine.plugin_linter import PluginLinter
 from core.main import app
@@ -72,6 +74,7 @@ async def test_plugin_linter_verify_nonexistent(db_session: Session):
 
 def test_plugin_linter_endpoint(db_session: Session):
     """Verify POST /api/plugins/{id}/verify REST API endpoint."""
+
     def override_get_session():
         yield db_session
 
@@ -89,4 +92,3 @@ def test_plugin_linter_endpoint(db_session: Session):
         assert data["checks"]["sync_knowledge"]["status"] == "PASSED"
     finally:
         app.dependency_overrides.clear()
-

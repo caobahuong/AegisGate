@@ -296,6 +296,7 @@ class GatewayService:
             logger.warning("Plugin '%s' reinit command note: %s", plugin_id, exc)
 
         return self._format_plugin_profile_response(p)
+
     async def delete_plugin(self, plugin_id: str, hard_delete: bool = False) -> dict[str, Any]:
         """Uninstall or disable a plugin, disconnect active subprocesses, and abort running tasks."""
         # Check if profile exists (raises PluginNotFoundError if not found)
@@ -540,7 +541,6 @@ class GatewayService:
                 "cline": {"mcpServers": servers},
             },
         )
-
 
     async def install_plugin_zip(self, file_content: bytes, filename: str | None = None) -> PluginProfileResponse:
         """Install, build, and certify an external plugin from an uploaded ZIP archive."""

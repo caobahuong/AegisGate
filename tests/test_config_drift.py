@@ -5,8 +5,9 @@ Adheres to python_clean_code.md:
 - 100% Type Hints
 """
 
-from pathlib import Path
 import re
+from pathlib import Path
+
 from core.config import Settings
 
 
@@ -51,4 +52,3 @@ def test_settings_drift_guard() -> None:
         f"The following Settings field(s) are missing from docs/configuration.md: {missing_in_docs}. "
         "Update docs/configuration.md to document all fields."
     )
-

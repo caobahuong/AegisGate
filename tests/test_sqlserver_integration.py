@@ -27,7 +27,9 @@ from core.exceptions import JsonRpcProtocolError
 from plugins.plugin_contract import AbortParams, DryRunParams, ExecuteParams, SyncKnowledgeParams
 
 SERVER = os.environ.get("AEGISGATE_TEST_MSSQL_SERVER")
-pytestmark = pytest.mark.skipif(not SERVER, reason="set AEGISGATE_TEST_MSSQL_SERVER to run SQL Server integration tests")
+pytestmark = pytest.mark.skipif(
+    not SERVER, reason="set AEGISGATE_TEST_MSSQL_SERVER to run SQL Server integration tests"
+)
 
 ENTRYPOINT = "python plugins/sqlserver_plugin/adapter.py --serve"
 
@@ -37,7 +39,9 @@ def _config(**extra: object) -> dict[str, object]:
         "server": SERVER,
         "port": os.environ.get("AEGISGATE_TEST_MSSQL_PORT", "1433"),
         "database": os.environ.get("AEGISGATE_TEST_MSSQL_DATABASE", "master"),
-        "auth_mode": "Windows Authentication" if os.environ.get("AEGISGATE_TEST_MSSQL_AUTH", "windows") == "windows" else "SQL Server Authentication",
+        "auth_mode": "Windows Authentication"
+        if os.environ.get("AEGISGATE_TEST_MSSQL_AUTH", "windows") == "windows"
+        else "SQL Server Authentication",
         "username": os.environ.get("AEGISGATE_TEST_MSSQL_USER", ""),
         "password": os.environ.get("AEGISGATE_TEST_MSSQL_PASSWORD", ""),
         "trust_server_certificate": os.environ.get("AEGISGATE_TEST_MSSQL_TRUST", "true"),
@@ -89,8 +93,12 @@ async def fixture_session(tmp_path: Path):
     with Session(engine) as s:
         s.add(
             PluginProfile(
-                id="itest_mssql", name="IT", driver="pyodbc/mssql", entrypoint=ENTRYPOINT,
-                config_json=json.dumps(_config()), status="active",
+                id="itest_mssql",
+                name="IT",
+                driver="pyodbc/mssql",
+                entrypoint=ENTRYPOINT,
+                config_json=json.dumps(_config()),
+                status="active",
             )
         )
         s.commit()
@@ -157,7 +165,9 @@ async def test_sync_knowledge_reads_catalog(client: PluginSubprocessClient) -> N
 
 async def test_abort_really_cancels_running_query(client: PluginSubprocessClient) -> None:
     running = asyncio.create_task(
-        client.execute(ExecuteParams(execution_id="it_abort", query="WAITFOR DELAY '00:00:30'", timeout_seconds=60, read_only=True))
+        client.execute(
+            ExecuteParams(execution_id="it_abort", query="WAITFOR DELAY '00:00:30'", timeout_seconds=60, read_only=True)
+        )
     )
     assert await _wait_until(lambda: _running_waitfors() == 1), "query never started on the server"
 
@@ -174,7 +184,9 @@ async def test_abort_really_cancels_running_query(client: PluginSubprocessClient
 async def test_server_side_timeout_is_enforced(client: PluginSubprocessClient) -> None:
     started = time.monotonic()
     with pytest.raises(JsonRpcProtocolError, match="timeout"):
-        await client.execute(ExecuteParams(execution_id="it_to", query="WAITFOR DELAY '00:00:30'", timeout_seconds=1, read_only=True))
+        await client.execute(
+            ExecuteParams(execution_id="it_to", query="WAITFOR DELAY '00:00:30'", timeout_seconds=1, read_only=True)
+        )
     assert time.monotonic() - started < 10
     assert await _wait_until(lambda: _running_waitfors() == 0)
 

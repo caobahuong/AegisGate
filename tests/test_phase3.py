@@ -4,8 +4,10 @@ Tests SqlServerAdapter direct methods and end-to-end Subprocess IPC communicatio
 """
 
 from pathlib import Path
+
 import pytest
 from sqlmodel import Session, SQLModel, create_engine
+
 from core.engine.plugin_client import PluginSubprocessClient
 from core.engine.plugin_registry import PluginRegistry
 from plugins.plugin_contract import (

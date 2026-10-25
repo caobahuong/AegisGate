@@ -8,6 +8,7 @@ Adheres strictly to python_clean_code.md:
 """
 
 import asyncio
+import contextlib
 import json
 import logging
 import os
@@ -146,7 +147,7 @@ class _PersistentWorker:
             return await (asyncio.wait_for(fut, timeout) if timeout else fut)
         except (BrokenPipeError, ConnectionResetError) as exc:
             raise PluginProcessError("Plugin worker pipe is closed") from exc
-        except asyncio.TimeoutError as exc:
+        except TimeoutError as exc:
             # The worker is deliberately NOT killed: a slow call must stay abortable.
             raise PluginProcessError(f"Plugin call '{method}' timed out after {timeout}s") from exc
         finally:
@@ -202,10 +203,8 @@ async def _get_worker(key: str, cmd: str, working_dir: str) -> _PersistentWorker
         if worker.loop is loop:
             await worker.close()
         elif worker.proc is not None and worker.proc.returncode is None:
-            try:
+            with contextlib.suppress(ProcessLookupError):
                 worker.proc.kill()
-            except ProcessLookupError:
-                pass
         worker = None
     if worker is None:
         worker = _PersistentWorker(cmd, working_dir)
@@ -300,7 +299,7 @@ class PluginSubprocessClient:
         timeout: float | None = None,
     ) -> Any:
         """Execute a single JSON-RPC roundtrip with the plugin process.
-        
+
         Guarantees process termination via try...finally to eliminate orphan processes.
         """
         if self.persistent:
@@ -340,9 +339,7 @@ class PluginSubprocessClient:
                 stdout_data, stderr_data = await proc.communicate()
                 if proc.returncode != 0 and not stdout_data:
                     err_msg = stderr_data.decode("utf-8", errors="replace").strip()
-                    raise PluginProcessError(
-                        f"Plugin exited with code {proc.returncode}: {err_msg}"
-                    )
+                    raise PluginProcessError(f"Plugin exited with code {proc.returncode}: {err_msg}")
                 return stdout_data.decode("utf-8", errors="replace").strip()
 
             if timeout:
@@ -378,7 +375,7 @@ class PluginSubprocessClient:
 
             return rpc_resp.result
 
-        except asyncio.TimeoutError as exc:
+        except TimeoutError as exc:
             raise PluginProcessError(f"Plugin execution timed out after {timeout}s") from exc
 
         finally:

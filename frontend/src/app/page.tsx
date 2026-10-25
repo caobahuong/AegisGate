@@ -156,7 +156,7 @@ export default function DashboardPage() {
         const list = await fetchExecutions();
         setExecutions(list);
         setSelectedExecution((current) =>
-          current ? list.find((e) => e.id === current.id) ?? current : list[0] ?? null
+          current ? (list.find((e) => e.id === current.id) ?? current) : (list[0] ?? null)
         );
       } catch (err) {
         console.error("Failed to refresh executions:", err);
@@ -196,10 +196,15 @@ export default function DashboardPage() {
               });
             } else if (rawData.event === "auto_mode_changed") {
               setAutoModeState(Boolean(rawData.data?.enabled));
-            } else if (typeof rawData.event === "string" && rawData.event.startsWith("execution_")) {
+            } else if (
+              typeof rawData.event === "string" &&
+              rawData.event.startsWith("execution_")
+            ) {
               void refreshExecutions();
             } else if (rawData.event === "plugin_installed") {
-              fetchPlugins().then(setPlugins).catch((err) => console.error("Failed to refresh plugins:", err));
+              fetchPlugins()
+                .then(setPlugins)
+                .catch((err) => console.error("Failed to refresh plugins:", err));
             }
           } catch (err) {
             console.error("SSE parse error:", err);
@@ -295,7 +300,6 @@ export default function DashboardPage() {
       alert(`Abort error: ${err instanceof Error ? err.message : "Unknown error"}`);
     }
   };
-
 
   const handleInstallZip = async (file: File) => {
     const installed = await installPluginZip(file);
@@ -462,12 +466,7 @@ export default function DashboardPage() {
             />
           )}
 
-          {activeTab === "logs" && (
-            <AuditLogs
-              executions={executions}
-              plugins={plugins}
-            />
-          )}
+          {activeTab === "logs" && <AuditLogs executions={executions} plugins={plugins} />}
         </main>
       </div>
 
@@ -482,10 +481,7 @@ export default function DashboardPage() {
       />
 
       {/* Interactive User Guide & Documentation Modal */}
-      <UserGuideModal
-        isOpen={showUserGuideModal}
-        onClose={() => setShowUserGuideModal(false)}
-      />
+      <UserGuideModal isOpen={showUserGuideModal} onClose={() => setShowUserGuideModal(false)} />
     </div>
   );
 }

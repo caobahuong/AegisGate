@@ -93,7 +93,9 @@ class TestCustomRuleSafety:
 
     def test_valid_custom_pattern_still_works(self) -> None:
         assert validate_rule_definition("CUSTOM", r"\bSALARY\b") is None
-        v = GovernanceEngine.inspect_query_and_plan("SELECT salary FROM T WHERE a=1", [_rule("CUSTOM", r"\bSALARY\b")], {})
+        v = GovernanceEngine.inspect_query_and_plan(
+            "SELECT salary FROM T WHERE a=1", [_rule("CUSTOM", r"\bSALARY\b")], {}
+        )
         assert v
 
     def test_rule_definition_validation(self) -> None:
@@ -122,7 +124,9 @@ class TestOutputMasker:
         assert out[0]["id"] == 1
 
     def test_remove_wins_over_redact_and_input_not_mutated(self) -> None:
-        out, _ = OutputMasker.apply(self.DATA, [_rule("REDACT_FIELD", "password"), _rule("REMOVE_FIELD", "password", "r2")])
+        out, _ = OutputMasker.apply(
+            self.DATA, [_rule("REDACT_FIELD", "password"), _rule("REMOVE_FIELD", "password", "r2")]
+        )
         assert "Password" not in out[0]
         assert self.DATA[0]["Password"] == "secret"
 
@@ -220,6 +224,7 @@ class TestStateMachineHardening:
         assert log.status == "COMPLETED"
         assert "secret" not in log.result_summary and "99" not in log.result_summary
         import json
+
         summary = json.loads(log.result_summary)
         assert summary["data"] == [{"Name": "A", "Password": None}]
         assert sorted(summary["masked_fields"]) == ["Password", "Salary"]

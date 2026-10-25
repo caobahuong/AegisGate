@@ -37,7 +37,7 @@ class RuleStore:
         exact_target: bool = False,
     ) -> list[Rule]:
         """List rules, optionally filtered by target and active status.
-        
+
         If target_id == 'global', matches rules where target_id is None.
         If exact_target is True, matches Rule.target_id == target_id strictly.
         Otherwise, target_id includes both target-specific and global rules.
@@ -78,4 +78,3 @@ class RuleStore:
         self.session.delete(rule)
         self.session.commit()
         return True
-

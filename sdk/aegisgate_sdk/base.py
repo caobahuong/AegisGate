@@ -12,7 +12,7 @@ from typing import Any
 
 class BasePlugin(ABC):
     """Abstract Base Class for all AegisGate database plugins.
-    
+
     External developers implement this class to build connectors for any database
     (PostgreSQL, Redis, ClickHouse, Snowflake, Oracle, Cassandra, etc.).
     """
@@ -74,4 +74,3 @@ class BasePlugin(ABC):
         to test actual socket connectivity.
         """
         return {"status": "pong", "protocol": "JSON-RPC 2.0", "sdk": "aegisgate-sdk/1.0"}
-

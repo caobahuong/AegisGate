@@ -81,4 +81,3 @@ class LogStore:
         statement = statement.limit(limit)
 
         return list(self.session.exec(statement).all())
-

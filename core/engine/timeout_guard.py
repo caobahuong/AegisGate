@@ -38,13 +38,13 @@ class TimeoutGuard:
         on_timeout_abort: Callable[[], Awaitable[Any]] | None = None,
     ) -> T:
         """Execute a coroutine within strict timeout.
-        
+
         If timeout is exceeded, invokes the on_timeout_abort hook to kill the session
         on the target system, then raises ExecutionTimeoutError.
         """
         try:
             return await asyncio.wait_for(coro, timeout=timeout_seconds)
-        except asyncio.TimeoutError as exc:
+        except TimeoutError as exc:
             abort_failure: str | None = None
             if on_timeout_abort:
                 try:
@@ -56,6 +56,7 @@ class TimeoutGuard:
                     abort_failure = str(abort_exc) or type(abort_exc).__name__
             message = f"Execution exceeded maximum allowed timeout of {timeout_seconds:.1f} seconds."
             if abort_failure:
-                message += f" WARNING: emergency abort FAILED ({abort_failure}); the query may still be running on the target."
+                message += (
+                    f" WARNING: emergency abort FAILED ({abort_failure}); the query may still be running on the target."
+                )
             raise ExecutionTimeoutError(message, details={"abort_failed": abort_failure is not None}) from exc
-

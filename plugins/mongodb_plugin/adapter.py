@@ -7,12 +7,12 @@ Adheres strictly to python_clean_code.md:
 - Custom exception handling
 """
 
-from datetime import datetime, timezone
 import json
-from pathlib import Path
 import sys
 import time
-from typing import Any, Optional
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
 
 # Ensure project root is in sys.path
 _root_dir = str(Path(__file__).resolve().parent.parent.parent)
@@ -27,8 +27,8 @@ from plugins.plugin_contract import (
     DryRunResult,
     ExecuteParams,
     ExecuteResult,
-    IPluginAdapter,
     IndexSchema,
+    IPluginAdapter,
     JsonRpcErrorPayload,
     JsonRpcRequest,
     JsonRpcResponse,
@@ -84,7 +84,7 @@ class MongoDbAdapter(IPluginAdapter):
         return SyncKnowledgeResult(
             partitions=[analytics_partition],
             target_id="mongodb_prod",
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
         )
 
     def dry_run(self, params: DryRunParams) -> DryRunResult:
@@ -95,12 +95,13 @@ class MongoDbAdapter(IPluginAdapter):
 
         # Check for COLLSCAN (unindexed scan)
         for rule in params.rules:
-            if rule.get("rule_type") == "FORBID_TABLE_SCAN":
-                if "{}" in query or "find()" in query.lower() or "$where" in query:
-                    violations.append(
-                        "Plugin Rule Violation: MongoDB query contains empty filter or $where clause causing COLLSCAN."
-                    )
-                    is_safe = False
+            if rule.get("rule_type") == "FORBID_TABLE_SCAN" and (
+                "{}" in query or "find()" in query.lower() or "$where" in query
+            ):
+                violations.append(
+                    "Plugin Rule Violation: MongoDB query contains empty filter or $where clause causing COLLSCAN."
+                )
+                is_safe = False
 
         explain_plan = {
             "queryPlanner": {
@@ -130,7 +131,7 @@ class MongoDbAdapter(IPluginAdapter):
     def execute(self, params: ExecuteParams) -> ExecuteResult:
         """Port 3: Execute query under strict timeout guard."""
         start_time = time.perf_counter()
-        opid = self._allocate_opid(params.execution_id)
+        self._allocate_opid(params.execution_id)
 
         time.sleep(0.04)
         duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
@@ -173,7 +174,7 @@ def handle_stdio_jsonrpc() -> None:
     if not raw_input:
         return
 
-    req_id: Optional[Any] = None
+    req_id: Any | None = None
     try:
         data = json.loads(raw_input)
         req = JsonRpcRequest.model_validate(data)
@@ -219,4 +220,3 @@ def handle_stdio_jsonrpc() -> None:
 
 if __name__ == "__main__":
     handle_stdio_jsonrpc()
-

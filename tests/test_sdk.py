@@ -2,7 +2,9 @@
 
 import io
 import json
+
 import pytest
+
 from sdk.aegisgate_sdk.base import BasePlugin
 from sdk.aegisgate_sdk.models import PluginExecutionError
 from sdk.aegisgate_sdk.server import PluginServer
@@ -30,6 +32,7 @@ class DummyValidPlugin(BasePlugin):
 
 def test_base_plugin_abstract_enforcement():
     """Verify that BasePlugin cannot be instantiated without implementing all methods."""
+
     class IncompletePlugin(BasePlugin):
         def sync_knowledge(self, config):
             return {}
@@ -72,12 +75,9 @@ def test_plugin_server_dry_run():
     plugin = DummyValidPlugin()
     server = PluginServer(plugin)
 
-    req = json.dumps({
-        "jsonrpc": "2.0",
-        "id": 3,
-        "method": "dry_run",
-        "params": {"query": "SELECT * FROM mock_table;", "config": {}}
-    })
+    req = json.dumps(
+        {"jsonrpc": "2.0", "id": 3, "method": "dry_run", "params": {"query": "SELECT * FROM mock_table;", "config": {}}}
+    )
     res = json.loads(server.handle_request(req))
 
     assert res["id"] == 3
@@ -90,12 +90,9 @@ def test_plugin_server_execute():
     plugin = DummyValidPlugin()
     server = PluginServer(plugin)
 
-    req = json.dumps({
-        "jsonrpc": "2.0",
-        "id": 4,
-        "method": "execute",
-        "params": {"query": "SELECT * FROM mock_table;", "config": {}}
-    })
+    req = json.dumps(
+        {"jsonrpc": "2.0", "id": 4, "method": "execute", "params": {"query": "SELECT * FROM mock_table;", "config": {}}}
+    )
     res = json.loads(server.handle_request(req))
 
     assert res["id"] == 4
@@ -108,21 +105,11 @@ def test_plugin_server_abort():
     plugin = DummyValidPlugin()
     server = PluginServer(plugin)
 
-    req_kill_ok = json.dumps({
-        "jsonrpc": "2.0",
-        "id": 5,
-        "method": "abort",
-        "params": {"spid": 88, "config": {}}
-    })
+    req_kill_ok = json.dumps({"jsonrpc": "2.0", "id": 5, "method": "abort", "params": {"spid": 88, "config": {}}})
     res_ok = json.loads(server.handle_request(req_kill_ok))
     assert res_ok["result"] is True
 
-    req_kill_fail = json.dumps({
-        "jsonrpc": "2.0",
-        "id": 6,
-        "method": "abort",
-        "params": {"spid": 999, "config": {}}
-    })
+    req_kill_fail = json.dumps({"jsonrpc": "2.0", "id": 6, "method": "abort", "params": {"spid": 999, "config": {}}})
     res_fail = json.loads(server.handle_request(req_kill_fail))
     assert res_fail["result"] is False
 
@@ -168,12 +155,9 @@ def test_plugin_server_custom_plugin_exception():
     plugin = DummyValidPlugin()
     server = PluginServer(plugin)
 
-    req = json.dumps({
-        "jsonrpc": "2.0",
-        "id": 12,
-        "method": "dry_run",
-        "params": {"query": "FAIL_DRY_RUN", "config": {}}
-    })
+    req = json.dumps(
+        {"jsonrpc": "2.0", "id": 12, "method": "dry_run", "params": {"query": "FAIL_DRY_RUN", "config": {}}}
+    )
     res = json.loads(server.handle_request(req))
 
     assert "error" in res
@@ -187,12 +171,7 @@ def test_plugin_server_unhandled_exception():
     plugin = DummyValidPlugin()
     server = PluginServer(plugin)
 
-    req = json.dumps({
-        "jsonrpc": "2.0",
-        "id": 13,
-        "method": "execute",
-        "params": {"query": "CRASH", "config": {}}
-    })
+    req = json.dumps({"jsonrpc": "2.0", "id": 13, "method": "execute", "params": {"query": "CRASH", "config": {}}})
     res = json.loads(server.handle_request(req))
 
     assert "error" in res
@@ -204,8 +183,10 @@ def test_plugin_server_stream_run():
     """Verify PluginServer.run loops through stdin lines and produces stdout lines."""
     plugin = DummyValidPlugin()
     input_stream = io.StringIO(
-        json.dumps({"jsonrpc": "2.0", "id": 100, "method": "ping"}) + "\n" +
-        json.dumps({"jsonrpc": "2.0", "id": 101, "method": "abort", "params": {"spid": 88}}) + "\n"
+        json.dumps({"jsonrpc": "2.0", "id": 100, "method": "ping"})
+        + "\n"
+        + json.dumps({"jsonrpc": "2.0", "id": 101, "method": "abort", "params": {"spid": 88}})
+        + "\n"
     )
     output_stream = io.StringIO()
 
@@ -222,4 +203,3 @@ def test_plugin_server_stream_run():
     assert res1["result"]["status"] == "pong"
     assert res2["id"] == 101
     assert res2["result"] is True
-

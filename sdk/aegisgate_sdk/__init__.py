@@ -22,4 +22,3 @@ __all__ = [
     "PluginServer",
 ]
 __version__ = "1.0.0"
-

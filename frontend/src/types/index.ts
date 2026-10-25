@@ -1,18 +1,12 @@
 /**
  * AegisGate Shared Contract Types
- * 
+ *
  * Synchronized with Core Python Pydantic Models.
  * Strict Zero `any` Policy enforced per typescript_clean_code.md.
  */
 
 export type ExecutionStatus =
-  | "DRY_RUN"
-  | "PAUSED_FOR_REVIEW"
-  | "EXECUTING"
-  | "COMPLETED"
-  | "REJECTED"
-  | "TIMEOUT"
-  | "ABORTED";
+  "DRY_RUN" | "PAUSED_FOR_REVIEW" | "EXECUTING" | "COMPLETED" | "REJECTED" | "TIMEOUT" | "ABORTED";
 
 export type QueryType = "READ" | "WRITE";
 
@@ -171,7 +165,6 @@ export interface UpdateRuleRequest {
   severity?: RuleSeverity;
   is_active?: boolean;
 }
-
 
 export interface SanityCheckItem {
   status: "PASSED" | "FAILED";

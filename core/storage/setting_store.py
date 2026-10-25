@@ -4,7 +4,6 @@ Adheres strictly to python_clean_code.md:
 - Full type hinting
 """
 
-
 from sqlmodel import Session, select
 
 from core.database import SystemSetting, utc_now
@@ -54,4 +53,3 @@ class SettingStore:
         """Update Auto Approval Mode status."""
         self.set_setting("auto_approval_mode", "true" if enabled else "false")
         return enabled
-

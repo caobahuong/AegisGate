@@ -7,49 +7,56 @@ Adheres strictly to python_clean_code.md:
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Literal, Optional, Union
-from pydantic import BaseModel, Field
+from typing import Any, Literal
 
+from pydantic import BaseModel, Field
 
 # --- JSON-RPC 2.0 Primitive Specifications ---
 
+
 class JsonRpcRequest(BaseModel):
     """JSON-RPC 2.0 Request envelope."""
+
     jsonrpc: Literal["2.0"] = "2.0"
     method: str
     params: dict[str, Any] = Field(default_factory=dict)
-    id: Union[int, str]
+    id: int | str
 
 
 class JsonRpcErrorPayload(BaseModel):
     """JSON-RPC 2.0 Error descriptor."""
+
     code: int
     message: str
-    data: Optional[Any] = None
+    data: Any | None = None
 
 
 class JsonRpcResponse(BaseModel):
     """JSON-RPC 2.0 Response envelope."""
+
     jsonrpc: Literal["2.0"] = "2.0"
-    result: Optional[Any] = None
-    error: Optional[JsonRpcErrorPayload] = None
-    id: Optional[Union[int, str]] = None
+    result: Any | None = None
+    error: JsonRpcErrorPayload | None = None
+    id: int | str | None = None
 
 
 # --- Standard Domain Payloads for the Contract Ports ---
 
+
 # 1. Sync Knowledge Port
 class ColumnSchema(BaseModel):
     """Column metadata representation."""
+
     name: str
     data_type: str
     is_nullable: bool = True
     is_primary_key: bool = False
-    description: Optional[str] = None
+    description: str | None = None
 
 
 class IndexSchema(BaseModel):
     """Index metadata representation."""
+
     name: str
     columns: list[str]
     is_unique: bool = False
@@ -57,16 +64,18 @@ class IndexSchema(BaseModel):
 
 class TableSchema(BaseModel):
     """Table structure representation."""
+
     name: str
     schema_name: str = "dbo"
     columns: list[ColumnSchema] = Field(default_factory=list)
     indexes: list[IndexSchema] = Field(default_factory=list)
-    row_count_estimate: Optional[int] = None
-    description: Optional[str] = None
+    row_count_estimate: int | None = None
+    description: str | None = None
 
 
 class PartitionSchema(BaseModel):
     """Chunked partition of database tables."""
+
     partition_key: str
     title: str
     tables: list[TableSchema] = Field(default_factory=list)
@@ -74,11 +83,13 @@ class PartitionSchema(BaseModel):
 
 class SyncKnowledgeParams(BaseModel):
     """Parameters passed to sync_knowledge."""
+
     config: dict[str, Any] = Field(default_factory=dict)
 
 
 class SyncKnowledgeResult(BaseModel):
     """Payload returned by sync_knowledge."""
+
     partitions: list[PartitionSchema] = Field(default_factory=list)
     target_id: str
     timestamp: str
@@ -87,15 +98,17 @@ class SyncKnowledgeResult(BaseModel):
 # 2. Dry-Run Port
 class DryRunParams(BaseModel):
     """Parameters passed to dry_run."""
+
     query: str
     rules: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class DryRunResult(BaseModel):
     """Payload returned by dry_run."""
+
     is_valid: bool
     violations: list[str] = Field(default_factory=list)
-    explain_plan: Union[dict[str, Any], str] = Field(default_factory=dict)
+    explain_plan: dict[str, Any] | str = Field(default_factory=dict)
     estimated_time_ms: float = 0.0
     query_type: Literal["READ", "WRITE"] = "READ"
 
@@ -103,6 +116,7 @@ class DryRunResult(BaseModel):
 # 3. Execute Port
 class ExecuteParams(BaseModel):
     """Parameters passed to execute."""
+
     execution_id: str
     query: str
     timeout_seconds: float = 15.0
@@ -113,10 +127,11 @@ class ExecuteParams(BaseModel):
 
 class ExecuteResult(BaseModel):
     """Payload returned by execute."""
-    data: Optional[Any] = None
+
+    data: Any | None = None
     rows_affected: int = 0
     execution_time_ms: float = 0.0
-    spid: Optional[int] = None
+    spid: int | None = None
     # True when the plugin stopped reading rows at its configured row cap
     truncated: bool = False
 
@@ -124,11 +139,13 @@ class ExecuteResult(BaseModel):
 # 4. Abort Port
 class AbortParams(BaseModel):
     """Parameters passed to abort."""
+
     execution_id: str
 
 
 class AbortResult(BaseModel):
     """Payload returned by abort."""
+
     success: bool
     message: str
 
@@ -136,17 +153,20 @@ class AbortResult(BaseModel):
 # 5. Lifecycle Re-Init Port
 class ReinitParams(BaseModel):
     """Parameters passed to reinitialize plugin connection with updated configuration."""
+
     config: dict[str, Any] = Field(default_factory=dict)
 
 
 class ReinitResult(BaseModel):
     """Payload returned by reinit."""
+
     success: bool = True
     message: str = "Connection reinitialized successfully."
     status: str = "active"
 
 
 # --- Abstract Base Interface for Plugin Adapters ---
+
 
 class IPluginAdapter(ABC):
     """Abstract interface defining standard ports every plugin implements."""

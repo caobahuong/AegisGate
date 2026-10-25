@@ -53,6 +53,7 @@ class ExecutionStateMachine:
         """Step 1 & 2: Ingest query, perform Dry-Run, evaluate Rules, transition to Pause or Execute."""
         if not execution_id:
             import uuid
+
             execution_id = f"exec_{uuid.uuid4().hex[:8]}"
 
         query_type = GovernanceEngine.determine_query_type(query)
@@ -90,9 +91,7 @@ class ExecutionStateMachine:
         explain_plan_dict: Any = {}
         dry_run_failed = False
         try:
-            dry_run_res = await client.dry_run(
-                DryRunParams(query=query, rules=rules_payload)
-            )
+            dry_run_res = await client.dry_run(DryRunParams(query=query, rules=rules_payload))
             explain_plan_dict = dry_run_res.explain_plan
             violations.extend(dry_run_res.violations)
             # A plugin may only make the classification stricter, never downgrade a WRITE.
@@ -188,9 +187,7 @@ class ExecutionStateMachine:
             )
             return log
 
-    async def approve_and_resume(
-        self, execution_id: str, approved_by: str = "Admin"
-    ) -> ExecutionLog:
+    async def approve_and_resume(self, execution_id: str, approved_by: str = "Admin") -> ExecutionLog:
         """User approves a PAUSED execution from Dashboard, resuming execution."""
         log = self.log_store.get_log(execution_id)
         if not log:
@@ -267,7 +264,9 @@ class ExecutionStateMachine:
         )
         self.session.refresh(log)
         if not won:
-            raise ExecutionStateError(f"Execution '{execution_id}' finished before it could be aborted (status '{log.status}').")
+            raise ExecutionStateError(
+                f"Execution '{execution_id}' finished before it could be aborted (status '{log.status}')."
+            )
 
         # 2) Then really stop the query on the target (persistent worker: SQLCancel + KILL <spid>).
         if was_executing:

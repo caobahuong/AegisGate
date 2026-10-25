@@ -134,7 +134,9 @@ const DynamicFormField: React.FC<DynamicFormFieldProps> = ({ field, value, onCha
       )}
 
       {field.description && (
-        <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">{field.description}</p>
+        <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
+          {field.description}
+        </p>
       )}
     </div>
   );
@@ -160,7 +162,9 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
   const [addId, setAddId] = useState<string>("");
   const [addName, setAddName] = useState<string>("");
   const [addDriver, setAddDriver] = useState<string>("pyodbc/mssql");
-  const [addEntrypoint, setAddEntrypoint] = useState<string>("python plugins/sqlserver_plugin/adapter.py");
+  const [addEntrypoint, setAddEntrypoint] = useState<string>(
+    "python plugins/sqlserver_plugin/adapter.py"
+  );
   const [addDryRunCmd, setAddDryRunCmd] = useState<string>("SET SHOWPLAN_XML ON");
   const [addAbortCmd, setAddAbortCmd] = useState<string>("KILL {spid}");
 
@@ -445,7 +449,9 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
                   Active Connection Parameters
                 </span>
                 {Object.keys(plugin.config || {}).length === 0 ? (
-                  <span className="text-slate-500 italic block py-0.5">No parameters configured.</span>
+                  <span className="text-slate-500 italic block py-0.5">
+                    No parameters configured.
+                  </span>
                 ) : (
                   Object.entries(plugin.config).map(([k, v]) => (
                     <div key={k} className="flex justify-between items-center text-[11px]">
@@ -493,13 +499,14 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
                       <table className="w-full text-left text-[10px] border-collapse">
                         <thead>
                           <tr className="border-b border-slate-800 text-slate-400">
-                            {(plugin.custom_card.columns || Object.keys(plugin.custom_card.sample_data[0] || {})).map(
-                              (col) => (
-                                <th key={col} className="py-1 px-1.5 font-semibold">
-                                  {col}
-                                </th>
-                              )
-                            )}
+                            {(
+                              plugin.custom_card.columns ||
+                              Object.keys(plugin.custom_card.sample_data[0] || {})
+                            ).map((col) => (
+                              <th key={col} className="py-1 px-1.5 font-semibold">
+                                {col}
+                              </th>
+                            ))}
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-800/60">
@@ -536,7 +543,9 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
                 </div>
                 <div className="flex justify-between text-[11px]">
                   <span className="text-slate-400">Roundtrip Latency:</span>
-                  <span className="font-mono text-emerald-400 font-semibold">{plugin.latency_ms} ms</span>
+                  <span className="font-mono text-emerald-400 font-semibold">
+                    {plugin.latency_ms} ms
+                  </span>
                 </div>
               </div>
             </div>
@@ -671,7 +680,9 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
               </div>
               <span className="font-mono text-[10px] text-slate-400">
                 {inspectCertPlugin.certification_report?.verified_at
-                  ? new Date(inspectCertPlugin.certification_report.verified_at).toLocaleTimeString()
+                  ? new Date(
+                      inspectCertPlugin.certification_report.verified_at
+                    ).toLocaleTimeString()
                   : "Latest"}
               </span>
             </div>

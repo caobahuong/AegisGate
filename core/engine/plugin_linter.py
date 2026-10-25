@@ -13,7 +13,6 @@ Strictly follows python_clean_code.md:
 - Clean async/await
 """
 
-import asyncio
 import json
 import logging
 import time
@@ -75,7 +74,7 @@ class PluginLinter:
                 "latency_ms": latency_ms,
                 "details": f"Handshake successful ({status_info})",
             }
-        except asyncio.TimeoutError:
+        except TimeoutError:
             all_passed = False
             latency_ms = round((time.perf_counter() - t0) * 1000, 2)
             checks["handshake"] = {
@@ -105,10 +104,13 @@ class PluginLinter:
                 timeout=TIMEOUT_PER_STAGE_SECONDS,
             )
             latency_ms = round((time.perf_counter() - t0) * 1000, 2)
-            
-            catalog_valid = (
-                isinstance(sync_res, dict) and
-                ("schemas" in sync_res or "tables" in sync_res or "collections" in sync_res or "views" in sync_res or "partitions" in sync_res)
+
+            catalog_valid = isinstance(sync_res, dict) and (
+                "schemas" in sync_res
+                or "tables" in sync_res
+                or "collections" in sync_res
+                or "views" in sync_res
+                or "partitions" in sync_res
             )
             if catalog_valid:
                 count_items = len(sync_res.get("tables", sync_res.get("collections", sync_res.get("partitions", []))))
@@ -126,7 +128,7 @@ class PluginLinter:
                 }
                 if not overall_error:
                     overall_error = "Stage 2 Schema missing required keys."
-        except asyncio.TimeoutError:
+        except TimeoutError:
             all_passed = False
             checks["sync_knowledge"] = {
                 "status": "FAILED",
@@ -156,8 +158,10 @@ class PluginLinter:
                 timeout=TIMEOUT_PER_STAGE_SECONDS,
             )
             latency_ms = round((time.perf_counter() - t0) * 1000, 2)
-            
-            if isinstance(dry_res, dict) and ("explain_plan" in dry_res or "risk_score" in dry_res or "estimated_cost" in dry_res):
+
+            if isinstance(dry_res, dict) and (
+                "explain_plan" in dry_res or "risk_score" in dry_res or "estimated_cost" in dry_res
+            ):
                 checks["dry_run"] = {
                     "status": "PASSED",
                     "latency_ms": latency_ms,
@@ -172,7 +176,7 @@ class PluginLinter:
                 }
                 if not overall_error:
                     overall_error = "Stage 3 dry_run missing explain_plan."
-        except asyncio.TimeoutError:
+        except TimeoutError:
             all_passed = False
             checks["dry_run"] = {
                 "status": "FAILED",
@@ -207,7 +211,7 @@ class PluginLinter:
                 "latency_ms": latency_ms,
                 "details": f"Abort protocol verified (returned: {abort_res})",
             }
-        except asyncio.TimeoutError:
+        except TimeoutError:
             all_passed = False
             checks["abort"] = {
                 "status": "FAILED",

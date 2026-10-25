@@ -29,9 +29,7 @@ class PluginRegistry:
 
     def register_profile(self, profile: PluginProfile) -> PluginProfile:
         """Register or update a plugin profile."""
-        existing = self.session.exec(
-            select(PluginProfile).where(PluginProfile.id == profile.id)
-        ).first()
+        existing = self.session.exec(select(PluginProfile).where(PluginProfile.id == profile.id)).first()
 
         if existing:
             existing.name = profile.name
@@ -61,9 +59,7 @@ class PluginRegistry:
 
     def get_profile(self, plugin_id: str) -> PluginProfile:
         """Fetch plugin profile or raise PluginNotFoundError."""
-        profile = self.session.exec(
-            select(PluginProfile).where(PluginProfile.id == plugin_id)
-        ).first()
+        profile = self.session.exec(select(PluginProfile).where(PluginProfile.id == plugin_id)).first()
         if not profile:
             raise PluginNotFoundError(f"Plugin with ID '{plugin_id}' not found in registry.")
         return profile
@@ -72,15 +68,11 @@ class PluginRegistry:
         """List registered plugin profiles."""
         if include_disabled:
             return list(self.session.exec(select(PluginProfile)).all())
-        return list(
-            self.session.exec(
-                select(PluginProfile).where(PluginProfile.status != "disabled")
-            ).all()
-        )
+        return list(self.session.exec(select(PluginProfile).where(PluginProfile.status != "disabled")).all())
 
     def unregister_profile(self, plugin_id: str, hard_delete: bool = False) -> PluginProfile:
         """Unregister or deactivate a plugin profile.
-        
+
         If hard_delete is True, permanently deletes the record from DB.
         If False, sets status="disabled" to preserve history and prevent auto-discovery reactivation.
         """
@@ -150,9 +142,7 @@ class PluginRegistry:
                 default_config = manifest_data.get("default_config", {})
 
                 # Check if already in db to preserve user configuration and disabled status
-                existing = self.session.exec(
-                    select(PluginProfile).where(PluginProfile.id == plugin_id)
-                ).first()
+                existing = self.session.exec(select(PluginProfile).where(PluginProfile.id == plugin_id)).first()
 
                 if existing and existing.status == "disabled":
                     logger.info("Plugin '%s' is marked as disabled in DB; skipping auto-activation.", plugin_id)

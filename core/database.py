@@ -6,21 +6,21 @@ Strictly adheres to python_clean_code.md:
 - Database session dependency injection
 """
 
-from collections.abc import Generator
-from datetime import datetime, timezone
 import logging
-
-logger = logging.getLogger("AegisGate.Database")
+from collections.abc import Generator
+from datetime import UTC, datetime
 
 from sqlalchemy import text
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 
 from core.config import settings
 
+logger = logging.getLogger("AegisGate.Database")
+
 
 def utc_now() -> datetime:
     """Return current UTC datetime."""
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class PluginProfile(SQLModel, table=True):
@@ -41,7 +41,9 @@ class PluginProfile(SQLModel, table=True):
     latency_ms: float = Field(default=0.0, description="Average response latency in ms")
     active_sessions_count: int = Field(default=0, description="Current number of active sessions/SPIDs")
     is_certified: bool = Field(default=False, description="Whether plugin passed 4-stage sanity linter")
-    certification_report_json: str | None = Field(default=None, description="Detailed 4-stage sanity check report in JSON")
+    certification_report_json: str | None = Field(
+        default=None, description="Detailed 4-stage sanity check report in JSON"
+    )
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
 
@@ -138,7 +140,9 @@ def init_db() -> None:
             ("certification_report_json", "TEXT", "NULL"),
         ]:
             try:
-                conn.execute(text(f"ALTER TABLE plugin_profiles ADD COLUMN {col_name} {col_type} DEFAULT {col_default}"))
+                conn.execute(
+                    text(f"ALTER TABLE plugin_profiles ADD COLUMN {col_name} {col_type} DEFAULT {col_default}")
+                )
                 conn.commit()
             except Exception as mig_err:
                 # Column already exists in SQLite schema
@@ -200,6 +204,7 @@ def init_db() -> None:
 
         # 3. Automatically register plugin manifests
         from core.engine.plugin_registry import PluginRegistry
+
         registry = PluginRegistry(session)
         registry.scan_and_load_manifests()
 

@@ -5,23 +5,25 @@ Tests SQLite models, KnowledgeStore, RuleStore, LogStore, Plugin Contract, and R
 
 import json
 from pathlib import Path
+
 import pytest
 from sqlmodel import Session, SQLModel, create_engine
-from core.database import KnowledgeChunk, PluginProfile, Rule, ExecutionLog
-from core.storage.knowledge_store import KnowledgeStore
-from core.storage.rule_store import RuleStore
-from core.storage.log_store import LogStore
-from core.storage.setting_store import SettingStore
+
+from core.database import ExecutionLog, KnowledgeChunk, PluginProfile, Rule
 from core.engine.plugin_registry import PluginRegistry
 from core.exceptions import PluginNotFoundError
+from core.storage.knowledge_store import KnowledgeStore
+from core.storage.log_store import LogStore
+from core.storage.rule_store import RuleStore
+from core.storage.setting_store import SettingStore
 from plugins.plugin_contract import (
+    ColumnSchema,
+    DryRunResult,
     JsonRpcRequest,
     JsonRpcResponse,
-    SyncKnowledgeResult,
-    DryRunResult,
     PartitionSchema,
+    SyncKnowledgeResult,
     TableSchema,
-    ColumnSchema,
 )
 
 
@@ -93,16 +95,12 @@ class TestPhase1Foundation:
             {
                 "partition_key": "Finance",
                 "title": "Finance & Invoicing",
-                "tables": [
-                    {"name": "Invoices", "columns": [{"name": "Id", "data_type": "INT"}]}
-                ],
+                "tables": [{"name": "Invoices", "columns": [{"name": "Id", "data_type": "INT"}]}],
             },
             {
                 "partition_key": "Inventory",
                 "title": "Warehouse & Stock",
-                "tables": [
-                    {"name": "StockItems", "columns": [{"name": "Sku", "data_type": "VARCHAR"}]}
-                ],
+                "tables": [{"name": "StockItems", "columns": [{"name": "Sku", "data_type": "VARCHAR"}]}],
             },
         ]
 
@@ -258,4 +256,3 @@ class TestPhase1Foundation:
 
         with pytest.raises(PluginNotFoundError):
             registry.get_profile("non_existent_plugin")
-

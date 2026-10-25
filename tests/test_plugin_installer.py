@@ -4,9 +4,11 @@ import io
 import json
 import zipfile
 from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine, select
+
 from core.database import PluginProfile, get_session
 from core.engine.plugin_installer import PluginInstaller, PluginInstallerError
 from core.main import app
@@ -117,6 +119,7 @@ async def test_installer_corrupt_zip_error(installer_db_session: Session):
 
 def test_api_install_plugin_zip_endpoint(installer_db_session: Session):
     """Verify POST /api/plugins/install-zip endpoint with multipart file upload."""
+
     def override_get_session():
         yield installer_db_session
 
@@ -124,9 +127,7 @@ def test_api_install_plugin_zip_endpoint(installer_db_session: Session):
     client = TestClient(app)
     try:
         zip_bytes = _create_mock_plugin_zip("api_zip_target")
-        files = {
-            "file": ("api_zip_target.zip", zip_bytes, "application/zip")
-        }
+        files = {"file": ("api_zip_target.zip", zip_bytes, "application/zip")}
         resp = client.post("/api/plugins/install-zip", files=files)
         assert resp.status_code == 201
         data = resp.json()
@@ -137,4 +138,3 @@ def test_api_install_plugin_zip_endpoint(installer_db_session: Session):
         assert data["status"] == "active"
     finally:
         app.dependency_overrides.clear()
-

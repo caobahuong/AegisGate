@@ -16,9 +16,16 @@ def _resp(status: int, body: dict) -> httpx.Response:
 
 async def test_submit_delegates_to_rest_and_maps_response() -> None:
     body = {
-        "id": "exec_1", "target_id": "t1", "query": "SELECT 1", "query_type": "READ",
-        "status": "COMPLETED", "auto_approved": True, "violations": [], "explain_plan": {"a": 1},
-        "result_summary": {"data": [{"x": 1}], "rows_affected": 1}, "execution_time_ms": 2.5,
+        "id": "exec_1",
+        "target_id": "t1",
+        "query": "SELECT 1",
+        "query_type": "READ",
+        "status": "COMPLETED",
+        "auto_approved": True,
+        "violations": [],
+        "explain_plan": {"a": 1},
+        "result_summary": {"data": [{"x": 1}], "rows_affected": 1},
+        "execution_time_ms": 2.5,
     }
     with patch.object(httpx.AsyncClient, "post", AsyncMock(return_value=_resp(201, body))) as post:
         out = json.loads(await mcp_server.submit_execution("SELECT 1", target_id="t1", reasoning="r"))
@@ -30,8 +37,13 @@ async def test_submit_delegates_to_rest_and_maps_response() -> None:
 
 async def test_rejected_includes_violations_and_message() -> None:
     body = {
-        "id": "e2", "target_id": "t1", "query": "q", "query_type": "READ", "status": "REJECTED",
-        "violations": ["Rule Violation [r]: x"], "error_message": "Rule Violation [r]: x",
+        "id": "e2",
+        "target_id": "t1",
+        "query": "q",
+        "query_type": "READ",
+        "status": "REJECTED",
+        "violations": ["Rule Violation [r]: x"],
+        "error_message": "Rule Violation [r]: x",
     }
     with patch.object(httpx.AsyncClient, "post", AsyncMock(return_value=_resp(201, body))):
         out = json.loads(await mcp_server.submit_execution("q", target_id="t1"))
@@ -45,7 +57,9 @@ async def test_api_down_gives_actionable_error() -> None:
 
 
 async def test_http_error_detail_is_surfaced() -> None:
-    with patch.object(httpx.AsyncClient, "post", AsyncMock(return_value=_resp(404, {"detail": "Plugin 'zz' not found"}))):
+    with patch.object(
+        httpx.AsyncClient, "post", AsyncMock(return_value=_resp(404, {"detail": "Plugin 'zz' not found"}))
+    ):
         out = json.loads(await mcp_server.submit_execution("q", target_id="zz"))
     assert "404" in out["error"] and "zz" in out["error"]
 

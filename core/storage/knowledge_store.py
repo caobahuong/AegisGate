@@ -174,9 +174,7 @@ class KnowledgeStore:
         self.session.commit()
         return True
 
-    def ingest_plugin_catalog(
-        self, target_id: str, catalog_partitions: list[dict[str, Any]]
-    ) -> list[KnowledgeChunk]:
+    def ingest_plugin_catalog(self, target_id: str, catalog_partitions: list[dict[str, Any]]) -> list[KnowledgeChunk]:
         """Standard Ingest Sink for chunked structural catalog pushed from plugins."""
         saved_chunks: list[KnowledgeChunk] = []
         for part in catalog_partitions:
@@ -222,4 +220,3 @@ class KnowledgeStore:
         for chunk in saved_chunks:
             self.session.refresh(chunk)
         return saved_chunks
-

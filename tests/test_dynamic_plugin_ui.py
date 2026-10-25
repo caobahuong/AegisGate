@@ -1,10 +1,12 @@
 """Unit tests for Dynamic Plugin UI, Manifest Schemas, and Plugin Edit Endpoints."""
 
-from pathlib import Path
 import json
+from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
+
 from core.database import PluginProfile, get_session
 from core.engine.plugin_registry import PluginRegistry
 from core.main import app
@@ -188,6 +190,7 @@ def test_plugin_uninstall_soft_disable_and_hard_delete(db_session: Session):
 
     # Verify profile completely removed from DB
     from sqlmodel import select
+
     check = db_session.exec(select(PluginProfile).where(PluginProfile.id == "uninstall_target_test")).first()
     assert check is None
 
@@ -315,4 +318,3 @@ def test_rules_and_skills_target_scoping(db_session: Session):
     assert update_to_global_res.json()["target_id"] is None
 
     app.dependency_overrides.clear()
-

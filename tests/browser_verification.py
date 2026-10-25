@@ -11,8 +11,9 @@ Verifies:
 - Screenshots saved for execution report
 """
 
-from pathlib import Path
 import time
+from pathlib import Path
+
 from playwright.sync_api import sync_playwright
 
 SCREENSHOTS_DIR = Path("./report/screenshots")
@@ -23,11 +24,9 @@ def run_browser_verification():
     console_errors = []
 
     def on_console(msg):
-        if msg.type in ("error", "warning"):
-            # Filter out expected browser noise like favicon
-            if "favicon" not in msg.text.lower():
-                console_errors.append(f"[{msg.type}] {msg.text}")
-                print(f"Browser Console {msg.type}: {msg.text}")
+        if msg.type in ("error", "warning") and "favicon" not in msg.text.lower():
+            console_errors.append(f"[{msg.type}] {msg.text}")
+            print(f"Browser Console {msg.type}: {msg.text}")
 
     print("Launching browser automation session...")
     with sync_playwright() as p:

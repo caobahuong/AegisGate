@@ -1,6 +1,6 @@
 /**
  * Typed API Client for AegisGate Core Gateway.
- * 
+ *
  * Strict Zero `any` Policy.
  */
 
@@ -47,7 +47,10 @@ export async function submitExecution(payload: {
   return res.json();
 }
 
-export async function approveExecution(executionId: string, approvedBy = "Admin"): Promise<ExecutionResponse> {
+export async function approveExecution(
+  executionId: string,
+  approvedBy = "Admin"
+): Promise<ExecutionResponse> {
   const res = await fetch(`${API_BASE}/monitor/executions/${executionId}/approve`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -57,7 +60,10 @@ export async function approveExecution(executionId: string, approvedBy = "Admin"
   return res.json();
 }
 
-export async function rejectExecution(executionId: string, reason = "Admin Rejected"): Promise<ExecutionResponse> {
+export async function rejectExecution(
+  executionId: string,
+  reason = "Admin Rejected"
+): Promise<ExecutionResponse> {
   const res = await fetch(`${API_BASE}/monitor/executions/${executionId}/reject`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -91,7 +97,6 @@ export async function registerPlugin(data: RegisterPluginRequest): Promise<Plugi
   return res.json();
 }
 
-
 export async function installPluginZip(file: File): Promise<PluginProfileResponse> {
   const formData = new FormData();
   formData.append("file", file);
@@ -106,7 +111,9 @@ export async function installPluginZip(file: File): Promise<PluginProfileRespons
   return res.json();
 }
 
-export async function installPluginGit(payload: InstallGitPluginRequest): Promise<PluginProfileResponse> {
+export async function installPluginGit(
+  payload: InstallGitPluginRequest
+): Promise<PluginProfileResponse> {
   const res = await fetch(`${API_BASE}/plugins/install-git`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -178,10 +185,9 @@ export async function fetchGlobalMcpConfig(): Promise<McpConfigResponse> {
 }
 
 export async function fetchPluginMcpConfig(pluginId: string): Promise<McpConfigResponse> {
-  const res = await fetch(
-    `${API_BASE}/plugins/${encodeURIComponent(pluginId)}/mcp-config`,
-    { cache: "no-store" }
-  );
+  const res = await fetch(`${API_BASE}/plugins/${encodeURIComponent(pluginId)}/mcp-config`, {
+    cache: "no-store",
+  });
   if (!res.ok) throw new Error("Failed to fetch plugin MCP config");
   return res.json();
 }
@@ -204,7 +210,9 @@ export async function fetchKnowledgeChunks(targetId?: string): Promise<Knowledge
 }
 
 export async function fetchKnowledgeChunkDetail(chunkId: string): Promise<KnowledgeChunkResponse> {
-  const res = await fetch(`${API_BASE}/knowledge/${encodeURIComponent(chunkId)}`, { cache: "no-store" });
+  const res = await fetch(`${API_BASE}/knowledge/${encodeURIComponent(chunkId)}`, {
+    cache: "no-store",
+  });
   if (!res.ok) throw new Error("Failed to fetch chunk detail");
   return res.json();
 }

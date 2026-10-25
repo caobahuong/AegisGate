@@ -85,9 +85,7 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <Zap className={cn("h-3.5 w-3.5", autoMode ? "text-emerald-400" : "text-amber-400")} />
           <span className="hidden sm:inline">Auto Mode:</span>
-          <span className="font-bold tracking-wide">
-            {autoMode ? "ON" : "OFF (Manual Review)"}
-          </span>
+          <span className="font-bold tracking-wide">{autoMode ? "ON" : "OFF (Manual Review)"}</span>
         </button>
 
         {/* Theme Switcher Button (Light Default / Dark) */}

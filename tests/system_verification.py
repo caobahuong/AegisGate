@@ -14,18 +14,18 @@ Verifies:
    - DevTools console inspection for zero JavaScript errors or memory leaks
 """
 
-from pathlib import Path
+import contextlib
 import sys
 import tempfile
 import time
+from pathlib import Path
+
 import psutil
 from playwright.sync_api import sync_playwright
 
 if sys.stdout.encoding.lower() != "utf-8":
-    try:
+    with contextlib.suppress(Exception):
         sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
 
 SCREENSHOTS_DIR = Path("./report/screenshots")
 SCREENSHOTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -47,10 +47,8 @@ def verify_no_orphan_processes() -> None:
     if found_orphans:
         print(f"Warning: Found {len(found_orphans)} lingering adapter process(es): {found_orphans}. Cleaning up...")
         for pid in found_orphans:
-            try:
+            with contextlib.suppress(Exception):
                 psutil.Process(pid).kill()
-            except Exception:
-                pass
     else:
         print("PASS: Zero orphan plugin subprocesses detected. Process isolation is clean.")
 
@@ -103,7 +101,9 @@ def run_anti_gravity_browser_qa() -> None:
         body_bg = page.evaluate("window.getComputedStyle(document.body).backgroundColor")
         print(f"   Body Computed Background (Default): {body_bg}")
         # RGB for light mode default #f8fafc is rgb(248, 250, 252)
-        assert "rgb(248, 250, 252)" in body_bg or "248, 250, 252" in body_bg, f"Expected default Light Mode rgb(248, 250, 252), got {body_bg}"
+        assert "rgb(248, 250, 252)" in body_bg or "248, 250, 252" in body_bg, (
+            f"Expected default Light Mode rgb(248, 250, 252), got {body_bg}"
+        )
         page.screenshot(path=str(SCREENSHOTS_DIR / "qa_00_light_mode_default.png"))
         print("   PASS: Light Mode default (#f8fafc) verified.")
 
@@ -132,7 +132,9 @@ def run_anti_gravity_browser_qa() -> None:
         time.sleep(0.5)
         light_restored_bg = page.evaluate("window.getComputedStyle(document.body).backgroundColor")
         print(f"   Body Computed Background (Restored Light): {light_restored_bg}")
-        assert "rgb(248, 250, 252)" in light_restored_bg or "248, 250, 252" in light_restored_bg, f"Expected Light Mode restored, got {light_restored_bg}"
+        assert "rgb(248, 250, 252)" in light_restored_bg or "248, 250, 252" in light_restored_bg, (
+            f"Expected Light Mode restored, got {light_restored_bg}"
+        )
         print("   PASS: Switched back to Light Mode default successfully.")
 
         # Test Sidebar User Guide Modal
@@ -158,7 +160,9 @@ def run_anti_gravity_browser_qa() -> None:
 
         page.click("[data-testid='close-user-guide-btn']")
         time.sleep(0.5)
-        print("   PASS: Sidebar User Guide modal opened, section 5 (Live Monitor & Approvals) verified, and closed cleanly.")
+        print(
+            "   PASS: Sidebar User Guide modal opened, section 5 (Live Monitor & Approvals) verified, and closed cleanly."
+        )
 
         # Test Header MCP Config Modal & Snippet Copy
         print("2.1 Testing Header MCP Config Modal & Snippet Copy...")
@@ -321,7 +325,7 @@ def run_anti_gravity_browser_qa() -> None:
             const aside = document.querySelector('aside');
             const main = document.querySelector('main');
             const asideTopBefore = aside.getBoundingClientRect().top;
-            
+
             // Scroll main content
             main.scrollTop = 400;
             const mainScrollTop = main.scrollTop;
@@ -340,7 +344,9 @@ def run_anti_gravity_browser_qa() -> None:
         assert layout_metrics["asideTopBefore"] == layout_metrics["asideTopAfter"], (
             f"Sidebar moved during main scroll! Before: {layout_metrics['asideTopBefore']}, After: {layout_metrics['asideTopAfter']}"
         )
-        print(f"   PASS: Sidebar is permanently fixed (top={layout_metrics['asideTopBefore']}px) while main scrolls independently (scrollTop={layout_metrics['mainScrollTop']}px).")
+        print(
+            f"   PASS: Sidebar is permanently fixed (top={layout_metrics['asideTopBefore']}px) while main scrolls independently (scrollTop={layout_metrics['mainScrollTop']}px)."
+        )
 
         # Tab: Knowledge & Rules
         print("   Navigating to Knowledge & Rules...")
@@ -399,14 +405,16 @@ def run_anti_gravity_browser_qa() -> None:
         page.click("[data-testid='create-rule-btn']")
         page.wait_for_selector("text=Create Governance Rule", timeout=3000)
         assert page.locator("[data-testid='create-rule-target-select']").is_visible()
-        
+
         # Fill rule fields and select target: sqlserver_prod
         new_rule_id = f"rule_sp_who2_{int(time.time())}"
         page.fill("input[placeholder='e.g. rule_no_cross_join']", new_rule_id)
         page.fill("input[placeholder='e.g. Forbid Orders & AuditLogs Join']", "Block SQL Server Sp_Who2")
         page.locator("[data-testid='create-rule-target-select']").select_option("sqlserver_prod")
         page.fill("input[placeholder='e.g. Orders,AuditLogs']", "sp_who2")
-        page.fill("textarea[placeholder='Why this rule must be enforced...']", "Direct execution of sp_who2 is restricted.")
+        page.fill(
+            "textarea[placeholder='Why this rule must be enforced...']", "Direct execution of sp_who2 is restricted."
+        )
         page.screenshot(path=str(SCREENSHOTS_DIR / "qa_05c_create_rule_target_scoped.png"))
         page.click("[data-testid='submit-create-rule-btn']")
         time.sleep(1.0)
@@ -442,8 +450,12 @@ def run_anti_gravity_browser_qa() -> None:
 
         # Verify rule badge dynamically updated to Global Scope
         updated_badge = page.locator(f"div[data-testid='rule-card-{new_rule_id}'] [data-testid^='rule-target-badge-']")
-        assert "Global Scope" in updated_badge.inner_text(), f"Expected Global Scope badge, got: {updated_badge.inner_text()}"
-        print("   PASS: Rule updated successfully; target scope reassigned to Global Scope and badge updated reactively.")
+        assert "Global Scope" in updated_badge.inner_text(), (
+            f"Expected Global Scope badge, got: {updated_badge.inner_text()}"
+        )
+        print(
+            "   PASS: Rule updated successfully; target scope reassigned to Global Scope and badge updated reactively."
+        )
 
         # Tab: Live Execution Monitor & State Machine Simulation
         print("5. Testing Live Execution Monitor & State Machine...")
@@ -480,7 +492,10 @@ def run_anti_gravity_browser_qa() -> None:
         auto_toggle.click()
         time.sleep(0.5)
         # Select safe query preset or default
-        page.fill("textarea[placeholder='Enter SQL or database statement...']", "SELECT OrderID, TotalAmount FROM dbo.Orders WHERE OrderID = 1001;")
+        page.fill(
+            "textarea[placeholder='Enter SQL or database statement...']",
+            "SELECT OrderID, TotalAmount FROM dbo.Orders WHERE OrderID = 1001;",
+        )
         page.click("button:has-text('Send Query to AegisGate')")
         page.wait_for_selector("text=COMPLETED", timeout=8000)
         page.wait_for_selector("text=Auto Approval ON", timeout=5000)

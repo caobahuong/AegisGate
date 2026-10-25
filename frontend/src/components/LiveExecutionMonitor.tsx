@@ -45,9 +45,7 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
   isSubmitting = false,
 }) => {
   // Query Form State
-  const [targetId, setTargetId] = useState<string>(
-    plugins[0]?.id || "sqlserver_prod"
-  );
+  const [targetId, setTargetId] = useState<string>(plugins[0]?.id || "sqlserver_prod");
   const [query, setQuery] = useState<string>(
     "SELECT o.OrderID, o.OrderDate, o.TotalAmount\nFROM dbo.Orders o\nWHERE o.Status = 'Completed';"
   );
@@ -71,10 +69,7 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
   const blockedSessions = useMemo(
     () =>
       executions.filter(
-        (ex) =>
-          ex.status === "REJECTED" ||
-          ex.status === "TIMEOUT" ||
-          ex.status === "ABORTED"
+        (ex) => ex.status === "REJECTED" || ex.status === "TIMEOUT" || ex.status === "ABORTED"
       ),
     [executions]
   );
@@ -97,7 +92,14 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
       default:
         return executions;
     }
-  }, [sessionFilter, executions, pendingSessions, runningSessions, blockedSessions, completedSessions]);
+  }, [
+    sessionFilter,
+    executions,
+    pendingSessions,
+    runningSessions,
+    blockedSessions,
+    completedSessions,
+  ]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -230,11 +232,7 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
           </span>
         );
       default:
-        return (
-          <span className="text-slate-400 text-[11px] font-mono">
-            {status}
-          </span>
-        );
+        return <span className="text-slate-400 text-[11px] font-mono">{status}</span>;
     }
   };
 
@@ -294,11 +292,16 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
                 sessionFilter === "PENDING"
                   ? "bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-sm shadow-amber-500/10"
                   : pendingSessions.length > 0
-                  ? "bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/15"
-                  : "bg-slate-950/60 text-slate-400 border-slate-800/80 hover:text-slate-200"
+                    ? "bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/15"
+                    : "bg-slate-950/60 text-slate-400 border-slate-800/80 hover:text-slate-200"
               )}
             >
-              <Clock className={cn("h-3 w-3", pendingSessions.length > 0 && "animate-pulse text-amber-400")} />
+              <Clock
+                className={cn(
+                  "h-3 w-3",
+                  pendingSessions.length > 0 && "animate-pulse text-amber-400"
+                )}
+              />
               <span>Pending Review</span>
               <span
                 className={cn(
@@ -322,11 +325,16 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
                 sessionFilter === "RUNNING"
                   ? "bg-indigo-50 text-indigo-700 border-indigo-300 dark:bg-indigo-500/20 dark:text-indigo-300 dark:border-indigo-500/50 shadow-xs"
                   : runningSessions.length > 0
-                  ? "bg-indigo-50/80 text-indigo-700 border-indigo-200 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/30 dark:hover:bg-indigo-500/15"
-                  : "bg-slate-850 text-slate-400 border border-slate-800 hover:text-slate-100"
+                    ? "bg-indigo-50/80 text-indigo-700 border-indigo-200 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/30 dark:hover:bg-indigo-500/15"
+                    : "bg-slate-850 text-slate-400 border border-slate-800 hover:text-slate-100"
               )}
             >
-              <RotateCw className={cn("h-3 w-3", runningSessions.length > 0 && "animate-spin text-indigo-600 dark:text-indigo-400")} />
+              <RotateCw
+                className={cn(
+                  "h-3 w-3",
+                  runningSessions.length > 0 && "animate-spin text-indigo-600 dark:text-indigo-400"
+                )}
+              />
               <span>Running</span>
               <span
                 className={cn(
@@ -350,8 +358,8 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
                 sessionFilter === "BLOCKED"
                   ? "bg-red-500/20 text-red-300 border-red-500/50 shadow-sm shadow-red-500/10"
                   : blockedSessions.length > 0
-                  ? "bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/15"
-                  : "bg-slate-950/60 text-slate-400 border-slate-800/80 hover:text-slate-200"
+                    ? "bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/15"
+                    : "bg-slate-950/60 text-slate-400 border-slate-800/80 hover:text-slate-200"
               )}
             >
               <ShieldAlert className="h-3 w-3" />
@@ -378,8 +386,8 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
                 sessionFilter === "COMPLETED"
                   ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-sm shadow-emerald-500/10"
                   : completedSessions.length > 0
-                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/15"
-                  : "bg-slate-950/60 text-slate-400 border-slate-800/80 hover:text-slate-200"
+                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/15"
+                    : "bg-slate-950/60 text-slate-400 border-slate-800/80 hover:text-slate-200"
               )}
             >
               <CheckCircle2 className="h-3 w-3" />
@@ -414,7 +422,9 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
               {sessionFilter === "RUNNING" && (
                 <div className="flex flex-col items-center space-y-1">
                   <Activity className="h-5 w-5 text-slate-500 mb-1" />
-                  <span className="font-semibold text-slate-200">No active sessions running in background</span>
+                  <span className="font-semibold text-slate-200">
+                    No active sessions running in background
+                  </span>
                   <span className="text-[11px] text-slate-500">
                     Gateway is ready to accept incoming queries from AI Clients via FastMCP.
                   </span>
@@ -423,7 +433,9 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
               {sessionFilter === "BLOCKED" && (
                 <div className="flex flex-col items-center space-y-1">
                   <ShieldAlert className="h-5 w-5 text-emerald-400/80 mb-1" />
-                  <span className="font-semibold text-slate-200">No blocked or rejected queries</span>
+                  <span className="font-semibold text-slate-200">
+                    No blocked or rejected queries
+                  </span>
                   <span className="text-[11px] text-slate-500">
                     Zero governance policy violations or execution timeouts recorded.
                   </span>
@@ -441,9 +453,12 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
               {sessionFilter === "ALL" && (
                 <div className="flex flex-col items-center space-y-1">
                   <Activity className="h-5 w-5 text-slate-500 mb-1" />
-                  <span className="font-semibold text-slate-200">No execution sessions recorded</span>
+                  <span className="font-semibold text-slate-200">
+                    No execution sessions recorded
+                  </span>
                   <span className="text-[11px] text-slate-500">
-                    Submit a query from the simulator below or connect an AI agent (Claude, Cursor, Cline) via MCP.
+                    Submit a query from the simulator below or connect an AI agent (Claude, Cursor,
+                    Cline) via MCP.
                   </span>
                 </div>
               )}
@@ -455,9 +470,7 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
                 const isPending = ex.status === "PAUSED_FOR_REVIEW" || ex.status === "DRY_RUN";
                 const isRunning = ex.status === "EXECUTING";
                 const isBlocked =
-                  ex.status === "REJECTED" ||
-                  ex.status === "TIMEOUT" ||
-                  ex.status === "ABORTED";
+                  ex.status === "REJECTED" || ex.status === "TIMEOUT" || ex.status === "ABORTED";
                 const isCompleted = ex.status === "COMPLETED";
 
                 return (
@@ -475,9 +488,7 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
                     )}
                   >
                     <div className="flex items-center justify-between w-full">
-                      <span className="font-mono text-xs font-bold text-slate-200">
-                        #{ex.id}
-                      </span>
+                      <span className="font-mono text-xs font-bold text-slate-200">#{ex.id}</span>
                       <span
                         className={cn(
                           "text-[10px] font-semibold px-1.5 py-0.5 rounded uppercase tracking-wider font-mono",
@@ -544,9 +555,7 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
               </h2>
             </div>
             {selectedExecution && (
-              <span className="text-[10px] font-mono text-slate-400">
-                #{selectedExecution.id}
-              </span>
+              <span className="text-[10px] font-mono text-slate-400">#{selectedExecution.id}</span>
             )}
           </div>
 
@@ -619,7 +628,9 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
                   setQuery(
                     "SELECT o.OrderID, a.Action\nFROM dbo.Orders o\nINNER JOIN dbo.AuditLogs a ON o.OrderID = a.LogID;"
                   );
-                  setReasoning("Test query triggering FORBID_JOIN rule between Orders and AuditLogs.");
+                  setReasoning(
+                    "Test query triggering FORBID_JOIN rule between Orders and AuditLogs."
+                  );
                 }}
                 className="px-2 py-1 rounded bg-slate-950 hover:bg-slate-800 border border-slate-800 text-[10px] text-amber-400 font-mono transition-colors"
               >
@@ -629,7 +640,9 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
                 type="button"
                 onClick={() => {
                   setQuery("SELECT * FROM dbo.Orders;");
-                  setReasoning("Test query triggering Table Scan rule due to missing WHERE filter.");
+                  setReasoning(
+                    "Test query triggering Table Scan rule due to missing WHERE filter."
+                  );
                 }}
                 className="px-2 py-1 rounded bg-slate-950 hover:bg-slate-800 border border-slate-800 text-[10px] text-red-400 font-mono transition-colors"
               >
@@ -672,7 +685,9 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
                   </div>
                   <ul className="list-disc list-inside text-xs space-y-1 pt-1 text-red-300">
                     {selectedExecution.violations.map((violation, i) => (
-                      <li key={i} className="leading-snug">{violation}</li>
+                      <li key={i} className="leading-snug">
+                        {violation}
+                      </li>
                     ))}
                   </ul>
                 </div>
@@ -726,7 +741,9 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
               <div className="bg-slate-950 border border-slate-800 rounded-lg p-3 space-y-2 text-xs">
                 <div className="flex justify-between">
                   <span className="text-slate-400">Execution ID:</span>
-                  <span className="font-mono text-slate-200 font-bold">#{selectedExecution.id}</span>
+                  <span className="font-mono text-slate-200 font-bold">
+                    #{selectedExecution.id}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-400">Mode:</span>

@@ -57,7 +57,9 @@ def _good_files(**override) -> dict[str, str]:
 
 
 class TestZipHardening:
-    @pytest.mark.parametrize("name", ["../evil.txt", "a/../../evil.txt", "/abs/evil.txt", "C:/evil.txt", "..\\evil.txt", "ok.txt:stream"])
+    @pytest.mark.parametrize(
+        "name", ["../evil.txt", "a/../../evil.txt", "/abs/evil.txt", "C:/evil.txt", "..\\evil.txt", "ok.txt:stream"]
+    )
     async def test_unsafe_zip_paths_rejected(self, env, name: str) -> None:
         installer, base = env
         data = _zip(_good_files(), extra=[zipfile.ZipInfo(name)])
@@ -115,9 +117,11 @@ class TestPluginIdAndOverwrite:
         await installer.install_from_zip(_zip(_good_files(**{"adapter.py": "VERSION = 1\n"})))
         assert "VERSION = 1" in (base / "plugins" / "good_plugin" / "adapter.py").read_text()
 
-        with patch.object(installer, "register_installed_plugin", side_effect=RuntimeError("db down")):
-            with pytest.raises(PluginInstallerError):
-                await installer.install_from_zip(_zip(_good_files(**{"adapter.py": "VERSION = 2\n"})))
+        with (
+            patch.object(installer, "register_installed_plugin", side_effect=RuntimeError("db down")),
+            pytest.raises(PluginInstallerError),
+        ):
+            await installer.install_from_zip(_zip(_good_files(**{"adapter.py": "VERSION = 2\n"})))
         assert "VERSION = 1" in (base / "plugins" / "good_plugin" / "adapter.py").read_text()
         assert not [p for p in (base / "plugins").iterdir() if p.name.startswith(".replaced_")]
 
@@ -166,7 +170,15 @@ class TestEntrypointAndRequirements:
 
     @pytest.mark.parametrize(
         "req",
-        ["--index-url http://evil/simple\nrequests", "-r other.txt", "pkg @ https://evil/x.whl", "git+https://x/y.git", "./local_dir", "https://evil/x.tar.gz", "pkg --install-option=x"],
+        [
+            "--index-url http://evil/simple\nrequests",
+            "-r other.txt",
+            "pkg @ https://evil/x.whl",
+            "git+https://x/y.git",
+            "./local_dir",
+            "https://evil/x.tar.gz",
+            "pkg --install-option=x",
+        ],
     )
     async def test_dangerous_requirements_rejected(self, env, req: str) -> None:
         installer, _ = env
@@ -221,9 +233,11 @@ class TestGitHardening:
             captured["cmd"], captured["env"] = cmd, kwargs["env"]
             return type("P", (), {"returncode": 1, "stderr": "boom", "stdout": ""})()
 
-        with patch("core.engine.plugin_installer.subprocess.run", side_effect=fake_run):
-            with pytest.raises(PluginInstallerError, match="git clone failed"):
-                await installer.install_from_git("https://github.com/o/r", branch="main")
+        with (
+            patch("core.engine.plugin_installer.subprocess.run", side_effect=fake_run),
+            pytest.raises(PluginInstallerError, match="git clone failed"),
+        ):
+            await installer.install_from_git("https://github.com/o/r", branch="main")
         cmd = captured["cmd"]
         assert "--" in cmd and cmd.index("--") < cmd.index("https://github.com/o/r")
         assert "protocol.allow=never" in cmd and "protocol.https.allow=always" in cmd
@@ -284,7 +298,10 @@ class TestPersistentWorker:
         c = _sim_client("w_conc")
         started = time.monotonic()
         results = await asyncio.gather(
-            *[c.execute(ExecuteParams(execution_id=f"c{i}", query="SELECT 1 FROM Orders WHERE OrderID = 1")) for i in range(5)]
+            *[
+                c.execute(ExecuteParams(execution_id=f"c{i}", query="SELECT 1 FROM Orders WHERE OrderID = 1"))
+                for i in range(5)
+            ]
         )
         assert len(results) == 5 and time.monotonic() - started < 5
 
@@ -304,7 +321,9 @@ class TestPersistentWorker:
     async def test_client_side_timeout_keeps_the_worker_alive_so_abort_still_works(self, workers) -> None:
         c = _sim_client("w_keep")
         with pytest.raises(PluginProcessError, match="timed out"):
-            await c.execute(ExecuteParams(execution_id="slow2", query="WAITFOR DELAY '00:00:30'", timeout_seconds=20), timeout=0.4)
+            await c.execute(
+                ExecuteParams(execution_id="slow2", query="WAITFOR DELAY '00:00:30'", timeout_seconds=20), timeout=0.4
+            )
         res = await c.abort(AbortParams(execution_id="slow2"))
         assert res.success and "KILL" in res.message  # session was still found in the live worker
 
@@ -315,7 +334,16 @@ class TestStateMachineWithWorkers:
         engine = create_engine(f"sqlite:///{tmp_path / 'sm.db'}", connect_args={"check_same_thread": False})
         SQLModel.metadata.create_all(engine)
         with Session(engine) as s:
-            s.add(PluginProfile(id="sim_t", name="S", driver="x", entrypoint=SIM_ENTRY, config_json=json.dumps(SIM_CFG), status="active"))
+            s.add(
+                PluginProfile(
+                    id="sim_t",
+                    name="S",
+                    driver="x",
+                    entrypoint=SIM_ENTRY,
+                    config_json=json.dumps(SIM_CFG),
+                    status="active",
+                )
+            )
             s.commit()
             sm = ExecutionStateMachine(s)
             sm.setting_store.set_auto_approval(True)
