@@ -51,3 +51,4 @@ def test_settings_drift_guard() -> None:
         f"The following Settings field(s) are missing from docs/configuration.md: {missing_in_docs}. "
         "Update docs/configuration.md to document all fields."
     )
+

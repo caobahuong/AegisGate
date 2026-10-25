@@ -52,3 +52,18 @@ include = ["core*", "plugins*", "sdk*"]
 pythonpath = ["."]
 asyncio_mode = "auto"
 
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W"]
+ignore = ["E501", "E402", "W293", "E741", "F841", "E711", "E712"]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+warn_unused_ignores = true
+show_error_codes = true
+
+

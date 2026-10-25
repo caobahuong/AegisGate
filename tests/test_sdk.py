@@ -4,7 +4,7 @@ import io
 import json
 import pytest
 from sdk.aegisgate_sdk.base import BasePlugin
-from sdk.aegisgate_sdk.models import PluginConfigError, PluginException, PluginExecutionError
+from sdk.aegisgate_sdk.models import PluginExecutionError
 from sdk.aegisgate_sdk.server import PluginServer
 
 

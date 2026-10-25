@@ -19,8 +19,6 @@ from plugins.plugin_contract import (
     JsonRpcResponse,
     SyncKnowledgeResult,
     DryRunResult,
-    ExecuteResult,
-    AbortResult,
     PartitionSchema,
     TableSchema,
     ColumnSchema,

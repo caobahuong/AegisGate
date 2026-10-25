@@ -59,10 +59,10 @@ class LogStore:
         """
         statement = (
             sa_update(ExecutionLog)
-            .where(ExecutionLog.id == log_id, ExecutionLog.status.in_(expected_statuses))  # type: ignore[attr-defined]
+            .where(ExecutionLog.id == log_id, ExecutionLog.status.in_(expected_statuses))  # type: ignore[attr-defined, arg-type]
             .values(**updates)
         )
-        result = self.session.exec(statement)  # type: ignore[call-overload]
+        result = self.session.exec(statement)
         self.session.commit()
         return bool(result.rowcount)
 

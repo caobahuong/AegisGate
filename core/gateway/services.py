@@ -468,8 +468,8 @@ class GatewayService:
         if not existing:
             return None
         problem = validate_rule_definition(
-            updates.get("rule_type", existing.rule_type),
-            updates.get("expression", existing.expression),
+            str(updates.get("rule_type", existing.rule_type)),
+            str(updates.get("expression", existing.expression)),
         )
         if problem:
             raise ValueError(problem)

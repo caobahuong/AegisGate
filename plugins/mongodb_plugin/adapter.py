@@ -10,8 +10,6 @@ Adheres strictly to python_clean_code.md:
 from datetime import datetime, timezone
 import json
 from pathlib import Path
-import random
-import re
 import sys
 import time
 from typing import Any, Optional

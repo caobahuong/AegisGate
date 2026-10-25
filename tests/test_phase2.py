@@ -15,7 +15,7 @@ from core.engine.state_machine import ExecutionStateMachine
 from core.engine.timeout_guard import TimeoutGuard
 from core.exceptions import ExecutionTimeoutError
 from core.main import app
-from plugins.plugin_contract import DryRunResult, ExecuteResult, AbortResult
+from plugins.plugin_contract import DryRunResult, ExecuteResult
 
 
 @pytest.fixture(name="db_session")

@@ -11,7 +11,6 @@ Verifies:
 - Screenshots saved for execution report
 """
 
-import os
 from pathlib import Path
 import time
 from playwright.sync_api import sync_playwright

@@ -14,10 +14,7 @@ Verifies:
    - DevTools console inspection for zero JavaScript errors or memory leaks
 """
 
-import json
-import os
 from pathlib import Path
-import subprocess
 import sys
 import tempfile
 import time
