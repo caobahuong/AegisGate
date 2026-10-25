@@ -1,0 +1,66 @@
+name: SQL Server Integration
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 2 * * *" # Daily at 02:00 UTC
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  mssql-integration:
+    name: SQL Server 2022 Integration Tests
+    runs-on: ubuntu-latest
+
+    services:
+      mssql:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_SA_PASSWORD: "AegisGateTestPassword123!"
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'AegisGateTestPassword123!' -C -Q 'SELECT 1'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Microsoft ODBC Driver 18 for SQL Server
+        run: |
+          curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --dearmor -o /usr/share/keyrings/microsoft-prod.gpg
+          curl -fsSL https://packages.microsoft.com/config/ubuntu/22.04/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list
+          sudo apt-get update
+          sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18 unixodbc-dev
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,sqlserver]"
+
+      - name: Run SQL Server Integration Tests
+        env:
+          AEGISGATE_TEST_MSSQL_SERVER: "127.0.0.1"
+          AEGISGATE_TEST_MSSQL_PORT: "1433"
+          AEGISGATE_TEST_MSSQL_AUTH: "sql"
+          AEGISGATE_TEST_MSSQL_USER: "sa"
+          AEGISGATE_TEST_MSSQL_PASSWORD: "AegisGateTestPassword123!"
+          AEGISGATE_TEST_MSSQL_DATABASE: "master"
+          AEGISGATE_TEST_MSSQL_TRUST: "yes"
+        run: |
+          python -m pytest -m integration tests/integration/
