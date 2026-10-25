@@ -10,16 +10,61 @@ treated as the *safer* outcome by callers (WRITE, unbounded, multi-statement).
 
 import re
 from dataclasses import dataclass
+from typing import Literal
 
 WRITE_KEYWORDS: frozenset[str] = frozenset(
     {
-        "INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "CREATE", "TRUNCATE", "MERGE",
-        "EXEC", "EXECUTE", "GRANT", "REVOKE", "DENY", "BULK", "RENAME", "REPLACE",
-        "UPSERT", "CALL", "SHUTDOWN", "KILL", "BACKUP", "RESTORE", "DBCC",
+        "INSERT",
+        "UPDATE",
+        "DELETE",
+        "DROP",
+        "ALTER",
+        "CREATE",
+        "TRUNCATE",
+        "MERGE",
+        "EXEC",
+        "EXECUTE",
+        "GRANT",
+        "REVOKE",
+        "DENY",
+        "BULK",
+        "RENAME",
+        "REPLACE",
+        "UPSERT",
+        "CALL",
+        "SHUTDOWN",
+        "KILL",
+        "BACKUP",
+        "RESTORE",
+        "DBCC",
     }
 )
-_CLAUSE_END = frozenset({"GROUP", "ORDER", "HAVING", "UNION", "INTERSECT", "EXCEPT", "LIMIT", "OFFSET", "FETCH", "FOR", "OPTION", "WINDOW"})
-_TABLE_STOP = frozenset({"WHERE", "ON", "USING", "SET", "SELECT", "VALUES", "GROUP", "ORDER", "HAVING", "UNION", "INTERSECT", "EXCEPT", "LIMIT", "OFFSET", "FETCH", "FOR", "OPTION", "WINDOW", "WITH"})
+_CLAUSE_END = frozenset(
+    {"GROUP", "ORDER", "HAVING", "UNION", "INTERSECT", "EXCEPT", "LIMIT", "OFFSET", "FETCH", "FOR", "OPTION", "WINDOW"}
+)
+_TABLE_STOP = frozenset(
+    {
+        "WHERE",
+        "ON",
+        "USING",
+        "SET",
+        "SELECT",
+        "VALUES",
+        "GROUP",
+        "ORDER",
+        "HAVING",
+        "UNION",
+        "INTERSECT",
+        "EXCEPT",
+        "LIMIT",
+        "OFFSET",
+        "FETCH",
+        "FOR",
+        "OPTION",
+        "WINDOW",
+        "WITH",
+    }
+)
 _JOIN_MODIFIERS = frozenset({"INNER", "LEFT", "RIGHT", "FULL", "CROSS", "OUTER", "NATURAL"})
 
 # Token kinds
@@ -102,7 +147,7 @@ def statement_count(query: str) -> int:
     return len(split_statements(tokenize(query)))
 
 
-def classify_query(query: str) -> str:
+def classify_query(query: str) -> Literal["READ", "WRITE"]:
     """Return ``WRITE`` if any statement can modify data/state, else ``READ``.
 
     Works on word tokens only, so ``UPDATED_AT`` or ``'DELETE'`` never count.
@@ -139,8 +184,10 @@ def referenced_tables(statement: list[Token]) -> set[str]:
             i += 1
             while i < n:
                 parts: list[str] = []
-                while i < n and statement[i].kind in (WORD, IDENT) and not (
-                    statement[i].kind == WORD and statement[i].text in _TABLE_STOP
+                while (
+                    i < n
+                    and statement[i].kind in (WORD, IDENT)
+                    and not (statement[i].kind == WORD and statement[i].text in _TABLE_STOP)
                 ):
                     parts.append(statement[i].text)
                     i += 1
@@ -156,7 +203,14 @@ def referenced_tables(statement: list[Token]) -> set[str]:
                 if (
                     i < n
                     and statement[i].kind in (WORD, IDENT)
-                    and not (statement[i].kind == WORD and (statement[i].text in _TABLE_STOP or statement[i].text in _JOIN_MODIFIERS or statement[i].text in ("JOIN", "WITH")))
+                    and not (
+                        statement[i].kind == WORD
+                        and (
+                            statement[i].text in _TABLE_STOP
+                            or statement[i].text in _JOIN_MODIFIERS
+                            or statement[i].text in ("JOIN", "WITH")
+                        )
+                    )
                 ):
                     i += 1
                 if expect_list and i < n and statement[i].kind == PUNCT and statement[i].text == ",":
@@ -222,8 +276,10 @@ def _top_level_where(statement: list[Token]) -> list[Token] | None:
 def _strip_parens(tokens: list[Token]) -> list[Token]:
     while (
         len(tokens) >= 2
-        and tokens[0].kind == PUNCT and tokens[0].text == "("
-        and tokens[-1].kind == PUNCT and tokens[-1].text == ")"
+        and tokens[0].kind == PUNCT
+        and tokens[0].text == "("
+        and tokens[-1].kind == PUNCT
+        and tokens[-1].text == ")"
     ):
         tokens = tokens[1:-1]
     return tokens
