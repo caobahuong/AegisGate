@@ -1,3 +1,8 @@
+> [!NOTE]
+> **Historical planning document** - see [docs/architecture.md](../architecture.md) for the active system architecture.
+
+---
+
 # KẾ HOẠCH TỔNG THỂ & ĐẶC TẢ NGHIỆP VỤ DỰ ÁN AEGISGATE (`plan.md`)
 
 **Tên định danh dự án:** AegisGate  

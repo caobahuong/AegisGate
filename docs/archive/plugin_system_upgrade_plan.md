@@ -1,3 +1,8 @@
+> [!NOTE]
+> **Historical planning document** - see [docs/architecture.md](../architecture.md) for the active system architecture.
+
+---
+
 # AegisGate Plugin Ecosystem Upgrade Plan (Ideas 1, 2, 5)
 ## Hệ sinh thái Plugin Linh hoạt: SDK Template, 1-Click Hot-Install & Automated Certification
 
