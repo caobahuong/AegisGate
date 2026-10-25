@@ -28,8 +28,10 @@ SIM_CFG = {"use_simulation": "true"}
 
 @pytest.fixture(name="env")
 def fixture_env(tmp_path: Path, monkeypatch):
-    """Installer sandbox: BASE_DIR points to tmp, so nothing touches the real plugins/ folder."""
+    """Installer sandbox: BASE_DIR and PLUGINS_DIR point to tmp, so nothing touches the real plugins/ folder."""
     monkeypatch.setattr(settings, "BASE_DIR", tmp_path)
+    monkeypatch.setattr(settings, "PLUGINS_DIR", tmp_path / "plugins")
+    (tmp_path / "plugins").mkdir(parents=True, exist_ok=True)
     engine = create_engine(f"sqlite:///{tmp_path / 'sec.db'}", connect_args={"check_same_thread": False})
     SQLModel.metadata.create_all(engine)
     with Session(engine) as session:
