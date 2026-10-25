@@ -14,7 +14,10 @@ Verifies:
 import time
 from pathlib import Path
 
+import pytest
 from playwright.sync_api import sync_playwright
+
+pytestmark = pytest.mark.e2e
 
 SCREENSHOTS_DIR = Path("./report/screenshots")
 SCREENSHOTS_DIR.mkdir(parents=True, exist_ok=True)

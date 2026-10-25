@@ -27,9 +27,10 @@ from core.exceptions import JsonRpcProtocolError
 from plugins.plugin_contract import AbortParams, DryRunParams, ExecuteParams, SyncKnowledgeParams
 
 SERVER = os.environ.get("AEGISGATE_TEST_MSSQL_SERVER")
-pytestmark = pytest.mark.skipif(
-    not SERVER, reason="set AEGISGATE_TEST_MSSQL_SERVER to run SQL Server integration tests"
-)
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skipif(not SERVER, reason="set AEGISGATE_TEST_MSSQL_SERVER to run SQL Server integration tests"),
+]
 
 ENTRYPOINT = "python plugins/sqlserver_plugin/adapter.py --serve"
 

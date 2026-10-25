@@ -9,10 +9,11 @@ Provides:
 - Pollution guard hook (pytest_sessionfinish) ensuring git cleanliness
 """
 
+import contextlib
 import shutil
 import subprocess
+from collections.abc import AsyncGenerator, Generator
 from pathlib import Path
-from typing import AsyncGenerator, Generator
 
 import pytest
 from fastapi.testclient import TestClient
@@ -48,6 +49,7 @@ def db_session(db_engine) -> Generator[Session, None, None]:
 @pytest.fixture
 def api_client(db_session: Session) -> Generator[TestClient, None, None]:
     """Provide a FastAPI TestClient wired to the isolated test database."""
+
     def override_get_session() -> Generator[Session, None, None]:
         yield db_session
 
@@ -79,10 +81,8 @@ def tmp_plugins_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 async def worker_cleanup() -> AsyncGenerator[None, None]:
     """Ensure persistent worker subprocesses are cleanly terminated after each test."""
     yield
-    try:
+    with contextlib.suppress(Exception):
         await terminate_all_subprocesses()
-    except Exception:
-        pass
 
 
 @pytest.fixture
@@ -117,8 +117,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
                 line
                 for line in res.stdout.strip().splitlines()
                 if not any(
-                    cache_dir in line
-                    for cache_dir in [".pytest_cache", ".ruff_cache", ".mypy_cache", ".coverage"]
+                    cache_dir in line for cache_dir in [".pytest_cache", ".ruff_cache", ".mypy_cache", ".coverage"]
                 )
             ]
             if dirty_lines:

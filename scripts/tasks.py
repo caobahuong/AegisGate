@@ -203,9 +203,6 @@ def run_test() -> None:
         sys.executable,
         "-m",
         "pytest",
-        "-q",
-        "--ignore=tests/browser_verification.py",
-        "--ignore=tests/system_verification.py",
     ]
     res_b = subprocess.run(pytest_cmd, cwd=str(BASE_DIR))
     if res_b.returncode != 0:
@@ -234,7 +231,10 @@ def run_check() -> None:
         sys.exit(res.returncode)
 
     print_banner("2/6 Backend Static Type Checking (Mypy)", CYAN)
-    res = subprocess.run([sys.executable, "-m", "mypy", "core", "sdk"], cwd=str(BASE_DIR))
+    res = subprocess.run(
+        [sys.executable, "-m", "mypy", "core", "plugins/sql_inspector.py", "plugins/plugin_contract.py"],
+        cwd=str(BASE_DIR),
+    )
     if res.returncode != 0:
         sys.exit(res.returncode)
 
@@ -244,9 +244,6 @@ def run_check() -> None:
             sys.executable,
             "-m",
             "pytest",
-            "-q",
-            "--ignore=tests/browser_verification.py",
-            "--ignore=tests/system_verification.py",
         ],
         cwd=str(BASE_DIR),
     )

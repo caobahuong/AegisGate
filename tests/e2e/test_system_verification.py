@@ -21,7 +21,10 @@ import time
 from pathlib import Path
 
 import psutil
+import pytest
 from playwright.sync_api import sync_playwright
+
+pytestmark = pytest.mark.e2e
 
 if sys.stdout.encoding.lower() != "utf-8":
     with contextlib.suppress(Exception):

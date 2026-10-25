@@ -6,14 +6,13 @@ Adheres to python_clean_code.md:
 """
 
 import re
-from pathlib import Path
 
-from core.config import Settings
+from core.config import Settings, settings
 
 
 def test_settings_drift_guard() -> None:
     """Ensure every Settings field is documented in .env.example and docs/configuration.md."""
-    base_dir = Path(__file__).resolve().parent.parent
+    base_dir = settings.BASE_DIR
     env_example_path = base_dir / ".env.example"
     docs_config_path = base_dir / "docs" / "configuration.md"
 

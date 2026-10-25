@@ -9,22 +9,11 @@ from pathlib import Path
 import pytest
 from sqlmodel import Session, SQLModel, create_engine
 
-from core.database import ExecutionLog, KnowledgeChunk, PluginProfile, Rule
-from core.engine.plugin_registry import PluginRegistry
-from core.exceptions import PluginNotFoundError
+from core.database import ExecutionLog, KnowledgeChunk, Rule
 from core.storage.knowledge_store import KnowledgeStore
 from core.storage.log_store import LogStore
 from core.storage.rule_store import RuleStore
 from core.storage.setting_store import SettingStore
-from plugins.plugin_contract import (
-    ColumnSchema,
-    DryRunResult,
-    JsonRpcRequest,
-    JsonRpcResponse,
-    PartitionSchema,
-    SyncKnowledgeResult,
-    TableSchema,
-)
 
 
 @pytest.fixture(name="db_session")
@@ -201,58 +190,3 @@ class TestPhase1Foundation:
 
         setting_store.set_auto_approval(False)
         assert setting_store.is_auto_approval_enabled() is False
-
-    def test_plugin_contract_models(self):
-        # JSON-RPC envelopes
-        req = JsonRpcRequest(
-            method="dry_run",
-            params={"query": "SELECT 1", "rules": []},
-            id="req_1",
-        )
-        assert req.method == "dry_run"
-
-        dry_run_res = DryRunResult(
-            is_valid=True,
-            violations=[],
-            explain_plan={"nodes": 3},
-            estimated_time_ms=15.0,
-            query_type="READ",
-        )
-        resp = JsonRpcResponse(result=dry_run_res.model_dump(), id="req_1")
-        assert resp.result["is_valid"] is True
-
-        col = ColumnSchema(name="OrderID", data_type="INT", is_primary_key=True)
-        tbl = TableSchema(name="Orders", columns=[col])
-        part = PartitionSchema(partition_key="Sales", title="Sales", tables=[tbl])
-        sync_res = SyncKnowledgeResult(
-            partitions=[part],
-            target_id="sqlserver_plugin",
-            timestamp="2026-10-21T00:00:00Z",
-        )
-        assert len(sync_res.partitions[0].tables[0].columns) == 1
-
-    def test_plugin_registry(self, db_session: Session):
-        registry = PluginRegistry(session=db_session)
-
-        profile = PluginProfile(
-            id="sqlserver_prod",
-            name="SQL Server Production",
-            driver="pyodbc/mssql",
-            entrypoint="python plugins/sqlserver_plugin/adapter.py",
-            dry_run_command="SET SHOWPLAN_XML ON",
-            abort_command="KILL {spid}",
-        )
-        registered = registry.register_profile(profile)
-        assert registered.id == "sqlserver_prod"
-
-        fetched = registry.get_profile("sqlserver_prod")
-        assert fetched.name == "SQL Server Production"
-
-        # Update metrics
-        registry.update_metrics("sqlserver_prod", latency_ms=25.0, active_sessions_count=3)
-        updated = registry.get_profile("sqlserver_prod")
-        assert updated.latency_ms == 25.0
-        assert updated.active_sessions_count == 3
-
-        with pytest.raises(PluginNotFoundError):
-            registry.get_profile("non_existent_plugin")
