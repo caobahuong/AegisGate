@@ -5,6 +5,23 @@
  * Strict Zero `any` Policy enforced per typescript_clean_code.md.
  */
 
+import type { components, paths } from "./api.generated";
+
+export type ApiPaths = paths;
+export type ApiSchemas = components["schemas"];
+
+export type GeneratedExecutionResponse = components["schemas"]["ExecutionResponse"];
+export type GeneratedPluginProfileResponse = components["schemas"]["PluginProfileResponse"];
+export type GeneratedRuleResponse = components["schemas"]["RuleResponse"];
+export type GeneratedKnowledgeChunkResponse = components["schemas"]["KnowledgeChunkResponse"];
+export type GeneratedCreateRuleRequest = components["schemas"]["CreateRuleRequest"];
+export type GeneratedSubmitExecutionRequest = components["schemas"]["SubmitExecutionRequest"];
+export type GeneratedAutoModeResponse = components["schemas"]["AutoModeResponse"];
+export type GeneratedPluginCertificationResponse =
+  components["schemas"]["PluginCertificationResponse"];
+export type GeneratedPluginSchemaResponse = components["schemas"]["PluginSchemaResponse"];
+export type GeneratedMcpConfigResponse = components["schemas"]["McpConfigResponse"];
+
 export type ExecutionStatus =
   "DRY_RUN" | "PAUSED_FOR_REVIEW" | "EXECUTING" | "COMPLETED" | "REJECTED" | "TIMEOUT" | "ABORTED";
 

@@ -1,0 +1,2502 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "AegisGate Core",
+    "description": "AI Execution Proxy & Pluggable Harness Platform",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/monitor/events": {
+      "get": {
+        "tags": [
+          "AegisGate Gateway"
+        ],
+        "summary": "Sse Events",
+        "description": "Server-Sent Events endpoint streaming real-time execution states.",
+        "operationId": "sse_events_api_monitor_events_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/monitor/executions": {
+      "get": {
+        "tags": [
+          "AegisGate Gateway"
+        ],
+        "summary": "List Executions",
+        "description": "List execution logs with optional filtering.",
+        "operationId": "list_executions_api_monitor_executions_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "target_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Target Id"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ExecutionResponse"
+                  },
+                  "title": "Response List Executions Api Monitor Executions Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "AegisGate Gateway"
+        ],
+        "summary": "Submit Execution",
+        "description": "Submit an AI query for Dry-Run and Execution lifecycle.",
+        "operationId": "submit_execution_api_monitor_executions_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitExecutionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecutionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/monitor/executions/{execution_id}": {
+      "get": {
+        "tags": [
+          "AegisGate Gateway"
+        ],
+        "summary": "Get Execution",
+        "description": "Retrieve details for a specific execution.",
+        "operationId": "get_execution_api_monitor_executions__execution_id__get",
+        "parameters": [
+          {
+            "name": "execution_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Execution Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecutionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/monitor/executions/{execution_id}/approve": {
+      "post": {
+        "tags": [
+          "AegisGate Gateway"
+        ],
+        "summary": "Approve Execution",
+        "description": "Resume execution of a paused query following user approval.",
+        "operationId": "approve_execution_api_monitor_executions__execution_id__approve_post",
+        "parameters": [
+          {
+            "name": "execution_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Execution Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveExecutionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecutionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/monitor/executions/{execution_id}/reject": {
+      "post": {
+        "tags": [
+          "AegisGate Gateway"
+        ],
+        "summary": "Reject Execution",
+        "description": "Reject execution of a paused query.",
+        "operationId": "reject_execution_api_monitor_executions__execution_id__reject_post",
+        "parameters": [
+          {
+            "name": "execution_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Execution Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectExecutionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecutionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/monitor/executions/{execution_id}/abort": {
+      "post": {
+        "tags": [
+          "AegisGate Gateway"
+        ],
+        "summary": "Abort Execution",
+        "description": "Emergency Stop / Kill command for in-flight or paused queries.",
+        "operationId": "abort_execution_api_monitor_executions__execution_id__abort_post",
+        "parameters": [
+          {
+            "name": "execution_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Execution Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecutionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plugins": {
+      "get": {
+        "tags": [
+          "AegisGate Gateway"
+        ],
+        "summary": "List Plugins",
+        "description": "List all registered pluggable targets.",
+        "operationId": "list_plugins_api_plugins_get",
+        "parameters": [
+          {
+            "name": "include_disabled",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Include disabled plugins",
+              "default": false,
+              "title": "Include Disabled"
+            },
+            "description": "Include disabled plugins"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PluginProfileResponse"
+                  },
+                  "title": "Response List Plugins Api Plugins Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "AegisGate Gateway"
+        ],
+        "summary": "Register Plugin",
+        "description": "Register a new plugin via Add Plugin Modal.",
+        "operationId": "register_plugin_api_plugins_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterPluginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PluginProfileResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plugins/install-zip": {
+      "post": {
+        "tags": [
+          "AegisGate Gateway"
+        ],
+        "summary": "Install Plugin Zip",
+        "description": "Install, build, and certify an external plugin from an uploaded ZIP archive.",
+        "operationId": "install_plugin_zip_api_plugins_install_zip_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_install_plugin_zip_api_plugins_install_zip_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PluginProfileResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plugins/install-git": {
+      "post": {
+        "tags": [
+          "AegisGate Gateway"
+        ],
+        "summary": "Install Plugin Git",
+        "description": "Clone, build, and certify an external plugin from a remote Git repository.",
+        "operationId": "install_plugin_git_api_plugins_install_git_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InstallGitPluginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PluginProfileResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plugins/{plugin_id}/verify": {
+      "post": {
+        "tags": [
+          "AegisGate Gateway"
+        ],
+        "summary": "Verify Plugin",
+        "description": "Run 4-stage automated sanity linter and generate certification report.",
+        "operationId": "verify_plugin_api_plugins__plugin_id__verify_post",
+        "parameters": [
+          {
+            "name": "plugin_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Plugin Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PluginCertificationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plugins/{plugin_id}/schema": {
+      "get": {
+        "tags": [
+          "AegisGate Gateway"
+        ],
+        "summary": "Get Plugin Schema",
+        "description": "Retrieve dynamic UI schema and current configuration for a plugin.",
+        "operationId": "get_plugin_schema_api_plugins__plugin_id__schema_get",
+        "parameters": [
+          {
+            "name": "plugin_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Plugin Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PluginSchemaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plugins/{plugin_id}": {
+      "put": {
+        "tags": [
+          "AegisGate Gateway"
+        ],
+        "summary": "Update Plugin Config",
+        "description": "Update connection configuration for a plugin and re-init subprocess.",
+        "operationId": "update_plugin_config_api_plugins__plugin_id__put",
+        "parameters": [
+          {
+            "name": "plugin_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Plugin Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePluginConfigRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PluginProfileResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "AegisGate Gateway"
+        ],
+        "summary": "Delete Plugin",
+        "description": "Uninstall or deactivate a plugin, disconnect active subprocesses, and abort running tasks.",
+        "operationId": "delete_plugin_api_plugins__plugin_id__delete",
+        "parameters": [
+          {
+            "name": "plugin_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Plugin Id"
+            }
+          },
+          {
+            "name": "hard_delete",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "True for hard delete from DB, False for soft deactivate",
+              "default": false,
+              "title": "Hard Delete"
+            },
+            "description": "True for hard delete from DB, False for soft deactivate"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Delete Plugin Api Plugins  Plugin Id  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plugins/{plugin_id}/mcp-config": {
+      "get": {
+        "tags": [
+          "AegisGate Gateway"
+        ],
+        "summary": "Get Plugin Mcp Config",
+        "description": "Retrieve MCP JSON connection snippet for a specific plugin target.",
+        "operationId": "get_plugin_mcp_config_api_plugins__plugin_id__mcp_config_get",
+        "parameters": [
+          {
+            "name": "plugin_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Plugin Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McpConfigResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mcp/config": {
+      "get": {
+        "tags": [
+          "AegisGate Gateway"
+        ],
+        "summary": "Get Global Mcp Config",
+        "description": "Retrieve global MCP JSON connection snippet for Claude Desktop, Cursor, and Cline.",
+        "operationId": "get_global_mcp_config_api_mcp_config_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McpConfigResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plugins/{plugin_id}/sync": {
+      "post": {
+        "tags": [
+          "AegisGate Gateway"
+        ],
+        "summary": "Sync Plugin Catalog",
+        "description": "Trigger catalog schema extraction and ingestion for a plugin.",
+        "operationId": "sync_plugin_catalog_api_plugins__plugin_id__sync_post",
+        "parameters": [
+          {
+            "name": "plugin_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Plugin Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "title": "Response Sync Plugin Catalog Api Plugins  Plugin Id  Sync Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/knowledge": {
+      "get": {
+        "tags": [
+          "AegisGate Gateway"
+        ],
+        "summary": "List Knowledge",
+        "description": "List structural catalog partitions.",
+        "operationId": "list_knowledge_api_knowledge_get",
+        "parameters": [
+          {
+            "name": "target_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Target Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/KnowledgeChunkResponse"
+                  },
+                  "title": "Response List Knowledge Api Knowledge Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/knowledge/{chunk_id}": {
+      "get": {
+        "tags": [
+          "AegisGate Gateway"
+        ],
+        "summary": "Get Knowledge Chunk",
+        "description": "Get single chunk with full markdown documentation.",
+        "operationId": "get_knowledge_chunk_api_knowledge__chunk_id__get",
+        "parameters": [
+          {
+            "name": "chunk_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Chunk Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeChunkResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/knowledge/{chunk_id}/docs": {
+      "put": {
+        "tags": [
+          "AegisGate Gateway"
+        ],
+        "summary": "Update Knowledge Docs",
+        "description": "Update markdown documentation for a partition.",
+        "operationId": "update_knowledge_docs_api_knowledge__chunk_id__docs_put",
+        "parameters": [
+          {
+            "name": "chunk_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Chunk Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDocsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Update Knowledge Docs Api Knowledge  Chunk Id  Docs Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/skills": {
+      "get": {
+        "tags": [
+          "AegisGate Gateway"
+        ],
+        "summary": "List Skills",
+        "description": "List query skills and templates, optionally filtered by target plugin.",
+        "operationId": "list_skills_api_skills_get",
+        "parameters": [
+          {
+            "name": "target_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter skills by target plugin ID",
+              "title": "Target Id"
+            },
+            "description": "Filter skills by target plugin ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "title": "Response List Skills Api Skills Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rules": {
+      "get": {
+        "tags": [
+          "AegisGate Gateway"
+        ],
+        "summary": "List Rules",
+        "description": "List governance rules optionally filtered by target plugin or global scope.",
+        "operationId": "list_rules_api_rules_get",
+        "parameters": [
+          {
+            "name": "target_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter rules by target plugin ID or 'global'",
+              "title": "Target Id"
+            },
+            "description": "Filter rules by target plugin ID or 'global'"
+          },
+          {
+            "name": "exact",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Exact target match without global fallback",
+              "default": false,
+              "title": "Exact"
+            },
+            "description": "Exact target match without global fallback"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RuleResponse"
+                  },
+                  "title": "Response List Rules Api Rules Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "AegisGate Gateway"
+        ],
+        "summary": "Create Rule",
+        "description": "Create a new governance rule.",
+        "operationId": "create_rule_api_rules_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRuleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rules/{rule_id}": {
+      "put": {
+        "tags": [
+          "AegisGate Gateway"
+        ],
+        "summary": "Update Rule",
+        "description": "Update an existing governance rule.",
+        "operationId": "update_rule_api_rules__rule_id__put",
+        "parameters": [
+          {
+            "name": "rule_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Rule Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRuleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "AegisGate Gateway"
+        ],
+        "summary": "Delete Rule",
+        "description": "Delete a governance rule.",
+        "operationId": "delete_rule_api_rules__rule_id__delete",
+        "parameters": [
+          {
+            "name": "rule_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Rule Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Delete Rule Api Rules  Rule Id  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/settings/auto-mode": {
+      "get": {
+        "tags": [
+          "AegisGate Gateway"
+        ],
+        "summary": "Get Auto Mode",
+        "description": "Get current Auto Approval Mode status.",
+        "operationId": "get_auto_mode_api_settings_auto_mode_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutoModeResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "AegisGate Gateway"
+        ],
+        "summary": "Set Auto Mode",
+        "description": "Set Auto Approval Mode status.",
+        "operationId": "set_auto_mode_api_settings_auto_mode_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetAutoModeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutoModeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/logs": {
+      "get": {
+        "tags": [
+          "AegisGate Gateway"
+        ],
+        "summary": "List Logs",
+        "description": "List historical audit logs.",
+        "operationId": "list_logs_api_logs_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "target_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Target Id"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ExecutionResponse"
+                  },
+                  "title": "Response List Logs Api Logs Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Health Check",
+        "description": "Health check endpoint for platform monitoring.",
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Health Check Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApproveExecutionRequest": {
+        "properties": {
+          "approved_by": {
+            "type": "string",
+            "title": "Approved By",
+            "description": "User or approver identifier",
+            "default": "Admin"
+          }
+        },
+        "type": "object",
+        "title": "ApproveExecutionRequest",
+        "description": "Payload for approving and resuming a paused execution."
+      },
+      "AutoModeResponse": {
+        "properties": {
+          "auto_approval_enabled": {
+            "type": "boolean",
+            "title": "Auto Approval Enabled"
+          }
+        },
+        "type": "object",
+        "required": [
+          "auto_approval_enabled"
+        ],
+        "title": "AutoModeResponse",
+        "description": "Auto approval mode status."
+      },
+      "Body_install_plugin_zip_api_plugins_install_zip_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "title": "File",
+            "description": "ZIP archive containing plugin files and manifest.json"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_install_plugin_zip_api_plugins_install_zip_post"
+      },
+      "CreateRuleRequest": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "target_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Id"
+          },
+          "rule_type": {
+            "type": "string",
+            "enum": [
+              "FORBID_JOIN",
+              "FORBID_TABLE_SCAN",
+              "MAX_EXECUTION_TIME",
+              "CUSTOM",
+              "REDACT_FIELD",
+              "REMOVE_FIELD"
+            ],
+            "title": "Rule Type",
+            "description": "FORBID_JOIN | FORBID_TABLE_SCAN | MAX_EXECUTION_TIME | CUSTOM | REDACT_FIELD | REMOVE_FIELD"
+          },
+          "expression": {
+            "type": "string",
+            "title": "Expression"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "CRITICAL",
+              "HIGH",
+              "MEDIUM",
+              "LOW"
+            ],
+            "title": "Severity",
+            "default": "HIGH"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "rule_type",
+          "expression"
+        ],
+        "title": "CreateRuleRequest",
+        "description": "Payload for creating a governance rule."
+      },
+      "ExecutionResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "target_id": {
+            "type": "string",
+            "title": "Target Id"
+          },
+          "query": {
+            "type": "string",
+            "title": "Query"
+          },
+          "query_type": {
+            "type": "string",
+            "enum": [
+              "READ",
+              "WRITE"
+            ],
+            "title": "Query Type"
+          },
+          "reasoning": {
+            "type": "string",
+            "title": "Reasoning"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "DRY_RUN",
+              "PAUSED_FOR_REVIEW",
+              "EXECUTING",
+              "COMPLETED",
+              "REJECTED",
+              "TIMEOUT",
+              "ABORTED",
+              "PENDING",
+              "FAILED"
+            ],
+            "title": "Status"
+          },
+          "explain_plan": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Explain Plan"
+          },
+          "violations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Violations"
+          },
+          "execution_time_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Execution Time Ms"
+          },
+          "auto_approved": {
+            "type": "boolean",
+            "title": "Auto Approved",
+            "default": false
+          },
+          "approved_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved By"
+          },
+          "result_summary": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result Summary"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "spid": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spid"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "target_id",
+          "query",
+          "query_type",
+          "reasoning",
+          "status",
+          "created_at"
+        ],
+        "title": "ExecutionResponse",
+        "description": "Response representing an execution's full state."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "InstallGitPluginRequest": {
+        "properties": {
+          "git_url": {
+            "type": "string",
+            "title": "Git Url",
+            "description": "Remote Git URL e.g. https://github.com/org/plugin.git"
+          },
+          "branch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Branch",
+            "description": "Optional branch or tag name"
+          },
+          "plugin_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plugin Id",
+            "description": "Optional override for plugin ID"
+          }
+        },
+        "type": "object",
+        "required": [
+          "git_url"
+        ],
+        "title": "InstallGitPluginRequest",
+        "description": "Payload for installing a plugin directly from a remote Git repository."
+      },
+      "KnowledgeChunkResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "target_id": {
+            "type": "string",
+            "title": "Target Id"
+          },
+          "partition_key": {
+            "type": "string",
+            "title": "Partition Key"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "catalog": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "items": {},
+                "type": "array"
+              },
+              {}
+            ],
+            "title": "Catalog"
+          },
+          "doc_content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doc Content"
+          },
+          "skills_content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skills Content"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "target_id",
+          "partition_key",
+          "title",
+          "catalog",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "KnowledgeChunkResponse",
+        "description": "Knowledge chunk metadata and doc references."
+      },
+      "McpConfigResponse": {
+        "properties": {
+          "server_name": {
+            "type": "string",
+            "title": "Server Name"
+          },
+          "plugin_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plugin Id"
+          },
+          "command": {
+            "type": "string",
+            "title": "Command",
+            "default": "python"
+          },
+          "args": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Args"
+          },
+          "env": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Env"
+          },
+          "mcpServers": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Mcpservers",
+            "description": "Standard JSON snippet ready for claude_desktop_config.json, .cursor/mcp.json, or cline"
+          },
+          "client_configs": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Client Configs",
+            "description": "Target-specific JSON snippets formatted for Claude, Cursor, and Cline"
+          }
+        },
+        "type": "object",
+        "required": [
+          "server_name",
+          "mcpServers"
+        ],
+        "title": "McpConfigResponse",
+        "description": "Response containing standard MCP JSON configuration for AI clients."
+      },
+      "PluginCertificationResponse": {
+        "properties": {
+          "plugin_id": {
+            "type": "string",
+            "title": "Plugin Id"
+          },
+          "certified": {
+            "type": "boolean",
+            "title": "Certified"
+          },
+          "badge": {
+            "type": "string",
+            "title": "Badge"
+          },
+          "checks": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Checks"
+          },
+          "verified_at": {
+            "type": "string",
+            "title": "Verified At"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "plugin_id",
+          "certified",
+          "badge",
+          "checks",
+          "verified_at"
+        ],
+        "title": "PluginCertificationResponse",
+        "description": "Report from running 4-stage sanity linter against a plugin."
+      },
+      "PluginProfileResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "driver": {
+            "type": "string",
+            "title": "Driver"
+          },
+          "entrypoint": {
+            "type": "string",
+            "title": "Entrypoint"
+          },
+          "dry_run_command": {
+            "type": "string",
+            "title": "Dry Run Command"
+          },
+          "abort_command": {
+            "type": "string",
+            "title": "Abort Command"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config"
+          },
+          "ui_schema": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Ui Schema"
+          },
+          "custom_card": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Card"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "inactive",
+              "error"
+            ],
+            "title": "Status"
+          },
+          "latency_ms": {
+            "type": "number",
+            "title": "Latency Ms"
+          },
+          "active_sessions_count": {
+            "type": "integer",
+            "title": "Active Sessions Count"
+          },
+          "is_certified": {
+            "type": "boolean",
+            "title": "Is Certified",
+            "default": false
+          },
+          "certification_report": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Certification Report"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "driver",
+          "entrypoint",
+          "dry_run_command",
+          "abort_command",
+          "config",
+          "status",
+          "latency_ms",
+          "active_sessions_count",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "PluginProfileResponse",
+        "description": "Plugin profile data for UI rendering."
+      },
+      "PluginSchemaResponse": {
+        "properties": {
+          "plugin_id": {
+            "type": "string",
+            "title": "Plugin Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "driver": {
+            "type": "string",
+            "title": "Driver"
+          },
+          "ui_schema": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Ui Schema"
+          },
+          "current_config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Current Config"
+          },
+          "custom_card": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Card"
+          }
+        },
+        "type": "object",
+        "required": [
+          "plugin_id",
+          "name",
+          "driver"
+        ],
+        "title": "PluginSchemaResponse",
+        "description": "Response containing plugin dynamic UI schema and current config."
+      },
+      "RegisterPluginRequest": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Unique plugin key (e.g. sqlserver_prod)"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Display name"
+          },
+          "driver": {
+            "type": "string",
+            "title": "Driver",
+            "description": "Driver identifier e.g. pyodbc/mssql"
+          },
+          "entrypoint": {
+            "type": "string",
+            "title": "Entrypoint",
+            "description": "Command to invoke plugin subprocess"
+          },
+          "dry_run_command": {
+            "type": "string",
+            "title": "Dry Run Command",
+            "default": "SET SHOWPLAN_XML ON"
+          },
+          "abort_command": {
+            "type": "string",
+            "title": "Abort Command",
+            "default": "KILL {spid}"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config"
+          },
+          "ui_schema": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ui Schema"
+          },
+          "custom_card": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Card"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "driver",
+          "entrypoint"
+        ],
+        "title": "RegisterPluginRequest",
+        "description": "Payload for registering a new plugin via Add Plugin Modal."
+      },
+      "RejectExecutionRequest": {
+        "properties": {
+          "rejected_by": {
+            "type": "string",
+            "title": "Rejected By",
+            "default": "Admin"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason",
+            "default": "Rejected by admin review"
+          }
+        },
+        "type": "object",
+        "title": "RejectExecutionRequest",
+        "description": "Payload for rejecting an execution."
+      },
+      "RuleResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "target_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Id"
+          },
+          "rule_type": {
+            "type": "string",
+            "enum": [
+              "FORBID_JOIN",
+              "FORBID_TABLE_SCAN",
+              "MAX_EXECUTION_TIME",
+              "CUSTOM",
+              "REDACT_FIELD",
+              "REMOVE_FIELD"
+            ],
+            "title": "Rule Type"
+          },
+          "expression": {
+            "type": "string",
+            "title": "Expression"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "CRITICAL",
+              "HIGH",
+              "MEDIUM",
+              "LOW"
+            ],
+            "title": "Severity"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "rule_type",
+          "expression",
+          "description",
+          "severity",
+          "is_active",
+          "created_at"
+        ],
+        "title": "RuleResponse",
+        "description": "Governance rule representation."
+      },
+      "SetAutoModeRequest": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          }
+        },
+        "type": "object",
+        "required": [
+          "enabled"
+        ],
+        "title": "SetAutoModeRequest",
+        "description": "Payload to toggle auto approval mode."
+      },
+      "SubmitExecutionRequest": {
+        "properties": {
+          "target_id": {
+            "type": "string",
+            "title": "Target Id",
+            "description": "Target plugin identifier"
+          },
+          "query": {
+            "type": "string",
+            "title": "Query",
+            "description": "SQL or command query string"
+          },
+          "reasoning": {
+            "type": "string",
+            "title": "Reasoning",
+            "description": "AI intent or chain of thought reasoning",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "target_id",
+          "query"
+        ],
+        "title": "SubmitExecutionRequest",
+        "description": "Payload for submitting an AI query for execution."
+      },
+      "UpdateDocsRequest": {
+        "properties": {
+          "doc_content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doc Content"
+          },
+          "skills_content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skills Content"
+          }
+        },
+        "type": "object",
+        "title": "UpdateDocsRequest",
+        "description": "Payload for updating doc.md and skills.md markdown text."
+      },
+      "UpdatePluginConfigRequest": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config",
+            "description": "Updated connection configuration"
+          },
+          "driver": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Driver"
+          },
+          "entrypoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entrypoint"
+          },
+          "dry_run_command": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dry Run Command"
+          },
+          "abort_command": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Abort Command"
+          }
+        },
+        "type": "object",
+        "required": [
+          "config"
+        ],
+        "title": "UpdatePluginConfigRequest",
+        "description": "Payload for updating a plugin's configuration via Edit Modal."
+      },
+      "UpdateRuleRequest": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "target_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Id"
+          },
+          "rule_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "FORBID_JOIN",
+                  "FORBID_TABLE_SCAN",
+                  "MAX_EXECUTION_TIME",
+                  "CUSTOM",
+                  "REDACT_FIELD",
+                  "REMOVE_FIELD"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rule Type"
+          },
+          "expression": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expression"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "severity": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "CRITICAL",
+                  "HIGH",
+                  "MEDIUM",
+                  "LOW"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Severity"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "title": "UpdateRuleRequest",
+        "description": "Payload for updating an existing rule."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

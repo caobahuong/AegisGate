@@ -5,11 +5,40 @@ Adheres to python_clean_code.md:
 - Strict validation models
 """
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
 from core.engine.governance import validate_rule_definition
+
+# --- Strongly-Typed Enums & Literals ---
+
+ExecutionStatus = Literal[
+    "DRY_RUN",
+    "PAUSED_FOR_REVIEW",
+    "EXECUTING",
+    "COMPLETED",
+    "REJECTED",
+    "TIMEOUT",
+    "ABORTED",
+    "PENDING",
+    "FAILED",
+]
+
+QueryType = Literal["READ", "WRITE"]
+
+RuleType = Literal[
+    "FORBID_JOIN",
+    "FORBID_TABLE_SCAN",
+    "MAX_EXECUTION_TIME",
+    "CUSTOM",
+    "REDACT_FIELD",
+    "REMOVE_FIELD",
+]
+
+RuleSeverity = Literal["CRITICAL", "HIGH", "MEDIUM", "LOW"]
+
+PluginStatus = Literal["active", "inactive", "error"]
 
 # --- Monitor & Execution Schemas ---
 
@@ -28,9 +57,9 @@ class ExecutionResponse(BaseModel):
     id: str
     target_id: str
     query: str
-    query_type: str
+    query_type: QueryType
     reasoning: str
-    status: str
+    status: ExecutionStatus
     explain_plan: Any | None = None
     violations: list[str] = Field(default_factory=list)
     execution_time_ms: float | None = None
@@ -96,7 +125,7 @@ class PluginProfileResponse(BaseModel):
     config: dict[str, Any]
     ui_schema: list[dict[str, Any]] = Field(default_factory=list)
     custom_card: dict[str, Any] | None = None
-    status: str
+    status: PluginStatus
     latency_ms: float
     active_sessions_count: int
     is_certified: bool = False
@@ -168,12 +197,12 @@ class CreateRuleRequest(BaseModel):
     id: str
     name: str
     target_id: str | None = None
-    rule_type: str = Field(
+    rule_type: RuleType = Field(
         description="FORBID_JOIN | FORBID_TABLE_SCAN | MAX_EXECUTION_TIME | CUSTOM | REDACT_FIELD | REMOVE_FIELD"
     )
     expression: str
     description: str = ""
-    severity: str = "HIGH"
+    severity: RuleSeverity = "HIGH"
     is_active: bool = True
 
     @model_validator(mode="after")
@@ -189,10 +218,10 @@ class UpdateRuleRequest(BaseModel):
 
     name: str | None = None
     target_id: str | None = None
-    rule_type: str | None = None
+    rule_type: RuleType | None = None
     expression: str | None = None
     description: str | None = None
-    severity: str | None = None
+    severity: RuleSeverity | None = None
     is_active: bool | None = None
 
 
@@ -202,10 +231,10 @@ class RuleResponse(BaseModel):
     id: str
     name: str
     target_id: str | None = None
-    rule_type: str
+    rule_type: RuleType
     expression: str
     description: str
-    severity: str
+    severity: RuleSeverity
     is_active: bool
     created_at: str
 
