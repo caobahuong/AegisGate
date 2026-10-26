@@ -25,9 +25,15 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
     <div
       role="status"
       aria-live="polite"
-      className={cn("flex items-center justify-center space-x-2 text-slate-500 dark:text-slate-400 p-6", className)}
+      className={cn(
+        "flex items-center justify-center space-x-2 text-slate-500 dark:text-slate-400 p-6",
+        className
+      )}
     >
-      <Loader2 className={cn("animate-spin text-indigo-600 dark:text-indigo-400", sizeMap[size])} aria-hidden="true" />
+      <Loader2
+        className={cn("animate-spin text-indigo-600 dark:text-indigo-400", sizeMap[size])}
+        aria-hidden="true"
+      />
       <span className="text-xs font-medium">{label}</span>
       <span className="sr-only">{label}</span>
     </div>

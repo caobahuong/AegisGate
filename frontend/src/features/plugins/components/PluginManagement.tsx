@@ -100,19 +100,25 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
           <div className="flex items-center space-x-3 text-xs bg-slate-50 dark:bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 font-mono">
             <span className="flex items-center space-x-1.5 text-slate-600 dark:text-slate-400">
               <Activity className="h-3 w-3 text-indigo-500" />
-              <span>Pool: <strong className="text-slate-900 dark:text-slate-100">{totalSessions}</strong> SPIDs</span>
+              <span>
+                Pool:{" "}
+                <strong className="text-slate-900 dark:text-slate-100">{totalSessions}</strong>{" "}
+                SPIDs
+              </span>
             </span>
             <span className="text-slate-300 dark:text-slate-700">|</span>
             <span className="flex items-center space-x-1.5 text-slate-600 dark:text-slate-400">
               <ShieldCheck className="h-3 w-3 text-emerald-500" />
-              <span>Certified: <strong className="text-emerald-700 dark:text-emerald-400">{certifiedCount}/{plugins.length}</strong></span>
+              <span>
+                Certified:{" "}
+                <strong className="text-emerald-700 dark:text-emerald-400">
+                  {certifiedCount}/{plugins.length}
+                </strong>
+              </span>
             </span>
           </div>
 
-          <Button
-            onClick={() => setShowAddModal(true)}
-            leftIcon={<Plus className="h-4 w-4" />}
-          >
+          <Button onClick={() => setShowAddModal(true)} leftIcon={<Plus className="h-4 w-4" />}>
             Add Pluggable Target
           </Button>
         </div>
@@ -124,11 +130,7 @@ export const PluginManagement: React.FC<PluginManagementProps> = ({
           title="No Pluggable Targets Registered"
           description="Register a database adapter plugin (SQL Server, MongoDB, PostgreSQL) to begin routing queries through AegisGate."
           icon={<Boxes className="h-8 w-8 text-indigo-500" />}
-          action={
-            <Button onClick={() => setShowAddModal(true)}>
-              Register First Target
-            </Button>
-          }
+          action={<Button onClick={() => setShowAddModal(true)}>Register First Target</Button>}
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

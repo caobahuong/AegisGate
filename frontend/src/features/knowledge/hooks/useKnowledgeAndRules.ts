@@ -56,10 +56,7 @@ export function useKnowledgeAndRules({
 
   const selectedChunk = useMemo(() => {
     return (
-      filteredChunks.find((c) => c.id === selectedChunkId) ||
-      filteredChunks[0] ||
-      chunks[0] ||
-      null
+      filteredChunks.find((c) => c.id === selectedChunkId) || filteredChunks[0] || chunks[0] || null
     );
   }, [filteredChunks, selectedChunkId, chunks]);
 
@@ -78,7 +75,7 @@ export function useKnowledgeAndRules({
   // Rule Modal state
   const [showRuleModal, setShowRuleModal] = useState<boolean>(false);
   const [editingRule, setEditingRule] = useState<RuleResponse | null>(null);
-  const [ruleId, setRuleId] = useState<string>("" );
+  const [ruleId, setRuleId] = useState<string>("");
   const [ruleName, setRuleName] = useState<string>("");
   const [ruleTargetId, setRuleTargetId] = useState<string>("");
   const [ruleType, setRuleType] = useState<RuleType>("FORBID_JOIN");

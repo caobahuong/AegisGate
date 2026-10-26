@@ -47,37 +47,25 @@ export function usePlugins(initialPlugins: PluginProfileResponse[] = []) {
     }
   }, [initialPlugins.length, loadPlugins]);
 
-  const register = useCallback(
-    async (req: RegisterPluginRequest) => {
-      const created = await apiRegisterPlugin(req);
-      setPlugins((prev) => [...prev.filter((p) => p.id !== created.id), created]);
-    },
-    []
-  );
+  const register = useCallback(async (req: RegisterPluginRequest) => {
+    const created = await apiRegisterPlugin(req);
+    setPlugins((prev) => [...prev.filter((p) => p.id !== created.id), created]);
+  }, []);
 
-  const installZip = useCallback(
-    async (file: File) => {
-      const installed = await apiInstallPluginZip(file);
-      setPlugins((prev) => [...prev.filter((p) => p.id !== installed.id), installed]);
-    },
-    []
-  );
+  const installZip = useCallback(async (file: File) => {
+    const installed = await apiInstallPluginZip(file);
+    setPlugins((prev) => [...prev.filter((p) => p.id !== installed.id), installed]);
+  }, []);
 
-  const installGit = useCallback(
-    async (req: InstallGitPluginRequest) => {
-      const installed = await apiInstallPluginGit(req);
-      setPlugins((prev) => [...prev.filter((p) => p.id !== installed.id), installed]);
-    },
-    []
-  );
+  const installGit = useCallback(async (req: InstallGitPluginRequest) => {
+    const installed = await apiInstallPluginGit(req);
+    setPlugins((prev) => [...prev.filter((p) => p.id !== installed.id), installed]);
+  }, []);
 
-  const updateConfig = useCallback(
-    async (pluginId: string, req: UpdatePluginConfigRequest) => {
-      const updated = await apiUpdatePluginConfig(pluginId, req);
-      setPlugins((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-    },
-    []
-  );
+  const updateConfig = useCallback(async (pluginId: string, req: UpdatePluginConfigRequest) => {
+    const updated = await apiUpdatePluginConfig(pluginId, req);
+    setPlugins((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+  }, []);
 
   const syncCatalog = useCallback(
     async (pluginId: string) => {
@@ -116,13 +104,10 @@ export function usePlugins(initialPlugins: PluginProfileResponse[] = []) {
     [showToast]
   );
 
-  const uninstall = useCallback(
-    async (pluginId: string, hardDelete: boolean) => {
-      await apiDeletePlugin(pluginId, hardDelete);
-      setPlugins((prev) => prev.filter((p) => p.id !== pluginId));
-    },
-    []
-  );
+  const uninstall = useCallback(async (pluginId: string, hardDelete: boolean) => {
+    await apiDeletePlugin(pluginId, hardDelete);
+    setPlugins((prev) => prev.filter((p) => p.id !== pluginId));
+  }, []);
 
   return {
     plugins,

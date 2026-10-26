@@ -9,10 +9,24 @@ import { KnowledgeAndRules } from "@/features/knowledge";
 import { AuditLogs } from "@/features/audit";
 import { McpConfigModal } from "@/features/mcp";
 import { UserGuideModal } from "@/features/guide";
-import { ActiveTab, KnowledgeChunkResponse, McpConfigResponse, PluginProfileResponse, RuleResponse } from "@/types";
 import {
-  fetchAutoMode, fetchGlobalMcpConfig, fetchKnowledgeChunks, fetchPluginMcpConfig,
-  fetchRules, setAutoMode as apiSetAutoMode, updateKnowledgeDocs, createRule, updateRule, deleteRule,
+  ActiveTab,
+  KnowledgeChunkResponse,
+  McpConfigResponse,
+  PluginProfileResponse,
+  RuleResponse,
+} from "@/types";
+import {
+  fetchAutoMode,
+  fetchGlobalMcpConfig,
+  fetchKnowledgeChunks,
+  fetchPluginMcpConfig,
+  fetchRules,
+  setAutoMode as apiSetAutoMode,
+  updateKnowledgeDocs,
+  createRule,
+  updateRule,
+  deleteRule,
 } from "@/shared/lib/api";
 import { ToastProvider, useToast } from "@/shared/hooks/useToast";
 import { useTheme } from "@/shared/hooks/useTheme";
@@ -26,18 +40,42 @@ function DashboardContent() {
   const { theme, toggleTheme } = useTheme();
   const { showToast } = useToast();
 
-  const { executions, selectedExecution, setSelectedExecution, submitQuery, approve, reject, abort, sseStatus } = useExecutions();
-  const { plugins, register, installZip, installGit, updateConfig, syncCatalog, verify, uninstall } = usePlugins();
+  const {
+    executions,
+    selectedExecution,
+    setSelectedExecution,
+    submitQuery,
+    approve,
+    reject,
+    abort,
+    sseStatus,
+  } = useExecutions();
+  const {
+    plugins,
+    register,
+    installZip,
+    installGit,
+    updateConfig,
+    syncCatalog,
+    verify,
+    uninstall,
+  } = usePlugins();
 
   const [showMcpModal, setShowMcpModal] = useState<boolean>(false);
   const [showGuideModal, setShowGuideModal] = useState<boolean>(false);
   const [mcpModalData, setMcpModalData] = useState<McpConfigResponse | null>(null);
   const [mcpModalTitle, setMcpModalTitle] = useState<string>("MCP Connection Configuration");
-  const [mcpModalSubtitle, setMcpModalSubtitle] = useState<string>("Global AegisGate MCP Server configuration");
+  const [mcpModalSubtitle, setMcpModalSubtitle] = useState<string>(
+    "Global AegisGate MCP Server configuration"
+  );
   const [isMcpLoading, setIsMcpLoading] = useState<boolean>(false);
 
   useEffect(() => {
-    Promise.all([fetchAutoMode().then(setAutoMode), fetchKnowledgeChunks().then(setChunks), fetchRules().then(setRules)]).catch(console.error);
+    Promise.all([
+      fetchAutoMode().then(setAutoMode),
+      fetchKnowledgeChunks().then(setChunks),
+      fetchRules().then(setRules),
+    ]).catch(console.error);
   }, []);
 
   const handleToggleAutoMode = async () => {
@@ -55,7 +93,11 @@ function DashboardContent() {
     setMcpModalSubtitle("Connect Claude Desktop, Cursor, or Cline to AegisGate Core Gateway");
     setShowMcpModal(true);
     setIsMcpLoading(true);
-    try { setMcpModalData(await fetchGlobalMcpConfig()); } finally { setIsMcpLoading(false); }
+    try {
+      setMcpModalData(await fetchGlobalMcpConfig());
+    } finally {
+      setIsMcpLoading(false);
+    }
   };
 
   const handleOpenPluginMcp = async (plugin: PluginProfileResponse) => {
@@ -63,7 +105,11 @@ function DashboardContent() {
     setMcpModalSubtitle(`Target connector snippet for ${plugin.driver} (${plugin.id})`);
     setShowMcpModal(true);
     setIsMcpLoading(true);
-    try { setMcpModalData(await fetchPluginMcpConfig(plugin.id)); } finally { setIsMcpLoading(false); }
+    try {
+      setMcpModalData(await fetchPluginMcpConfig(plugin.id));
+    } finally {
+      setIsMcpLoading(false);
+    }
   };
 
   const reloadChunks = useCallback(async () => setChunks(await fetchKnowledgeChunks()), []);
@@ -71,25 +117,86 @@ function DashboardContent() {
 
   return (
     <div className="h-screen w-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col overflow-hidden">
-      <Header autoMode={autoMode} onToggleAutoMode={handleToggleAutoMode} sseStatus={sseStatus} onOpenMcpModal={handleOpenGlobalMcp} theme={theme} onToggleTheme={toggleTheme} />
+      <Header
+        autoMode={autoMode}
+        onToggleAutoMode={handleToggleAutoMode}
+        sseStatus={sseStatus}
+        onOpenMcpModal={handleOpenGlobalMcp}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+      />
       <div className="flex-1 flex overflow-hidden min-h-0">
-        <Sidebar activeTab={activeTab} onTabChange={setActiveTab} plugins={plugins} onOpenUserGuide={() => setShowGuideModal(true)} />
+        <Sidebar
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          plugins={plugins}
+          onOpenUserGuide={() => setShowGuideModal(true)}
+        />
         <main className="flex-1 overflow-y-auto p-6 min-h-0">
           <ErrorBoundary>
             {activeTab === "monitor" && (
-              <LiveExecutionMonitor executions={executions} selectedExecution={selectedExecution} onSelectExecution={setSelectedExecution} onSubmitQuery={submitQuery} onApprove={approve} onReject={reject} onAbort={abort} plugins={plugins} />
+              <LiveExecutionMonitor
+                executions={executions}
+                selectedExecution={selectedExecution}
+                onSelectExecution={setSelectedExecution}
+                onSubmitQuery={submitQuery}
+                onApprove={approve}
+                onReject={reject}
+                onAbort={abort}
+                plugins={plugins}
+              />
             )}
             {activeTab === "plugins" && (
-              <PluginManagement plugins={plugins} onRegisterPlugin={register} onUpdatePlugin={updateConfig} onSyncPlugin={async (id) => { await syncCatalog(id); await reloadChunks(); }} onUninstallPlugin={uninstall} onViewMcpConfig={handleOpenPluginMcp} onInstallZip={installZip} onInstallGit={installGit} onVerifyPlugin={verify} />
+              <PluginManagement
+                plugins={plugins}
+                onRegisterPlugin={register}
+                onUpdatePlugin={updateConfig}
+                onSyncPlugin={async (id) => {
+                  await syncCatalog(id);
+                  await reloadChunks();
+                }}
+                onUninstallPlugin={uninstall}
+                onViewMcpConfig={handleOpenPluginMcp}
+                onInstallZip={installZip}
+                onInstallGit={installGit}
+                onVerifyPlugin={verify}
+              />
             )}
             {activeTab === "knowledge" && (
-              <KnowledgeAndRules chunks={chunks} rules={rules} plugins={plugins} onSaveDocs={async (id, d, s) => { await updateKnowledgeDocs(id, d, s); await reloadChunks(); }} onCreateRule={async (r) => { await createRule(r); await reloadRules(); }} onUpdateRule={async (id, r) => { await updateRule(id, r); await reloadRules(); }} onDeleteRule={async (id) => { await deleteRule(id); await reloadRules(); }} />
+              <KnowledgeAndRules
+                chunks={chunks}
+                rules={rules}
+                plugins={plugins}
+                onSaveDocs={async (id, d, s) => {
+                  await updateKnowledgeDocs(id, d, s);
+                  await reloadChunks();
+                }}
+                onCreateRule={async (r) => {
+                  await createRule(r);
+                  await reloadRules();
+                }}
+                onUpdateRule={async (id, r) => {
+                  await updateRule(id, r);
+                  await reloadRules();
+                }}
+                onDeleteRule={async (id) => {
+                  await deleteRule(id);
+                  await reloadRules();
+                }}
+              />
             )}
             {activeTab === "logs" && <AuditLogs executions={executions} plugins={plugins} />}
           </ErrorBoundary>
         </main>
       </div>
-      <McpConfigModal isOpen={showMcpModal} onClose={() => setShowMcpModal(false)} title={mcpModalTitle} subtitle={mcpModalSubtitle} configData={mcpModalData} isLoading={isMcpLoading} />
+      <McpConfigModal
+        isOpen={showMcpModal}
+        onClose={() => setShowMcpModal(false)}
+        title={mcpModalTitle}
+        subtitle={mcpModalSubtitle}
+        configData={mcpModalData}
+        isLoading={isMcpLoading}
+      />
       <UserGuideModal isOpen={showGuideModal} onClose={() => setShowGuideModal(false)} />
     </div>
   );

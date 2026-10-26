@@ -74,13 +74,23 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               )}
             >
               <div className="flex-shrink-0 mt-0.5">
-                {toast.type === "success" && <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />}
-                {toast.type === "error" && <AlertCircle className="h-4 w-4 text-rose-600 dark:text-rose-400" />}
-                {toast.type === "warning" && <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />}
-                {toast.type === "info" && <Info className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />}
+                {toast.type === "success" && (
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                )}
+                {toast.type === "error" && (
+                  <AlertCircle className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+                )}
+                {toast.type === "warning" && (
+                  <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                )}
+                {toast.type === "info" && (
+                  <Info className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                )}
               </div>
 
-              <div className="flex-1 font-medium leading-relaxed pr-1 break-words">{toast.message}</div>
+              <div className="flex-1 font-medium leading-relaxed pr-1 break-words">
+                {toast.message}
+              </div>
 
               <button
                 type="button"
@@ -102,7 +112,10 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 export function useToast() {
   const context = useContext(ToastContext);
   if (!context) {
-    throw new Error("useToast must be used within a ToastProvider");
+    return {
+      showToast: () => "",
+      dismissToast: () => {},
+    };
   }
   return context;
 }

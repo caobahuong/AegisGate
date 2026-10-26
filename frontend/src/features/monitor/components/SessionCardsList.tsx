@@ -21,7 +21,9 @@ export const SessionCardsList = memo<SessionCardsListProps>(
           {sessionFilter === "PENDING" && (
             <div className="flex flex-col items-center space-y-1">
               <CheckCircle2 className="h-5 w-5 text-emerald-500 mb-1" />
-              <span className="font-semibold text-slate-800 dark:text-slate-200">No queries awaiting review</span>
+              <span className="font-semibold text-slate-800 dark:text-slate-200">
+                No queries awaiting review
+              </span>
               <span className="text-[11px] text-slate-500">
                 All AI queries have been processed or the gateway is currently idle.
               </span>
@@ -41,7 +43,9 @@ export const SessionCardsList = memo<SessionCardsListProps>(
           {sessionFilter === "BLOCKED" && (
             <div className="flex flex-col items-center space-y-1">
               <ShieldAlert className="h-5 w-5 text-emerald-500 mb-1" />
-              <span className="font-semibold text-slate-800 dark:text-slate-200">No blocked or rejected queries</span>
+              <span className="font-semibold text-slate-800 dark:text-slate-200">
+                No blocked or rejected queries
+              </span>
               <span className="text-[11px] text-slate-500">
                 Zero governance policy violations or execution timeouts recorded.
               </span>
@@ -50,7 +54,9 @@ export const SessionCardsList = memo<SessionCardsListProps>(
           {sessionFilter === "COMPLETED" && (
             <div className="flex flex-col items-center space-y-1">
               <Database className="h-5 w-5 text-slate-500 mb-1" />
-              <span className="font-semibold text-slate-800 dark:text-slate-200">No completed sessions yet</span>
+              <span className="font-semibold text-slate-800 dark:text-slate-200">
+                No completed sessions yet
+              </span>
               <span className="text-[11px] text-slate-500">
                 Submit a test query below to verify the full execution lifecycle.
               </span>
@@ -59,9 +65,12 @@ export const SessionCardsList = memo<SessionCardsListProps>(
           {sessionFilter === "ALL" && (
             <div className="flex flex-col items-center space-y-1">
               <Activity className="h-5 w-5 text-slate-500 mb-1" />
-              <span className="font-semibold text-slate-800 dark:text-slate-200">No execution sessions recorded</span>
+              <span className="font-semibold text-slate-800 dark:text-slate-200">
+                No execution sessions recorded
+              </span>
               <span className="text-[11px] text-slate-500">
-                Submit a query from the simulator below or connect an AI agent (Claude, Cursor, Cline) via MCP.
+                Submit a query from the simulator below or connect an AI agent (Claude, Cursor,
+                Cline) via MCP.
               </span>
             </div>
           )}

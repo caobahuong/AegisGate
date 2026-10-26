@@ -27,9 +27,24 @@ export const AddPluginModal: React.FC<AddPluginModalProps> = ({
   const [activeTab, setActiveTab] = useState<string>("preset");
 
   const tabItems = [
-    { id: "preset", label: "Presets & Manual", icon: <Database className="h-3.5 w-3.5" /> },
-    { id: "zip", label: "ZIP Archive", icon: <Upload className="h-3.5 w-3.5" /> },
-    { id: "git", label: "Git Repository", icon: <GitBranch className="h-3.5 w-3.5" /> },
+    {
+      id: "preset",
+      testId: "tab-add-preset",
+      label: "Preset & Form",
+      icon: <Database className="h-3.5 w-3.5" />,
+    },
+    {
+      id: "zip",
+      testId: "tab-add-zip",
+      label: "Upload ZIP",
+      icon: <Upload className="h-3.5 w-3.5" />,
+    },
+    {
+      id: "git",
+      testId: "tab-add-git",
+      label: "Clone Git",
+      icon: <GitBranch className="h-3.5 w-3.5" />,
+    },
   ];
 
   return (
@@ -48,13 +63,9 @@ export const AddPluginModal: React.FC<AddPluginModalProps> = ({
           <ManualPluginForm onRegisterPlugin={onRegisterPlugin} onClose={onClose} />
         )}
 
-        {activeTab === "zip" && (
-          <ZipPluginForm onInstallZip={onInstallZip} onClose={onClose} />
-        )}
+        {activeTab === "zip" && <ZipPluginForm onInstallZip={onInstallZip} onClose={onClose} />}
 
-        {activeTab === "git" && (
-          <GitPluginForm onInstallGit={onInstallGit} onClose={onClose} />
-        )}
+        {activeTab === "git" && <GitPluginForm onInstallGit={onInstallGit} onClose={onClose} />}
       </div>
     </Modal>
   );

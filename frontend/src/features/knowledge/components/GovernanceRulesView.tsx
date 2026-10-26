@@ -52,7 +52,8 @@ export const GovernanceRulesView: React.FC<GovernanceRulesViewProps> = ({
               No governance rules found for this target scope.
             </p>
             <p className="text-[11px] text-slate-500">
-              Click &quot;Create Rule&quot; to define query restrictions for this database target or globally.
+              Click &quot;Create Rule&quot; to define query restrictions for this database target or
+              globally.
             </p>
           </div>
         ) : (
@@ -73,12 +74,15 @@ export const GovernanceRulesView: React.FC<GovernanceRulesViewProps> = ({
                         "bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30",
                       rule.severity === "MEDIUM" &&
                         "bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30",
-                      rule.severity === "LOW" && "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
+                      rule.severity === "LOW" &&
+                        "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
                     )}
                   >
                     {rule.severity}
                   </span>
-                  <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200">{rule.name}</h4>
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200">
+                    {rule.name}
+                  </h4>
                 </div>
 
                 <div className="flex items-center space-x-1.5">
@@ -139,7 +143,9 @@ export const GovernanceRulesView: React.FC<GovernanceRulesViewProps> = ({
                     {rule.expression || "Global"}
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">{rule.description}</p>
+                <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">
+                  {rule.description}
+                </p>
               </div>
             </div>
           ))

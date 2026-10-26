@@ -7,7 +7,12 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: "default" | "elevated" | "interactive";
 }
 
-export const Card: React.FC<CardProps> = ({ className, variant = "default", children, ...props }) => {
+export const Card: React.FC<CardProps> = ({
+  className,
+  variant = "default",
+  children,
+  ...props
+}) => {
   return (
     <div
       className={cn(
@@ -24,23 +29,47 @@ export const Card: React.FC<CardProps> = ({ className, variant = "default", chil
   );
 };
 
-export const CardHeader: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ className, children, ...props }) => {
+export const CardHeader: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
+  className,
+  children,
+  ...props
+}) => {
   return (
-    <div className={cn("p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between", className)} {...props}>
+    <div
+      className={cn(
+        "p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between",
+        className
+      )}
+      {...props}
+    >
       {children}
     </div>
   );
 };
 
-export const CardTitle: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = ({ className, children, ...props }) => {
+export const CardTitle: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = ({
+  className,
+  children,
+  ...props
+}) => {
   return (
-    <h3 className={cn("text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center space-x-2", className)} {...props}>
+    <h3
+      className={cn(
+        "text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center space-x-2",
+        className
+      )}
+      {...props}
+    >
       {children}
     </h3>
   );
 };
 
-export const CardDescription: React.FC<React.HTMLAttributes<HTMLParagraphElement>> = ({ className, children, ...props }) => {
+export const CardDescription: React.FC<React.HTMLAttributes<HTMLParagraphElement>> = ({
+  className,
+  children,
+  ...props
+}) => {
   return (
     <p className={cn("text-xs text-slate-500 dark:text-slate-400 mt-0.5", className)} {...props}>
       {children}
@@ -48,7 +77,11 @@ export const CardDescription: React.FC<React.HTMLAttributes<HTMLParagraphElement
   );
 };
 
-export const CardContent: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ className, children, ...props }) => {
+export const CardContent: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
+  className,
+  children,
+  ...props
+}) => {
   return (
     <div className={cn("p-4 sm:p-5", className)} {...props}>
       {children}
@@ -56,9 +89,19 @@ export const CardContent: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ cl
   );
 };
 
-export const CardFooter: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ className, children, ...props }) => {
+export const CardFooter: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
+  className,
+  children,
+  ...props
+}) => {
   return (
-    <div className={cn("p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30 rounded-b-xl", className)} {...props}>
+    <div
+      className={cn(
+        "p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30 rounded-b-xl",
+        className
+      )}
+      {...props}
+    >
       {children}
     </div>
   );

@@ -41,7 +41,10 @@ export const AuditLogsTable: React.FC<AuditLogsTableProps> = ({
           <tbody className="divide-y divide-slate-200 dark:divide-slate-800/80">
             {logs.length === 0 ? (
               <tr>
-                <td colSpan={8} className="py-12 text-center text-slate-400 dark:text-slate-500 italic">
+                <td
+                  colSpan={8}
+                  className="py-12 text-center text-slate-400 dark:text-slate-500 italic"
+                >
                   No matching execution logs found.
                 </td>
               </tr>

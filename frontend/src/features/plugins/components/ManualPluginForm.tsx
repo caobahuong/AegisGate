@@ -10,13 +10,18 @@ export interface ManualPluginFormProps {
   onClose: () => void;
 }
 
-export const ManualPluginForm: React.FC<ManualPluginFormProps> = ({ onRegisterPlugin, onClose }) => {
+export const ManualPluginForm: React.FC<ManualPluginFormProps> = ({
+  onRegisterPlugin,
+  onClose,
+}) => {
   const { showToast } = useToast();
   const [preset, setPreset] = useState<string>("sqlserver");
   const [id, setId] = useState<string>("sqlserver_prod");
   const [name, setName] = useState<string>("SQL Server Enterprise");
   const [driver, setDriver] = useState<string>("pyodbc/mssql");
-  const [entrypoint, setEntrypoint] = useState<string>("python plugins/sqlserver_plugin/adapter.py");
+  const [entrypoint, setEntrypoint] = useState<string>(
+    "python plugins/sqlserver_plugin/adapter.py"
+  );
   const [dryRunCmd, setDryRunCmd] = useState<string>("SET SHOWPLAN_XML ON");
   const [abortCmd, setAbortCmd] = useState<string>("KILL {spid}");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -75,7 +80,7 @@ export const ManualPluginForm: React.FC<ManualPluginFormProps> = ({ onRegisterPl
     <form onSubmit={handleManualSubmit} className="space-y-4 pt-2">
       <div>
         <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-          Adapter Template
+          Target Architecture Preset
         </label>
         <select
           value={preset}
@@ -90,7 +95,9 @@ export const ManualPluginForm: React.FC<ManualPluginFormProps> = ({ onRegisterPl
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Target ID</label>
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+            Target ID
+          </label>
           <input
             type="text"
             value={id}
@@ -100,7 +107,9 @@ export const ManualPluginForm: React.FC<ManualPluginFormProps> = ({ onRegisterPl
           />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Display Name</label>
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+            Display Name
+          </label>
           <input
             type="text"
             value={name}
@@ -113,7 +122,9 @@ export const ManualPluginForm: React.FC<ManualPluginFormProps> = ({ onRegisterPl
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Driver</label>
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+            Driver
+          </label>
           <input
             type="text"
             value={driver}
@@ -123,7 +134,9 @@ export const ManualPluginForm: React.FC<ManualPluginFormProps> = ({ onRegisterPl
           />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Entrypoint</label>
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+            Entrypoint
+          </label>
           <input
             type="text"
             value={entrypoint}

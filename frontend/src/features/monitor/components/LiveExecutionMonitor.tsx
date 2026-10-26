@@ -13,7 +13,11 @@ export interface LiveExecutionMonitorProps {
   executions: ExecutionResponse[];
   selectedExecution: ExecutionResponse | null;
   onSelectExecution: (exec: ExecutionResponse) => void;
-  onSubmitQuery: (targetId: string, query: string, reasoning: string) => Promise<void | ExecutionResponse>;
+  onSubmitQuery: (
+    targetId: string,
+    query: string,
+    reasoning: string
+  ) => Promise<void | ExecutionResponse>;
   onApprove: (id: string) => Promise<void>;
   onReject: (id: string) => Promise<void>;
   onAbort: (id: string) => Promise<void>;
@@ -68,7 +72,14 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
       default:
         return executions;
     }
-  }, [sessionFilter, executions, pendingSessions, runningSessions, blockedSessions, completedSessions]);
+  }, [
+    sessionFilter,
+    executions,
+    pendingSessions,
+    runningSessions,
+    blockedSessions,
+    completedSessions,
+  ]);
 
   return (
     <div className="space-y-6">

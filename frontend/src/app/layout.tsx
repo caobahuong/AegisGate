@@ -27,7 +27,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       </head>
-      <body className="bg-slate-950 text-slate-100 h-full overflow-hidden antialiased" suppressHydrationWarning>
+      <body
+        className="bg-slate-950 text-slate-100 h-full overflow-hidden antialiased"
+        suppressHydrationWarning
+      >
         {children}
       </body>
     </html>

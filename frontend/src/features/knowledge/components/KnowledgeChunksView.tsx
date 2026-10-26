@@ -37,7 +37,8 @@ export const KnowledgeChunksView: React.FC<KnowledgeChunksViewProps> = ({
               No knowledge chunks found for this target scope.
             </p>
             <p className="text-[11px] text-slate-500">
-              Go to Pluggable Targets and click &quot;Sync Catalog&quot; to extract schema partitions.
+              Go to Pluggable Targets and click &quot;Sync Catalog&quot; to extract schema
+              partitions.
             </p>
           </div>
         ) : (
@@ -53,7 +54,9 @@ export const KnowledgeChunksView: React.FC<KnowledgeChunksViewProps> = ({
               )}
             >
               <div className="flex justify-between items-center">
-                <span className="text-xs font-bold text-slate-900 dark:text-slate-200">{chunk.title}</span>
+                <span className="text-xs font-bold text-slate-900 dark:text-slate-200">
+                  {chunk.title}
+                </span>
                 <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-400 border border-slate-300 dark:border-slate-700">
                   {chunk.partition_key}
                 </span>

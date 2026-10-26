@@ -23,10 +23,12 @@ export const GuideExecutionSection: React.FC = () => {
             <span>Manual Review Mode (Default)</span>
           </div>
           <p className="text-[11px] text-slate-600 dark:text-slate-400">
-            When Header toggle is <strong className="text-slate-800 dark:text-slate-200">OFF</strong>: After passing
-            Dry-Run, queries pause at <code className="text-amber-600 dark:text-amber-400 font-mono">PAUSED_FOR_REVIEW</code>
-            . Click <strong>&quot;Approve &amp; Run&quot;</strong> to execute or <strong>&quot;Reject&quot;</strong> to
-            cancel.
+            When Header toggle is{" "}
+            <strong className="text-slate-800 dark:text-slate-200">OFF</strong>: After passing
+            Dry-Run, queries pause at{" "}
+            <code className="text-amber-600 dark:text-amber-400 font-mono">PAUSED_FOR_REVIEW</code>.
+            Click <strong>&quot;Approve &amp; Run&quot;</strong> to execute or{" "}
+            <strong>&quot;Reject&quot;</strong> to cancel.
           </p>
         </div>
 
@@ -36,9 +38,10 @@ export const GuideExecutionSection: React.FC = () => {
             <span>Auto Approval Mode</span>
           </div>
           <p className="text-[11px] text-slate-600 dark:text-slate-400">
-            Switch Header toggle to <strong className="text-emerald-600 dark:text-emerald-400">ON</strong>: Any safe
-            query (0 policy violations) is automatically approved and executed immediately, returning data to the AI in
-            milliseconds.
+            Switch Header toggle to{" "}
+            <strong className="text-emerald-600 dark:text-emerald-400">ON</strong>: Any safe query
+            (0 policy violations) is automatically approved and executed immediately, returning data
+            to the AI in milliseconds.
           </p>
         </div>
       </div>
@@ -50,8 +53,8 @@ export const GuideExecutionSection: React.FC = () => {
         </div>
         <p>
           If a running query hangs or consumes excessive resources, clicking{" "}
-          <strong>&quot;Stop &amp; KILL Session Now&quot;</strong> dispatches an immediate native kill command to
-          terminate the database session.
+          <strong>&quot;Stop &amp; KILL Session Now&quot;</strong> dispatches an immediate native
+          kill command to terminate the database session.
         </p>
       </div>
     </div>

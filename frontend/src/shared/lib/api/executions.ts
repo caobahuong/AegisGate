@@ -40,24 +40,33 @@ export async function approveExecution(
   executionId: string,
   approvedBy = "Admin"
 ): Promise<ExecutionResponse> {
-  return apiClient<ExecutionResponse>(`/monitor/executions/${encodeURIComponent(executionId)}/approve`, {
-    method: "POST",
-    body: JSON.stringify({ approved_by: approvedBy }),
-  });
+  return apiClient<ExecutionResponse>(
+    `/monitor/executions/${encodeURIComponent(executionId)}/approve`,
+    {
+      method: "POST",
+      body: JSON.stringify({ approved_by: approvedBy }),
+    }
+  );
 }
 
 export async function rejectExecution(
   executionId: string,
   reason = "Admin Rejected"
 ): Promise<ExecutionResponse> {
-  return apiClient<ExecutionResponse>(`/monitor/executions/${encodeURIComponent(executionId)}/reject`, {
-    method: "POST",
-    body: JSON.stringify({ rejected_by: "Admin", reason }),
-  });
+  return apiClient<ExecutionResponse>(
+    `/monitor/executions/${encodeURIComponent(executionId)}/reject`,
+    {
+      method: "POST",
+      body: JSON.stringify({ rejected_by: "Admin", reason }),
+    }
+  );
 }
 
 export async function abortExecution(executionId: string): Promise<ExecutionResponse> {
-  return apiClient<ExecutionResponse>(`/monitor/executions/${encodeURIComponent(executionId)}/abort`, {
-    method: "POST",
-  });
+  return apiClient<ExecutionResponse>(
+    `/monitor/executions/${encodeURIComponent(executionId)}/abort`,
+    {
+      method: "POST",
+    }
+  );
 }

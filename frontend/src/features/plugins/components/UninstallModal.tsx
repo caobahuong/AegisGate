@@ -59,8 +59,8 @@ export const UninstallModal: React.FC<UninstallModalProps> = ({
         <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs flex items-start space-x-2.5">
           <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
           <p className="leading-relaxed">
-            Removing this database target will immediately revoke AI Agent access to its schema catalog and pause any
-            active execution tunnels.
+            Removing this database target will immediately revoke AI Agent access to its schema
+            catalog and pause any active execution tunnels.
           </p>
         </div>
 
@@ -69,12 +69,15 @@ export const UninstallModal: React.FC<UninstallModalProps> = ({
             <input
               type="radio"
               name="uninstall_mode"
+              data-testid="mode-soft-deactivate"
               checked={!hardDelete}
               onChange={() => setHardDelete(false)}
               className="text-indigo-600 focus:ring-indigo-500"
             />
             <div className="text-xs">
-              <span className="font-bold text-slate-800 dark:text-slate-200 block">Soft Disable (Recommended)</span>
+              <span className="font-bold text-slate-800 dark:text-slate-200 block">
+                Soft Deactivate (Recommended)
+              </span>
               <span className="text-slate-500 dark:text-slate-400">
                 Retains plugin files and audit logs, but disables execution and catalog access.
               </span>
@@ -85,12 +88,15 @@ export const UninstallModal: React.FC<UninstallModalProps> = ({
             <input
               type="radio"
               name="uninstall_mode"
+              data-testid="mode-hard-delete"
               checked={hardDelete}
               onChange={() => setHardDelete(true)}
               className="text-rose-600 focus:ring-rose-500"
             />
             <div className="text-xs">
-              <span className="font-bold text-rose-700 dark:text-rose-400 block">Permanently Hard Delete</span>
+              <span className="font-bold text-rose-700 dark:text-rose-400 block">
+                Permanent Hard Delete
+              </span>
               <span className="text-slate-500 dark:text-slate-400">
                 Purges adapter files and profile record from the AegisGate registry entirely.
               </span>
@@ -102,7 +108,12 @@ export const UninstallModal: React.FC<UninstallModalProps> = ({
           <Button variant="secondary" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="danger" onClick={handleConfirm} isLoading={isUninstalling}>
+          <Button
+            variant="danger"
+            data-testid="confirm-uninstall-btn"
+            onClick={handleConfirm}
+            isLoading={isUninstalling}
+          >
             {hardDelete ? "Permanently Delete" : "Disable Target"}
           </Button>
         </div>

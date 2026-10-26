@@ -53,10 +53,7 @@ export function useExecutions(options?: UseExecutionsOptions) {
             return [updated, ...prev];
           });
           setSelectedExecution((curr) => (!curr || curr.id === updated.id ? updated : curr));
-        } else if (
-          typeof event === "string" &&
-          event.startsWith("execution_")
-        ) {
+        } else if (typeof event === "string" && event.startsWith("execution_")) {
           void refresh();
         }
       } catch (err) {

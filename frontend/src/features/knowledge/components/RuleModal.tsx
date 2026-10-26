@@ -62,7 +62,10 @@ export const RuleModal: React.FC<RuleModalProps> = ({
       <form onSubmit={onSubmit} className="space-y-3.5">
         <div>
           <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider mb-1">
-            Rule ID {editingRule && <span className="text-[10px] text-slate-500 lowercase">(read-only)</span>}
+            Rule ID{" "}
+            {editingRule && (
+              <span className="text-[10px] text-slate-500 lowercase">(read-only)</span>
+            )}
           </label>
           <input
             type="text"
@@ -113,7 +116,8 @@ export const RuleModal: React.FC<RuleModalProps> = ({
             ))}
           </select>
           <p className="text-[10px] text-slate-500 mt-1">
-            Select &quot;Global Scope&quot; to enforce across all databases, or assign specifically to a database connector.
+            Select &quot;Global Scope&quot; to enforce across all databases, or assign specifically
+            to a database connector.
           </p>
         </div>
 

@@ -60,7 +60,12 @@ export const SessionFilterBar: React.FC<SessionFilterBarProps> = ({
               : "bg-slate-50 dark:bg-slate-950/60 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800/80 hover:text-slate-900 dark:hover:text-slate-200"
         )}
       >
-        <Clock className={cn("h-3 w-3", pendingCount > 0 && "animate-pulse text-amber-500 dark:text-amber-400")} />
+        <Clock
+          className={cn(
+            "h-3 w-3",
+            pendingCount > 0 && "animate-pulse text-amber-500 dark:text-amber-400"
+          )}
+        />
         <span>Pending Review</span>
         <span
           className={cn(
@@ -88,7 +93,12 @@ export const SessionFilterBar: React.FC<SessionFilterBarProps> = ({
               : "bg-slate-50 dark:bg-slate-950/60 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800/80 hover:text-slate-900 dark:hover:text-slate-200"
         )}
       >
-        <RotateCw className={cn("h-3 w-3", runningCount > 0 && "animate-spin text-indigo-600 dark:text-indigo-400")} />
+        <RotateCw
+          className={cn(
+            "h-3 w-3",
+            runningCount > 0 && "animate-spin text-indigo-600 dark:text-indigo-400"
+          )}
+        />
         <span>Running</span>
         <span
           className={cn(

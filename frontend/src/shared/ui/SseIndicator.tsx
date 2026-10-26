@@ -11,11 +11,7 @@ export interface SseIndicatorProps {
   className?: string;
 }
 
-export const SseIndicator: React.FC<SseIndicatorProps> = ({
-  status,
-  onRetry,
-  className,
-}) => {
+export const SseIndicator: React.FC<SseIndicatorProps> = ({ status, onRetry, className }) => {
   const statusConfig = {
     connected: {
       label: "Live Stream",
@@ -57,10 +53,7 @@ export const SseIndicator: React.FC<SseIndicatorProps> = ({
     >
       <span className={cn("h-2 w-2 rounded-full", current.dotClass)} aria-hidden="true" />
       <Icon
-        className={cn(
-          "h-3 w-3",
-          status === "reconnecting" && "animate-spin"
-        )}
+        className={cn("h-3 w-3", status === "reconnecting" && "animate-spin")}
         aria-hidden="true"
       />
       <span className="hidden md:inline font-medium">{current.label}:</span>

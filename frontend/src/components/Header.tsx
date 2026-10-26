@@ -27,8 +27,7 @@ export const Header: React.FC<HeaderProps> = ({
   theme = "light",
   onToggleTheme,
 }) => {
-  const currentSseStatus: SseConnectionStatus =
-    sseStatus ?? (mcpOnline ? "connected" : "offline");
+  const currentSseStatus: SseConnectionStatus = sseStatus ?? (mcpOnline ? "connected" : "offline");
 
   return (
     <header className="h-16 flex-shrink-0 w-full bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 flex items-center justify-between sticky top-0 z-50">
@@ -39,7 +38,9 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
         <div>
           <div className="flex items-center space-x-2">
-            <h1 className="text-sm font-bold tracking-tight text-slate-900 dark:text-slate-100">AEGISGATE</h1>
+            <h1 className="text-sm font-bold tracking-tight text-slate-900 dark:text-slate-100">
+              AEGISGATE
+            </h1>
             <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20">
               v1.0 Core
             </span>
@@ -58,7 +59,9 @@ export const Header: React.FC<HeaderProps> = ({
         {/* MCP Server Status Indicator & Snippet Button */}
         <div className="flex items-center space-x-2.5 px-3 py-1.5 rounded-full bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
           <Server className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
-          <span className="text-xs text-slate-700 dark:text-slate-300 font-medium hidden md:inline">MCP Server:</span>
+          <span className="text-xs text-slate-700 dark:text-slate-300 font-medium hidden md:inline">
+            MCP Server:
+          </span>
           <div className="flex items-center space-x-1.5">
             <span
               className={cn(
@@ -97,7 +100,14 @@ export const Header: React.FC<HeaderProps> = ({
           )}
           title="Toggle Auto Approval Mode"
         >
-          <Zap className={cn("h-3.5 w-3.5", autoMode ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400")} />
+          <Zap
+            className={cn(
+              "h-3.5 w-3.5",
+              autoMode
+                ? "text-emerald-600 dark:text-emerald-400"
+                : "text-amber-600 dark:text-amber-400"
+            )}
+          />
           <span className="hidden sm:inline">Auto Mode:</span>
           <span className="font-bold tracking-wide">{autoMode ? "ON" : "OFF (Manual Review)"}</span>
         </button>

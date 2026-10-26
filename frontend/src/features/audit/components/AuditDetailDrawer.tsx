@@ -51,17 +51,25 @@ export const AuditDetailDrawer: React.FC<AuditDetailDrawerProps> = ({
         {/* Quick KPI Overview Bar */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 dark:bg-slate-950 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
           <div>
-            <span className="text-slate-500 block text-[10px] uppercase font-semibold">Query Type</span>
-            <span className="font-mono text-slate-900 dark:text-slate-200 font-bold">{log.query_type}</span>
+            <span className="text-slate-500 block text-[10px] uppercase font-semibold">
+              Query Type
+            </span>
+            <span className="font-mono text-slate-900 dark:text-slate-200 font-bold">
+              {log.query_type}
+            </span>
           </div>
           <div>
-            <span className="text-slate-500 block text-[10px] uppercase font-semibold">Execution Latency</span>
+            <span className="text-slate-500 block text-[10px] uppercase font-semibold">
+              Execution Latency
+            </span>
             <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">
               {log.execution_time_ms !== null ? `${log.execution_time_ms} ms` : "N/A"}
             </span>
           </div>
           <div>
-            <span className="text-slate-500 block text-[10px] uppercase font-semibold">Result Records</span>
+            <span className="text-slate-500 block text-[10px] uppercase font-semibold">
+              Result Records
+            </span>
             <span className="font-mono text-indigo-600 dark:text-indigo-400 font-bold">
               {res.dataRows
                 ? `${res.dataRows.length} rows`
@@ -71,8 +79,12 @@ export const AuditDetailDrawer: React.FC<AuditDetailDrawerProps> = ({
             </span>
           </div>
           <div>
-            <span className="text-slate-500 block text-[10px] uppercase font-semibold">Database SPID</span>
-            <span className="font-mono text-slate-800 dark:text-slate-200">{log.spid || "Session clean"}</span>
+            <span className="text-slate-500 block text-[10px] uppercase font-semibold">
+              Database SPID
+            </span>
+            <span className="font-mono text-slate-800 dark:text-slate-200">
+              {log.spid || "Session clean"}
+            </span>
           </div>
         </div>
 
@@ -92,7 +104,13 @@ export const AuditDetailDrawer: React.FC<AuditDetailDrawerProps> = ({
               {tab === "output" && <Database className="h-3.5 w-3.5" />}
               {tab === "input" && <Code2 className="h-3.5 w-3.5" />}
               {tab === "governance" && <Layers className="h-3.5 w-3.5" />}
-              <span className="capitalize">{tab === "output" ? "Output & Results" : tab === "input" ? "Input Statement" : "Dry-Run Plan"}</span>
+              <span>
+                {tab === "output"
+                  ? "Execution Output & Results"
+                  : tab === "input"
+                    ? "Input Statement & Intent"
+                    : "Dry-Run & Governance Plan"}
+              </span>
             </button>
           ))}
         </div>
@@ -117,14 +135,15 @@ export const AuditDetailDrawer: React.FC<AuditDetailDrawerProps> = ({
                 <span>AI Intent &amp; Purpose Reasoning</span>
               </div>
               <p className="text-xs text-slate-700 dark:text-slate-200 leading-relaxed pl-6">
-                {log.reasoning || "Direct database execution requested without specific reasoning context."}
+                {log.reasoning ||
+                  "Direct database execution requested without specific reasoning context."}
               </p>
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center space-x-2">
                   <Code2 className="h-3.5 w-3.5 text-indigo-500" />
-                  <span>Full SQL Statement</span>
+                  <span>Full SQL Statement / Command Input</span>
                 </span>
                 <button
                   onClick={() => onCopy(log.query, "SQL query")}
@@ -168,12 +187,24 @@ export const AuditDetailDrawer: React.FC<AuditDetailDrawerProps> = ({
               </span>
               <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 font-mono text-xs text-slate-800 dark:text-slate-300 max-h-64 overflow-y-auto">
                 <pre className="whitespace-pre-wrap">
-                  {log.explain_plan ? JSON.stringify(log.explain_plan, null, 2) : "No explain plan generated"}
+                  {log.explain_plan
+                    ? JSON.stringify(log.explain_plan, null, 2)
+                    : "No explain plan generated"}
                 </pre>
               </div>
             </div>
           </div>
         )}
+
+        <div className="flex justify-end pt-3 border-t border-slate-200 dark:border-slate-800">
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200"
+          >
+            Close
+          </button>
+        </div>
       </div>
     </Modal>
   );

@@ -68,9 +68,14 @@ export const Drawer: React.FC<DrawerProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 flex-shrink-0">
           <div className="flex items-center space-x-3 pr-4">
-            {icon && <div className="text-indigo-600 dark:text-indigo-400 flex-shrink-0">{icon}</div>}
+            {icon && (
+              <div className="text-indigo-600 dark:text-indigo-400 flex-shrink-0">{icon}</div>
+            )}
             <div>
-              <h2 id={titleId} className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+              <h2
+                id={titleId}
+                className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight"
+              >
                 {title}
               </h2>
               {subtitle && (

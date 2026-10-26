@@ -1,7 +1,16 @@
 "use client";
 
 import React, { useState } from "react";
-import { BookOpen, Layers, Terminal, Shield, Activity, Boxes, FileText, Sparkles } from "lucide-react";
+import {
+  BookOpen,
+  Layers,
+  Terminal,
+  Shield,
+  Activity,
+  Boxes,
+  FileText,
+  Sparkles,
+} from "lucide-react";
 import { Modal } from "@/shared/ui/Modal";
 import { Button } from "@/shared/ui/Button";
 import { getBackendOrigin } from "@/shared/lib/api";
@@ -68,7 +77,10 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                 )}
               >
                 <Icon
-                  className={cn("h-4 w-4 flex-shrink-0", isActive ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400")}
+                  className={cn(
+                    "h-4 w-4 flex-shrink-0",
+                    isActive ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400"
+                  )}
                   aria-hidden="true"
                 />
                 <span className="truncate">{sec.label}</span>
@@ -83,7 +95,10 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                 <span>Gateway Status</span>
               </span>
               <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-snug">
-                MCP Server is active at <code className="text-indigo-700 dark:text-indigo-300 font-mono text-[10px] font-bold">{backendUrl}</code>
+                MCP Server is active at{" "}
+                <code className="text-indigo-700 dark:text-indigo-300 font-mono text-[10px] font-bold">
+                  {backendUrl}
+                </code>
               </p>
             </div>
           </div>

@@ -91,13 +91,14 @@ export const McpConfigModal: React.FC<McpConfigModalProps> = ({
   };
 
   const tabItems = [
-    { id: "claude", label: "Claude Desktop", icon: <Sparkles className="h-3.5 w-3.5" /> },
-    { id: "cursor", label: "Cursor AI", icon: <Cpu className="h-3.5 w-3.5" /> },
+    { id: "claude", label: "Claude Desktop / Code", icon: <Sparkles className="h-3.5 w-3.5" /> },
+    { id: "cursor", label: "Cursor (.cursor/mcp.json)", icon: <Cpu className="h-3.5 w-3.5" /> },
     { id: "cline", label: "Cline (VS Code)", icon: <Terminal className="h-3.5 w-3.5" /> },
-    { id: "raw", label: "Universal JSON", icon: <ExternalLink className="h-3.5 w-3.5" /> },
+    { id: "raw", label: "Raw JSON", icon: <ExternalLink className="h-3.5 w-3.5" /> },
   ];
 
-  const currentInstruction = CLIENT_INSTRUCTIONS[activeTab as ClientTab] || CLIENT_INSTRUCTIONS.claude;
+  const currentInstruction =
+    CLIENT_INSTRUCTIONS[activeTab as ClientTab] || CLIENT_INSTRUCTIONS.claude;
 
   return (
     <Modal
@@ -110,16 +111,13 @@ export const McpConfigModal: React.FC<McpConfigModalProps> = ({
     >
       <div data-testid="mcp-modal" className="space-y-4">
         {/* Client Selection Tabs */}
-        <Tabs
-          items={tabItems}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          variant="pill"
-        />
+        <Tabs items={tabItems} activeTab={activeTab} onTabChange={setActiveTab} variant="pill" />
 
         {/* Client Instructions */}
         <div className="bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 space-y-1.5 text-xs">
-          <p className="text-slate-600 dark:text-slate-400 font-medium">{currentInstruction.desc}</p>
+          <p className="text-slate-600 dark:text-slate-400 font-medium">
+            {currentInstruction.desc}
+          </p>
           <div className="flex items-center space-x-2 pt-1 font-mono text-[11px] text-slate-700 dark:text-slate-300">
             <span className="text-slate-400">Target Config File:</span>
             <span className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-indigo-700 dark:text-indigo-400 font-semibold select-all break-all">
@@ -143,8 +141,12 @@ export const McpConfigModal: React.FC<McpConfigModalProps> = ({
               data-testid="copy-mcp-btn"
               className="flex items-center space-x-1.5 text-xs font-semibold px-2.5 py-1 rounded-md bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/30 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
             >
-              {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
-              <span>{copied ? "Copied!" : "Copy Snippet"}</span>
+              {copied ? (
+                <Check className="h-3.5 w-3.5 text-emerald-400" />
+              ) : (
+                <Copy className="h-3.5 w-3.5" />
+              )}
+              <span>{copied ? "Copied to Clipboard!" : "Copy Snippet"}</span>
             </button>
           </div>
 

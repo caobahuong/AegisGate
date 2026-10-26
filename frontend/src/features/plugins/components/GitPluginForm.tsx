@@ -40,9 +40,12 @@ export const GitPluginForm: React.FC<GitPluginFormProps> = ({ onInstallGit, onCl
   return (
     <form onSubmit={handleGitSubmit} className="space-y-4 pt-2">
       <div>
-        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Git Clone URL</label>
+        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+          Git Clone URL
+        </label>
         <input
           type="text"
+          data-testid="input-git-url"
           value={gitUrl}
           onChange={(e) => setGitUrl(e.target.value)}
           placeholder="https://github.com/org/aegisgate-plugin-postgres.git"
@@ -52,7 +55,9 @@ export const GitPluginForm: React.FC<GitPluginFormProps> = ({ onInstallGit, onCl
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Branch</label>
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+            Branch
+          </label>
           <input
             type="text"
             value={gitBranch}
@@ -61,7 +66,9 @@ export const GitPluginForm: React.FC<GitPluginFormProps> = ({ onInstallGit, onCl
           />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Override Plugin ID</label>
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+            Override Plugin ID
+          </label>
           <input
             type="text"
             value={gitId}
@@ -75,7 +82,12 @@ export const GitPluginForm: React.FC<GitPluginFormProps> = ({ onInstallGit, onCl
         <Button variant="secondary" onClick={onClose}>
           Cancel
         </Button>
-        <Button type="submit" disabled={!gitUrl.trim()} isLoading={isCloningGit}>
+        <Button
+          type="submit"
+          data-testid="clone-git-btn"
+          disabled={!gitUrl.trim()}
+          isLoading={isCloningGit}
+        >
           Clone &amp; Install Git
         </Button>
       </div>

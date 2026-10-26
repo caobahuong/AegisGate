@@ -9,7 +9,11 @@ export interface FieldProps {
   error?: string;
   required?: boolean;
   className?: string;
-  children: (props: { id: string; "aria-describedby"?: string; "aria-invalid"?: boolean }) => React.ReactNode;
+  children: (props: {
+    id: string;
+    "aria-describedby"?: string;
+    "aria-invalid"?: boolean;
+  }) => React.ReactNode;
 }
 
 export const Field: React.FC<FieldProps> = ({
@@ -29,9 +33,16 @@ export const Field: React.FC<FieldProps> = ({
   return (
     <div className={cn("space-y-1.5", className)}>
       {label && (
-        <label htmlFor={inputId} className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+        <label
+          htmlFor={inputId}
+          className="block text-xs font-semibold text-slate-700 dark:text-slate-300"
+        >
           {label}
-          {required && <span className="text-rose-500 ml-1" aria-hidden="true">*</span>}
+          {required && (
+            <span className="text-rose-500 ml-1" aria-hidden="true">
+              *
+            </span>
+          )}
         </label>
       )}
       {children({
@@ -40,7 +51,11 @@ export const Field: React.FC<FieldProps> = ({
         "aria-invalid": !!error,
       })}
       {error && (
-        <p id={errorId} role="alert" className="text-[11px] font-medium text-rose-600 dark:text-rose-400">
+        <p
+          id={errorId}
+          role="alert"
+          className="text-[11px] font-medium text-rose-600 dark:text-rose-400"
+        >
           {error}
         </p>
       )}

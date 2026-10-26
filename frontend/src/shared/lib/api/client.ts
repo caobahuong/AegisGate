@@ -44,9 +44,10 @@ export async function apiClient<T>(endpoint: string, options: RequestOptions = {
   const { timeoutMs = 15000, params, headers, ...customConfig } = options;
   const baseUrl = getApiBaseUrl();
 
-  let url = endpoint.startsWith("http://") || endpoint.startsWith("https://")
-    ? endpoint
-    : `${baseUrl}${endpoint.startsWith("/") ? "" : "/"}${endpoint}`;
+  let url =
+    endpoint.startsWith("http://") || endpoint.startsWith("https://")
+      ? endpoint
+      : `${baseUrl}${endpoint.startsWith("/") ? "" : "/"}${endpoint}`;
 
   if (params) {
     const searchParams = new URLSearchParams();

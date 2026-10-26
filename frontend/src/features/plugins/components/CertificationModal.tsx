@@ -20,13 +20,14 @@ export const CertificationModal: React.FC<CertificationModalProps> = ({
   if (!plugin) return null;
 
   const report = plugin.certification_report || {};
-  const checks = (report as { checks?: Record<string, { status?: string; error?: string }> }).checks || {};
+  const checks =
+    (report as { checks?: Record<string, { status?: string; error?: string }> }).checks || {};
 
   const stages = [
-    { key: "handshake", title: "Stage 1: Stdio Subprocess Handshake & Ping" },
-    { key: "catalog", title: "Stage 2: Schema Catalog & Structural Discovery" },
-    { key: "dry_run", title: "Stage 3: Dry-Run Plan Inspection & Cost Validation" },
-    { key: "execution", title: "Stage 4: Guarded Query Execution & SPID Tracking" },
+    { key: "handshake", title: "1. Handshake & RPC Ping" },
+    { key: "sync_knowledge", title: "2. Sync Knowledge Schema" },
+    { key: "dry_run", title: "3. Dry-Run Analysis" },
+    { key: "abort", title: "4. Abort Hook Protocol" },
   ];
 
   return (
@@ -70,7 +71,9 @@ export const CertificationModal: React.FC<CertificationModalProps> = ({
                 className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 flex items-start justify-between space-x-3 text-xs"
               >
                 <div>
-                  <span className="font-semibold text-slate-800 dark:text-slate-200 block">{stage.title}</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200 block">
+                    {stage.title}
+                  </span>
                   {check?.error && (
                     <span className="font-mono text-[11px] text-rose-600 dark:text-rose-400 mt-1 block">
                       {check.error}
@@ -99,7 +102,7 @@ export const CertificationModal: React.FC<CertificationModalProps> = ({
 
         <div className="flex justify-end pt-2 border-t border-slate-200 dark:border-slate-800">
           <Button variant="secondary" size="sm" onClick={onClose}>
-            Close
+            Close Report
           </Button>
         </div>
       </div>

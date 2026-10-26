@@ -53,21 +53,25 @@ export const GuideMcpSection: React.FC = () => {
           <span>2. Connecting AI Clients via MCP Protocol</span>
         </h3>
         <p className="text-slate-500 dark:text-slate-400 mt-1">
-          Provides standardized Model Context Protocol (MCP) over Stdio transport for Claude Desktop, Cursor, and Cline.
+          Provides standardized Model Context Protocol (MCP) over Stdio transport for Claude
+          Desktop, Cursor, and Cline.
         </p>
       </div>
 
       <div className="space-y-3">
-        <h4 className="font-bold text-slate-800 dark:text-slate-200">How to retrieve connection config:</h4>
+        <h4 className="font-bold text-slate-800 dark:text-slate-200">
+          How to retrieve connection config:
+        </h4>
         <p className="text-slate-500 dark:text-slate-400">
-          Click the <strong>&quot;MCP Config&quot;</strong> button on the top Header (global connection) or the terminal
-          icon on any Plugin card (scoped to that specific database).
+          Click the <strong>&quot;MCP Config&quot;</strong> button on the top Header (global
+          connection) or the terminal icon on any Plugin card (scoped to that specific database).
         </p>
 
         <div className="space-y-1.5">
           <div className="flex justify-between items-center">
             <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
-              Configured endpoint: <code className="text-indigo-600 dark:text-indigo-400 font-bold">{backendUrl}</code>
+              Configured endpoint:{" "}
+              <code className="text-indigo-600 dark:text-indigo-400 font-bold">{backendUrl}</code>
             </span>
             <button
               type="button"
@@ -90,7 +94,9 @@ export const GuideMcpSection: React.FC = () => {
       </div>
 
       <div className="p-4 rounded-xl bg-slate-50/80 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 space-y-2">
-        <h4 className="font-bold text-slate-800 dark:text-slate-200">4 MCP Tools Exposed to AI Agents:</h4>
+        <h4 className="font-bold text-slate-800 dark:text-slate-200">
+          4 MCP Tools Exposed to AI Agents:
+        </h4>
         <ul className="space-y-1.5 text-[11px] text-slate-700 dark:text-slate-300">
           <li>
             <code className="text-indigo-600 dark:text-indigo-400 font-bold font-mono">

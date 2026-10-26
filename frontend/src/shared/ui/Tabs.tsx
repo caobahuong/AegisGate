@@ -8,6 +8,7 @@ export interface TabItem {
   label: React.ReactNode;
   icon?: React.ReactNode;
   badge?: React.ReactNode;
+  testId?: string;
 }
 
 export interface TabsProps {
@@ -57,7 +58,8 @@ export const Tabs: React.FC<TabsProps> = ({
       aria-orientation="horizontal"
       className={cn(
         "flex items-center space-x-1 p-1 select-none",
-        variant === "pill" && "bg-slate-100 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800",
+        variant === "pill" &&
+          "bg-slate-100 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800",
         variant === "underline" && "border-b border-slate-200 dark:border-slate-800 space-x-4",
         className
       )}
@@ -69,6 +71,7 @@ export const Tabs: React.FC<TabsProps> = ({
             key={item.id}
             role="tab"
             id={`tab-${item.id}`}
+            data-testid={item.testId || `tab-${item.id}`}
             aria-selected={isSelected}
             aria-controls={`tabpanel-${item.id}`}
             tabIndex={isSelected ? 0 : -1}
@@ -90,7 +93,11 @@ export const Tabs: React.FC<TabsProps> = ({
               ]
             )}
           >
-            {item.icon && <span className="flex-shrink-0" aria-hidden="true">{item.icon}</span>}
+            {item.icon && (
+              <span className="flex-shrink-0" aria-hidden="true">
+                {item.icon}
+              </span>
+            )}
             <span>{item.label}</span>
             {item.badge && <span className="flex-shrink-0">{item.badge}</span>}
           </button>

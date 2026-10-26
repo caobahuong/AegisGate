@@ -35,8 +35,17 @@ export const ZipPluginForm: React.FC<ZipPluginFormProps> = ({ onInstallZip, onCl
     <form onSubmit={handleZipSubmit} className="space-y-4 pt-2">
       <div className="p-6 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl text-center">
         <Upload className="h-8 w-8 mx-auto text-indigo-500 mb-2" />
-        <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">Upload a packaged .zip plugin archive</p>
+        <label
+          htmlFor="zip-upload-input"
+          className="cursor-pointer text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline block mb-1"
+        >
+          Choose ZIP file
+        </label>
+        <p className="text-[11px] text-slate-500 mb-2">
+          Package must contain manifest.json, adapter.py, and optional requirements.txt
+        </p>
         <input
+          id="zip-upload-input"
           type="file"
           accept=".zip"
           onChange={(e) => setZipFile(e.target.files?.[0] || null)}
@@ -47,7 +56,12 @@ export const ZipPluginForm: React.FC<ZipPluginFormProps> = ({ onInstallZip, onCl
         <Button variant="secondary" onClick={onClose}>
           Cancel
         </Button>
-        <Button type="submit" disabled={!zipFile} isLoading={isUploadingZip}>
+        <Button
+          type="submit"
+          data-testid="upload-zip-btn"
+          disabled={!zipFile}
+          isLoading={isUploadingZip}
+        >
           Upload &amp; Install ZIP
         </Button>
       </div>

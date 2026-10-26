@@ -99,7 +99,10 @@ export const AuditDetailOutputTab: React.FC<AuditDetailOutputTabProps> = ({
                     <tr key={idx} className="hover:bg-slate-100/50 dark:hover:bg-slate-900/40">
                       <td className="py-2.5 px-3 text-slate-400">{idx + 1}</td>
                       {res.columns.map((col) => (
-                        <td key={col} className="py-2.5 px-3 text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                        <td
+                          key={col}
+                          className="py-2.5 px-3 text-slate-700 dark:text-slate-300 whitespace-nowrap"
+                        >
                           {row[col] !== null && row[col] !== undefined ? (
                             String(row[col])
                           ) : (
@@ -113,7 +116,9 @@ export const AuditDetailOutputTab: React.FC<AuditDetailOutputTabProps> = ({
               </table>
             </div>
           ) : (
-            <div className="p-8 text-center text-slate-500 text-xs italic">No output dataset available.</div>
+            <div className="p-8 text-center text-slate-500 text-xs italic">
+              No output dataset available.
+            </div>
           )}
         </div>
       ) : (

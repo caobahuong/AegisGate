@@ -7,7 +7,11 @@ import { Button } from "@/shared/ui/Button";
 
 export interface QuerySimulatorPaneProps {
   plugins: PluginProfileResponse[];
-  onSubmitQuery: (targetId: string, query: string, reasoning: string) => Promise<void | ExecutionResponse>;
+  onSubmitQuery: (
+    targetId: string,
+    query: string,
+    reasoning: string
+  ) => Promise<void | ExecutionResponse>;
   isSubmitting?: boolean;
   selectedExecutionId?: string | null;
 }
@@ -42,7 +46,9 @@ export const QuerySimulatorPane: React.FC<QuerySimulatorPaneProps> = ({
           </h2>
         </div>
         {selectedExecutionId && (
-          <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">#{selectedExecutionId}</span>
+          <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
+            #{selectedExecutionId}
+          </span>
         )}
       </div>
 
@@ -90,12 +96,7 @@ export const QuerySimulatorPane: React.FC<QuerySimulatorPaneProps> = ({
           />
         </div>
 
-        <Button
-          type="submit"
-          disabled={isSubmitting}
-          isLoading={isSubmitting}
-          className="w-full"
-        >
+        <Button type="submit" disabled={isSubmitting} isLoading={isSubmitting} className="w-full">
           <Send className="h-3.5 w-3.5 mr-1.5" />
           <span>{isSubmitting ? "Submitting..." : "Send Query to AegisGate"}</span>
         </Button>
@@ -110,7 +111,9 @@ export const QuerySimulatorPane: React.FC<QuerySimulatorPaneProps> = ({
           <button
             type="button"
             onClick={() => {
-              setQuery("SELECT o.OrderID, a.Action\nFROM dbo.Orders o\nINNER JOIN dbo.AuditLogs a ON o.OrderID = a.LogID;");
+              setQuery(
+                "SELECT o.OrderID, a.Action\nFROM dbo.Orders o\nINNER JOIN dbo.AuditLogs a ON o.OrderID = a.LogID;"
+              );
               setReasoning("Test query triggering FORBID_JOIN rule between Orders and AuditLogs.");
             }}
             className="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-950 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-800 text-[10px] text-amber-700 dark:text-amber-400 font-mono transition-colors"

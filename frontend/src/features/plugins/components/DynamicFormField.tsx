@@ -46,7 +46,11 @@ export const DynamicFormField: React.FC<DynamicFormFieldProps> = ({ field, value
           className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-500 shadow-xs"
         >
           {field.options?.map((opt) => (
-            <option key={opt} value={opt} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
+            <option
+              key={opt}
+              value={opt}
+              className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+            >
               {opt}
             </option>
           ))}
@@ -94,7 +98,9 @@ export const DynamicFormField: React.FC<DynamicFormFieldProps> = ({ field, value
       )}
 
       {field.description && (
-        <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">{field.description}</p>
+        <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
+          {field.description}
+        </p>
       )}
     </div>
   );

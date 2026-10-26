@@ -34,8 +34,7 @@ export const Badge: React.FC<BadgeProps> = ({
       "bg-amber-50 dark:bg-amber-500/10 text-amber-800 dark:text-amber-400 border-amber-300 dark:border-amber-500/30",
     danger:
       "bg-rose-50 dark:bg-rose-500/10 text-rose-800 dark:text-rose-400 border-rose-300 dark:border-rose-500/30",
-    info:
-      "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-800 dark:text-indigo-400 border-indigo-300 dark:border-indigo-500/30",
+    info: "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-800 dark:text-indigo-400 border-indigo-300 dark:border-indigo-500/30",
     neutral:
       "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-300 border-slate-300 dark:border-slate-700",
   };
@@ -49,9 +48,21 @@ export const Badge: React.FC<BadgeProps> = ({
   };
 
   return (
-    <span className={cn(baseStyles, sizeStyles[size], variantStyles[variant], className)} {...props}>
-      {dot && <span className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0", dotColors[variant])} aria-hidden="true" />}
-      {icon && <span className="flex-shrink-0" aria-hidden="true">{icon}</span>}
+    <span
+      className={cn(baseStyles, sizeStyles[size], variantStyles[variant], className)}
+      {...props}
+    >
+      {dot && (
+        <span
+          className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0", dotColors[variant])}
+          aria-hidden="true"
+        />
+      )}
+      {icon && (
+        <span className="flex-shrink-0" aria-hidden="true">
+          {icon}
+        </span>
+      )}
       <span>{children}</span>
     </span>
   );

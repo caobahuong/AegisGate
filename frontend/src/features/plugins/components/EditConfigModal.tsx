@@ -67,10 +67,11 @@ export const EditConfigModal: React.FC<EditConfigModalProps> = ({
       icon={<Sliders className="h-5 w-5" />}
       maxWidth="xl"
     >
-      <form onSubmit={handleSave} className="space-y-4">
+      <form onSubmit={handleSave} data-testid="edit-plugin-modal" className="space-y-4">
         {uiSchema.length === 0 ? (
           <div className="p-4 text-center text-xs text-slate-500">
-            No dynamic UI schema defined for this plugin. Configuration operates on raw key-value pairs.
+            No dynamic UI schema defined for this plugin. Configuration operates on raw key-value
+            pairs.
           </div>
         ) : (
           <div className="space-y-3.5">
@@ -90,7 +91,7 @@ export const EditConfigModal: React.FC<EditConfigModalProps> = ({
             Cancel
           </Button>
           <Button type="submit" isLoading={isSaving}>
-            Save &amp; Re-initialize
+            Save &amp; Re-Init Connection
           </Button>
         </div>
       </form>

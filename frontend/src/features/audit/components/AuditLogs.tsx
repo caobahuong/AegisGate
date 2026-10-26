@@ -39,7 +39,8 @@ export const AuditLogs: React.FC<AuditLogsProps> = (props) => {
             <span>Audit &amp; Compliance Logs</span>
           </h2>
           <p className="text-xs text-slate-600 dark:text-slate-400">
-            Comprehensive ledger tracking detailed Input parameters, AI intent, governance checks, and concrete Output datasets.
+            Comprehensive ledger tracking detailed Input parameters, AI intent, governance checks,
+            and concrete Output datasets.
           </p>
         </div>
 
