@@ -45,6 +45,7 @@ export const KnowledgeChunksView: React.FC<KnowledgeChunksViewProps> = ({
           chunks.map((chunk) => (
             <button
               key={chunk.id}
+              data-testid={`chunk-btn-${chunk.id}`}
               onClick={() => onSelectChunk(chunk.id)}
               className={cn(
                 "w-full text-left p-3 rounded-lg border transition-all duration-150 space-y-1.5",

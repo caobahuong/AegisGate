@@ -213,6 +213,11 @@ async def seed_data(count: int = 0, force: bool = False) -> None:
         # 4. Bulk Synthetic Historical Executions (--count N)
         if count > 0:
             logger.info("Generating %d synthetic historical executions...", count)
+            # Ensure idempotency by replacing existing synthetic executions
+            existing_syn = session.exec(select(ExecutionLog).where(ExecutionLog.id.startswith("syn_exec_"))).all()
+            for old in existing_syn:
+                session.delete(old)
+            session.flush()
             templates = [
                 (
                     "READ",
