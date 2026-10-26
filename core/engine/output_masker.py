@@ -10,6 +10,7 @@ is accepted and matched on the column part. Nested dicts/lists are walked
 recursively, so it also works for document stores (MongoDB).
 """
 
+import re
 from typing import Any
 
 from core.database import Rule
@@ -17,13 +18,38 @@ from core.database import Rule
 REDACT = "REDACT_FIELD"
 REMOVE = "REMOVE_FIELD"
 
+_SECRET_PATTERNS = [
+    # JWT tokens (three base64 segments)
+    (re.compile(r"eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_.-]{10,}"), "[REDACTED_JWT]"),
+    # Bearer tokens
+    (re.compile(r"(?i)\bBearer\s+[A-Za-z0-9\-._~+/]+=*"), "Bearer [REDACTED_TOKEN]"),
+    # Passwords or secrets in connection strings / key-value lines
+    (re.compile(r"(?i)\b(password|pwd|secret|api_key|token)\s*=\s*['\"]?[^;'\",\s]+['\"]?"), r"\1=[REDACTED]"),
+    # Passwords embedded in URI connection strings (postgres://user:password@host)
+    (re.compile(r"://([^:]+):([^@]+)@"), r"://\1:[REDACTED]@"),
+    # Private keys
+    (
+        re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----"),
+        "[REDACTED_PRIVATE_KEY]",
+    ),
+]
+
+
+def mask_sensitive_patterns(text: str) -> str:
+    """Mask high-risk secret patterns (JWT, Bearer, DB connection passwords, private keys)."""
+    if not isinstance(text, str) or not text:
+        return text
+    for pattern, replacement in _SECRET_PATTERNS:
+        text = pattern.sub(replacement, text)
+    return text
+
 
 def _field_names(expression: str) -> set[str]:
     return {part.strip().split(".")[-1].strip().lower() for part in expression.split(",") if part.strip()}
 
 
 class OutputMasker:
-    """Applies REDACT_FIELD / REMOVE_FIELD rules to result payloads."""
+    """Applies REDACT_FIELD / REMOVE_FIELD rules and automatic secret pattern masking to result payloads."""
 
     @staticmethod
     def apply(data: Any, rules: list[Rule]) -> tuple[Any, list[str]]:
@@ -40,8 +66,6 @@ class OutputMasker:
                 remove |= _field_names(rule.expression)
         # REMOVE wins over REDACT when both name the same field.
         redact -= remove
-        if not redact and not remove:
-            return data, []
 
         hit: dict[str, str] = {}  # lower-cased name -> first-seen original casing
 
@@ -61,6 +85,8 @@ class OutputMasker:
                         continue
                     out[key] = walk(value)
                 return out
+            if isinstance(node, str):
+                return mask_sensitive_patterns(node)
             return node
 
         masked = walk(data)

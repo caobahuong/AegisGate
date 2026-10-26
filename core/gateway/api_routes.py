@@ -7,6 +7,7 @@ Adheres strictly to python_clean_code.md:
 - Zero generic `except Exception:`, proper status codes
 """
 
+import re
 from datetime import datetime
 from typing import Annotated, Any
 
@@ -14,6 +15,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, Upl
 from fastapi.responses import StreamingResponse
 from sqlmodel import Session
 
+from core.config import settings
 from core.database import get_session
 from core.exceptions import (
     ExecutionStateError,
@@ -48,6 +50,19 @@ from core.gateway.services import GatewayService
 from core.gateway.sse_broadcaster import sse_broadcaster
 
 router = APIRouter(prefix="/api", tags=["AegisGate Gateway"])
+
+
+def _sanitize_error_detail(exc: Exception | str) -> str:
+    """Sanitize internal filesystem paths and credentials from exception messages in production."""
+    msg = str(exc)
+    if settings.DEBUG:
+        return msg
+    # Strip Windows drive paths and Unix paths
+    msg = re.sub(r"[A-Za-z]:\\[^ \"';\n\r]+", "[INTERNAL_PATH]", msg)
+    msg = re.sub(r"/(?:Users|home|root|var|etc)/[^ \"';\n\r]+", "[INTERNAL_PATH]", msg)
+    # Mask passwords, tokens, or secrets
+    msg = re.sub(r"(?i)\b(password|pwd|secret|token)\s*=\s*[^;\s]+", r"\1=[REDACTED]", msg)
+    return msg
 
 
 def get_service(session: Annotated[Session, Depends(get_session)]) -> GatewayService:
@@ -221,7 +236,7 @@ async def install_plugin_zip(
         content = await file.read()
         return await service.install_plugin_zip(content, filename=file.filename)
     except Exception as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=_sanitize_error_detail(exc)) from exc
 
 
 @router.post("/plugins/install-git", response_model=PluginProfileResponse, status_code=status.HTTP_201_CREATED)
@@ -233,7 +248,7 @@ async def install_plugin_git(
     try:
         return await service.install_plugin_git(req)
     except Exception as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=_sanitize_error_detail(exc)) from exc
 
 
 @router.post("/plugins/{plugin_id}/verify", response_model=PluginCertificationResponse)
@@ -247,7 +262,9 @@ async def verify_plugin(
     except PluginNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=exc.message) from exc
     except Exception as exc:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=_sanitize_error_detail(exc)
+        ) from exc
 
 
 @router.get("/plugins/{plugin_id}/schema", response_model=PluginSchemaResponse)
@@ -274,7 +291,9 @@ async def update_plugin_config(
     except PluginNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=exc.message) from exc
     except Exception as exc:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=_sanitize_error_detail(exc)
+        ) from exc
 
 
 @router.delete("/plugins/{plugin_id}")
@@ -289,7 +308,9 @@ async def delete_plugin(
     except PluginNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=exc.message) from exc
     except Exception as exc:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=_sanitize_error_detail(exc)
+        ) from exc
 
 
 @router.get("/plugins/{plugin_id}/mcp-config", response_model=McpConfigResponse)
@@ -323,7 +344,9 @@ async def sync_plugin_catalog(
     except PluginNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=exc.message) from exc
     except PluginExecutionError as exc:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=exc.message) from exc
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=_sanitize_error_detail(exc.message)
+        ) from exc
 
 
 # --- Knowledge & Rules Endpoints ---

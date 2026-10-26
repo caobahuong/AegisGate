@@ -464,3 +464,26 @@ async def test_gateway_service_execution_actions(db_session: Session):
 
         resp_stop = await service.stop_execution("paused_act_test")
         assert resp_stop.id == "paused_act_test"
+
+
+def test_api_error_detail_sanitizes_paths_and_credentials(monkeypatch: pytest.MonkeyPatch):
+    """Internal filesystem paths and credentials in error messages are stripped in production."""
+    from core.config import settings
+    from core.gateway.api_routes import _sanitize_error_detail
+
+    # Production mode: DEBUG=False
+    monkeypatch.setattr(settings, "DEBUG", False)
+
+    raw_exc = Exception(
+        r"Failed opening C:\Users\caoba\AppData\Local\secret\db.sqlite with password=SuperSecretPassword123"
+    )
+    sanitized = _sanitize_error_detail(raw_exc)
+
+    assert r"C:\Users\caoba" not in sanitized
+    assert "SuperSecretPassword123" not in sanitized
+    assert "[INTERNAL_PATH]" in sanitized
+    assert "password=[REDACTED]" in sanitized
+
+    # Debug mode: preserves original message
+    monkeypatch.setattr(settings, "DEBUG", True)
+    assert _sanitize_error_detail(raw_exc) == str(raw_exc)

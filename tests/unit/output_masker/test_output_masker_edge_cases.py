@@ -140,3 +140,41 @@ def test_output_masker_deeply_nested_structures():
     assert bob_payment["cvv"] is None
     assert bob_payment["billing_address"]["city"] == "Hanoi"
     assert sorted(hit) == ["card_number", "cvv"]
+
+
+def test_output_masker_automatic_secret_pattern_masking():
+    """Verify that OutputMasker automatically sanitizes JWT, Bearer tokens, passwords, and connection strings."""
+    raw_payload = {
+        "status": "connected",
+        "connection_uri": "postgresql://dbuser:MySuperPassword123@prod-db.internal:5432/main",
+        "connection_str": "Server=tcp:sqlserver.internal;Database=appdb;User Id=sa;Password=VerySecretPass999;",
+        "auth_header": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+        "private_key_data": "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA0Y...\n-----END RSA PRIVATE KEY-----",
+        "nested_logs": [
+            "User login failed with token=secret_token_val_12345",
+            "OK response",
+        ],
+    }
+
+    # Apply with no rules configured
+    masked, hit = OutputMasker.apply(raw_payload, [])
+
+    # Connection URI password redacted
+    assert "MySuperPassword123" not in masked["connection_uri"]
+    assert masked["connection_uri"] == "postgresql://dbuser:[REDACTED]@prod-db.internal:5432/main"
+
+    # Connection string password redacted
+    assert "VerySecretPass999" not in masked["connection_str"]
+    assert "Password=[REDACTED]" in masked["connection_str"]
+
+    # Bearer token and JWT redacted
+    assert "eyJhbGci" not in masked["auth_header"]
+    assert masked["auth_header"] == "Bearer [REDACTED_JWT]"
+
+    # Private key redacted
+    assert "MIIEowIBAAKCAQEA0Y" not in masked["private_key_data"]
+    assert "[REDACTED_PRIVATE_KEY]" in masked["private_key_data"]
+
+    # Nested log secret redacted
+    assert "secret_token_val_12345" not in masked["nested_logs"][0]
+    assert "token=[REDACTED]" in masked["nested_logs"][0]
