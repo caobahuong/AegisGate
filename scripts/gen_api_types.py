@@ -24,6 +24,7 @@ def generate_openapi_spec() -> None:
     openapi_schema = app.openapi()
     with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
         json.dump(openapi_schema, f, indent=2)
+        f.write("\n")
     print(f"Exported OpenAPI schema to {OUTPUT_PATH}")
 
 
