@@ -1,0 +1,12 @@
+Method,Name,Error,Occurrences,First Seen,Last Seen
+GET,/api/executions/page,"ConnectionRefusedError(10061, '[WinError 10061] No connection could be made because the target machine actively refused it.')",25,2026-10-26T18:11:28Z,2026-10-26T18:11:32Z
+POST,/api/monitor/executions [async],"ConnectionRefusedError(10061, '[WinError 10061] No connection could be made because the target machine actively refused it.')",29,2026-10-26T18:11:28Z,2026-10-26T18:11:32Z
+GET,/api/mcp/config,"ConnectionRefusedError(10061, '[WinError 10061] No connection could be made because the target machine actively refused it.')",15,2026-10-26T18:11:28Z,2026-10-26T18:11:32Z
+POST,/api/monitor/executions [sync],CatchResponseError('Unexpected status: 0'),58,2026-10-26T18:11:27Z,2026-10-26T18:11:32Z
+GET,/api/plugins,"ConnectionRefusedError(10061, '[WinError 10061] No connection could be made because the target machine actively refused it.')",35,2026-10-26T18:11:28Z,2026-10-26T18:11:32Z
+GET,/api/monitor/executions/{id},"ConnectionRefusedError(10061, '[WinError 10061] No connection could be made because the target machine actively refused it.')",2,2026-10-26T18:11:29Z,2026-10-26T18:11:31Z
+GET,/api/knowledge,"ConnectionRefusedError(10061, '[WinError 10061] No connection could be made because the target machine actively refused it.')",12,2026-10-26T18:11:28Z,2026-10-26T18:11:32Z
+GET,/api/rules,"ConnectionRefusedError(10061, '[WinError 10061] No connection could be made because the target machine actively refused it.')",34,2026-10-26T18:11:27Z,2026-10-26T18:11:32Z
+GET,/api/monitor/executions,"ConnectionRefusedError(10061, '[WinError 10061] No connection could be made because the target machine actively refused it.')",41,2026-10-26T18:11:28Z,2026-10-26T18:11:32Z
+GET,/health,"ConnectionRefusedError(10061, '[WinError 10061] No connection could be made because the target machine actively refused it.')",12,2026-10-26T18:11:29Z,2026-10-26T18:11:31Z
+GET,/api/monitor/events [stream],CatchResponseError('SSE connect failed: 0'),20,2026-10-26T18:11:27Z,2026-10-26T18:11:31Z
