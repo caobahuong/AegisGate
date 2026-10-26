@@ -9,7 +9,7 @@ Adheres strictly to python_clean_code.md:
 
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlmodel import Session
 
@@ -56,10 +56,20 @@ def get_service(session: Annotated[Session, Depends(get_session)]) -> GatewaySer
 
 
 @router.get("/monitor/events")
-async def sse_events() -> StreamingResponse:
-    """Server-Sent Events endpoint streaming real-time execution states."""
+async def sse_events(
+    request: Request,
+    last_event_id: Annotated[int | None, Query(alias="last_event_id")] = None,
+) -> StreamingResponse:
+    """Server-Sent Events endpoint streaming real-time execution states with replay."""
+    header_last_id = request.headers.get("Last-Event-ID")
+    effective_last_id: int | None = None
+    if header_last_id and header_last_id.isdigit():
+        effective_last_id = int(header_last_id)
+    elif last_event_id is not None:
+        effective_last_id = last_event_id
+
     return StreamingResponse(
-        sse_broadcaster.subscribe(),
+        sse_broadcaster.subscribe(last_event_id=effective_last_id),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",

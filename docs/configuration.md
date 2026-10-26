@@ -33,6 +33,19 @@ Configuration variables are read from system environment variables or a `.env` f
 | `PLUGIN_MAX_MESSAGE_BYTES` | `int` | `67108864` (64MB) | Maximum allowed size of a single JSON-RPC message over Stdio from a plugin worker. | Increase if query results or schema catalogs exceed 64MB. |
 | `AUTO_APPROVAL_DEFAULT` | `bool` | `False` | Default state of the Auto Approval toggle when initialized for the first time. | Set `true` if you want all clean dry-run queries to auto-execute without human review. |
 | `SSE_HEARTBEAT_INTERVAL_SECONDS` | `float` | `2.0` | Frequency in seconds of SSE heartbeat keep-alive events sent to the frontend dashboard. | Increase to reduce network traffic or decrease for higher-resolution liveliness checks. |
+| `EVENT_BUS` | `str` | `"memory"` | Event bus architecture: `"memory"` for single-process ring buffer, `"db"` for multi-process distributed outbox. | Change to `"db"` when running multiple Uvicorn worker processes or cluster nodes. |
+| `PLUGIN_MAX_CONCURRENCY` | `int` | `8` | Maximum concurrent executions dispatched to a single plugin worker process. | Tune based on target database concurrency capabilities. |
+| `PLUGIN_QUEUE_TIMEOUT_SECONDS` | `float` | `30.0` | Maximum seconds a request can wait in `QUEUED` state before timing out. | Increase if batch job bursts frequently saturate execution capacity. |
+| `PLUGIN_QUEUE_MAXSIZE` | `int` | `100` | Maximum number of pending executions queued per target plugin before rejecting with HTTP 429. | Tune based on memory capacity and acceptable backlog depth. |
+| `RESULT_MAX_BYTES` | `int` | `50000` | Maximum payload size in bytes for `result_summary` before truncation kicks in. | Lower to conserve DB disk space or raise if larger sample datasets are required. |
+| `LOG_RETENTION_DAYS` | `int` | `30` | Age in days after which execution log audit records are eligible for pruning. | Adjust according to organization compliance and storage policy. |
+| `RESULT_RETENTION_DAYS` | `int` | `7` | Age in days after which heavy result payloads are scrubbed to keep DB lean. | Lower to conserve disk while retaining metadata indefinitely. |
+| `ARCHIVE_BEFORE_DELETE` | `bool` | `True` | Whether pruned execution records are compressed into `ndjson.gz` archives before purge. | Disable only in non-production environments with no audit trail requirements. |
+| `ARCHIVE_DIR` | `Path` | `<BASE_DIR>/data/archive` | Directory path where compressed audit archive files are stored. | Point to an external volume, NFS mount, or object store mount. |
+| `HEARTBEAT_INTERVAL_SECONDS` | `float` | `3.0` | Interval in seconds at which active worker processes renew their `process_heartbeat` records. | Increase to reduce DB heartbeat writes or decrease for faster failure detection. |
+| `HEARTBEAT_TIMEOUT_SECONDS` | `float` | `30.0` | Threshold in seconds after which an unresponsive worker process is deemed dead by the janitor. | Adjust based on network jitter and GC pause expectations. |
+| `OUTBOX_POLL_INTERVAL_SECONDS` | `float` | `0.2` | Polling frequency for `DbOutboxBus` background consumer when synchronizing SSE across processes. | Decrease for lower SSE latency across processes; increase to reduce DB query rate. |
+| `OUTBOX_RETENTION_HOURS` | `int` | `24` | Hours to retain dispatched outbox event records in `event_outbox` table. | Adjust to balance disk usage against client disconnect/replay tolerances. |
 
 ---
 

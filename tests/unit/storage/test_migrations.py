@@ -1,16 +1,13 @@
 """Unit tests for Alembic migrations and init_db behavior."""
 
-import os
-import tempfile
 from pathlib import Path
 
 import pytest
-from sqlalchemy import create_engine, inspect, text
-from sqlmodel import SQLModel
-
-from core.database import init_db
 from alembic.config import Config
+from sqlalchemy import create_engine, inspect, text
+
 from alembic import command
+from core.database import init_db
 
 
 @pytest.fixture

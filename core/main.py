@@ -20,6 +20,7 @@ from core.database import engine, init_db
 from core.engine.plugin_client import terminate_all_subprocesses
 from core.engine.plugin_registry import PluginRegistry
 from core.gateway.api_routes import router as api_router
+from core.gateway.event_bus import get_event_bus
 
 logging.basicConfig(
     level=logging.INFO if not settings.DEBUG else logging.DEBUG,
@@ -34,6 +35,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("Starting AegisGate Core Engine...")
     init_db()
 
+    # Start event bus (DbOutboxBus tailer if enabled)
+    bus = get_event_bus()
+    await bus.start()
+
     # Automatically discover manifests in plugins directory
     with Session(engine) as session:
         registry = PluginRegistry(session)
@@ -42,6 +47,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     yield
     logger.info("Shutting down AegisGate Core Engine...")
+    await bus.stop()
     stopped = await terminate_all_subprocesses()
     logger.info("Stopped %d plugin worker process(es)", stopped)
 

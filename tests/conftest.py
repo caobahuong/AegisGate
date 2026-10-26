@@ -101,6 +101,34 @@ def sim_plugin_profile(db_session: Session) -> PluginProfile:
     return profile
 
 
+_initial_dirty_lines: set[str] = set()
+
+
+def pytest_sessionstart(session: pytest.Session) -> None:
+    """Record initial git state before tests execute."""
+    global _initial_dirty_lines
+    try:
+        res = subprocess.run(
+            ["git", "status", "--porcelain"],
+            capture_output=True,
+            text=True,
+            check=False,
+            cwd=str(settings.BASE_DIR),
+        )
+        if res.returncode == 0 and res.stdout.strip():
+            _initial_dirty_lines = {
+                line.strip()
+                for line in res.stdout.strip().splitlines()
+                if not any(
+                    cache_dir in line for cache_dir in [".pytest_cache", ".ruff_cache", ".mypy_cache", ".coverage"]
+                )
+            }
+        else:
+            _initial_dirty_lines = set()
+    except Exception:
+        _initial_dirty_lines = set()
+
+
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
     """Pollution Guard: verify the test run did not modify or leave untracked files in git."""
     try:
@@ -120,10 +148,11 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
                     cache_dir in line for cache_dir in [".pytest_cache", ".ruff_cache", ".mypy_cache", ".coverage"]
                 )
             ]
-            if dirty_lines:
+            new_dirty_lines = [line for line in dirty_lines if line.strip() not in _initial_dirty_lines]
+            if new_dirty_lines:
                 print("\n\n" + "=" * 70)
                 print("[POLLUTION GUARD ERROR] Test suite left git working tree dirty:")
-                for line in dirty_lines:
+                for line in new_dirty_lines:
                     print(f"  {line}")
                 print("=" * 70 + "\n")
                 session.exitstatus = 1
