@@ -43,8 +43,23 @@ python scripts/tasks.py dev
 # Run all unit tests (Backend pytest + Frontend Vitest)
 python scripts/tasks.py test
 
-# Run full CI quality checks (Ruff, Mypy, Pytest, ESLint, TypeScript tsc, Vitest)
+# Run full CI quality checks (Ruff, Mypy, Pytest with coverage, ESLint, TypeScript tsc, Vitest)
 python scripts/tasks.py check
+
+# Run code formatters (Ruff format for Python + Prettier for Frontend)
+python -m ruff format
+cd frontend && npm run format
+
+# Verify formatting without modifying files
+python -m ruff format --check
+cd frontend && npm run format:check
+
+# Run static type checking
+python -m mypy core plugins/sql_inspector.py plugins/plugin_contract.py
+cd frontend && npm run typecheck
+
+# Regenerate shared TypeScript API types from FastAPI OpenAPI schema
+python scripts/gen_api_types.py
 
 # Seed demo data against simulated plugin
 python scripts/tasks.py seed
@@ -59,35 +74,76 @@ python scripts/tasks.py clean
 
 ## 🧪 Testing Guidelines
 
-AegisGate enforces high test coverage and strict type safety:
+AegisGate enforces high test coverage, strict isolation, and automated quality gates:
 
-### 1. Backend Unit Tests
+### 1. Test Architecture & Structure
+Tests are organized strictly by **module/domain** under `tests/`:
+- `tests/unit/`:
+  - `governance/`: Governance rules, join policies, and cost inspection
+  - `sql_inspector/`: SQL dialect parsing and table/join extraction
+  - `output_masker/`: Output masking (`REDACT_FIELD`, `REMOVE_FIELD`, nested JSON)
+  - `state_machine/`: Query lifecycle, transitions, auto-approval, and simulations
+  - `timeout_guard/`: Query timeouts and emergency kill dispatching
+  - `plugin_installer/`: Dynamic plugin registration, zip verification, and uninstallation
+  - `plugin_client/`: JSON-RPC subprocess workers and communication protocols
+  - `plugin_registry/`: Plugin manifest discovery and registration
+  - `mcp_gateway/`: Model Context Protocol tool endpoints and bridging
+  - `api/`: FastAPI REST endpoints and configuration drift guards
+  - `sdk/`: AegisGate Python SDK contracts and BasePlugin implementations
+  - `storage/`: SQLite database models and SQLModel persistence
+- `tests/integration/`: Real target database tests (e.g. Microsoft SQL Server)
+- `tests/e2e/`: Automated Playwright UI smoke suite and system verification
+
+### 2. Running Unit Tests
+Unit tests run isolated from real databases and external services:
 ```bash
-python -m pytest -q --ignore=tests/browser_verification.py --ignore=tests/system_verification.py
+python -m pytest
 ```
+*Note: Pytest defaults exclude `integration` and `e2e` markers automatically.*
 
-### 2. Frontend Component Tests
+### 3. Coverage Ratchet Guard
+Pytest enforces a test coverage ratchet (`--cov-fail-under=62` in `pyproject.toml`) across `core/`, `plugins/sql_inspector.py`, and `plugins/plugin_contract.py`. The suite will fail if overall coverage drops below the ratchet threshold.
+
+### 4. Repository Pollution Guard
+A conftest hook (`pytest_sessionfinish`) checks `git status --porcelain` at the end of every test run. If any test creates untracked files or modifies tracked files in `plugins/`, `data/`, or the repository root, the test run fails immediately. Use `tmp_plugins_dir` or `db_session` fixtures to keep tests clean.
+
+### 5. Automated UI Smoke Test (Playwright)
+To run the automated UI smoke test suite (covering scenarios S1 through S11):
+1. Start the dev servers: `python scripts/tasks.py dev --no-reload`
+2. In a separate terminal, execute:
 ```bash
-cd frontend && npx vitest run
+python tests/e2e/ui_smoke.py
 ```
+Screenshots for each scenario are automatically saved to `report/screenshots/phase2_s{1..11}_<name>.png`.
 
-### 3. Opt-in Live SQL Server Integration Tests
+### 6. Opt-in Live SQL Server Integration Tests
 To test against a real Microsoft SQL Server instance, set the following environment variables:
 - `AEGISGATE_TEST_MSSQL_SERVER` (e.g. `localhost` or IP)
 - `AEGISGATE_TEST_MSSQL_PORT` (default: `1433`)
-- `AEGISGATE_TEST_MSSQL_DATABASE` (e.g. `EnterpriseSales`)
+- `AEGISGATE_TEST_MSSQL_DATABASE` (e.g. `master`)
 - `AEGISGATE_TEST_MSSQL_AUTH` (`SQL Server Authentication` or `Windows Authentication`)
 - `AEGISGATE_TEST_MSSQL_USER` (e.g. `sa`)
 - `AEGISGATE_TEST_MSSQL_PASSWORD`
 - `AEGISGATE_TEST_MSSQL_TRUST` (`true` or `false`)
 
+Run integration tests using:
+```bash
+pytest -m integration
+```
 When these variables are absent, integration tests automatically skip safely.
 
-### 4. Browser UI Verification
-Playwright browser automation tests run via:
+---
+
+## 🔄 Shared API Types
+
+Backend FastAPI endpoints expose schemas that define the frontend contract. We generate shared TypeScript types using `openapi-typescript`:
+
 ```bash
-python tests/browser_verification.py
+# Generate TypeScript definitions from FastAPI OpenAPI spec
+python scripts/gen_api_types.py
 ```
+
+Generated types are written to `frontend/src/types/api.generated.ts` and cleanly re-exported in `frontend/src/types/index.ts`. The CI pipeline verifies that these types remain in sync and fails if any API change is made without regenerating types.
 
 ---
 

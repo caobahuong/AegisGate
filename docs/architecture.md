@@ -236,3 +236,65 @@ AegisGate manages its state in SQLite (`data/aegisgate.db`) via SQLModel:
    - Connect to real-time events via `useSSE` hook in `frontend/src/lib/sse.ts`.
    - Ensure light-theme contrast adherence in `frontend/src/app/globals.css`.
 
+---
+
+## 8. Test Infrastructure, Quality Gates & CI Architecture
+
+Phase 2 established committed, enterprise-grade quality gates and automated test infrastructure across the backend and frontend:
+
+```mermaid
+flowchart LR
+    subgraph Local_Gates ["Developer Quality Gates (scripts/tasks.py check)"]
+        Ruff["Ruff Lint & Format\n(Line length 120)"]
+        Mypy["Mypy Strict Typing\n(Core + Contract)"]
+        Prettier["Prettier Check\n(Tailwind + React)"]
+        ESLint["Next.js ESLint"]
+        Vitest["Vitest Component Tests"]
+        Pytest["Pytest Unit Suite\n(Cov >= 62% Ratchet)"]
+    end
+
+    subgraph CI_Pipeline ["GitHub Actions CI (.github/workflows/ci.yml)"]
+        Matrix["Ubuntu / Windows Matrix\n(Python 3.11 & 3.13)"]
+        FrontCI["Frontend Verification\n(Node 20, Next Build)"]
+        TypeSync["API Types Drift Check\n(openapi-typescript)"]
+        DocsLink["Docs Markdown Validation"]
+    end
+
+    subgraph Nightly_CI ["Nightly Integration (.github/workflows/integration.yml)"]
+        MSSQL_Svc["Microsoft SQL Server 2022\nService Container (Linux)"]
+        IntegTest["Opt-in Live Integration Tests\n(pytest -m integration)"]
+    end
+
+    Local_Gates --> CI_Pipeline
+    MSSQL_Svc --> IntegTest
+```
+
+### 8.1 Domain-Driven Test Organization
+Tests are decoupled from development phases and structured by domain subsystem under `tests/unit/`:
+- `governance/`: Cost limits, table scan bans, join restrictions, and query AST analysis.
+- `sql_inspector/`: SQL tokenization and dialect-neutral identifier extraction.
+- `output_masker/`: Sanitization algorithms (`REDACT_FIELD`, `REMOVE_FIELD`, nested JSON structures).
+- `state_machine/`: Formal state transitions, dry-run evaluation, auto-approval heuristics, and lifecycle simulation.
+- `timeout_guard/`: Query deadline enforcement and child process cancellation.
+- `plugin_installer/`: Manifest discovery, dynamic schema validation, zip file hardening, and lifecycle management.
+- `plugin_client/`: JSON-RPC 2.0 communication over stdio with isolated persistent worker processes.
+- `plugin_registry/`: Plugin directory discovery and runtime profiling.
+- `mcp_gateway/`: FastMCP protocol integration and execution submission endpoints.
+- `api/`: REST routing, dependency injection, and configuration drift guards.
+- `sdk/`: Public client and BasePlugin SDK contracts.
+- `storage/`: SQLModel entity persistence and SQLite database migrations.
+
+### 8.2 Test Isolation & Repository Pollution Guard
+To eliminate disk side-effects during automated test runs:
+- **`tmp_plugins_dir` fixture**: Dynamically isolates `settings.PLUGINS_DIR` to a temporary directory with bundled plugin copies, preventing custom or dynamically installed plugins from dirtying `plugins/`.
+- **`db_session` fixture**: Uses an in-memory or ephemeral SQLite database for complete test isolation.
+- **`worker_cleanup` fixture**: Autouse fixture guaranteeing that all child worker processes terminate at the conclusion of each test.
+- **Pollution Guard (`pytest_sessionfinish`)**: A global hook executes `git status --porcelain` at session completion and immediately aborts the test run if untracked files or unstaged changes are detected in `plugins/`, `data/`, or the repo root.
+
+### 8.3 Shared API Types & Synchronization Guard
+The contract between backend FastAPI endpoints and frontend React components is strictly typed:
+1. `scripts/gen_api_types.py` fetches the OpenAPI 3.1 specification from FastAPI.
+2. `openapi-typescript` translates the schema into TypeScript interfaces saved in `frontend/src/types/api.generated.ts`.
+3. `frontend/src/types/index.ts` re-exports and aliases these types for consumption by React hooks and components.
+4. CI checks for drift by re-running the generation script and failing if `git diff` is non-empty.
+
