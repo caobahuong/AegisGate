@@ -26,7 +26,11 @@ import sys
 import threading
 import time
 import uuid
-import xml.etree.ElementTree as ET
+
+try:
+    from defusedxml.ElementTree import fromstring as safe_xml_fromstring
+except ImportError:
+    from xml.etree.ElementTree import fromstring as safe_xml_fromstring  # type: ignore[no-redef]  # nosec B314
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
@@ -427,8 +431,8 @@ class SqlServerAdapter(IPluginAdapter):
         missing_indexes = 0
         for doc in docs:
             try:
-                root = ET.fromstring(doc)
-            except ET.ParseError:
+                root = safe_xml_fromstring(doc)  # nosec B314
+            except Exception:
                 continue
             for stmt in root.iter(f"{SHOWPLAN_NS}StmtSimple"):
                 if stmt_type == "UNKNOWN":
