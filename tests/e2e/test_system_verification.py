@@ -104,9 +104,9 @@ def run_anti_gravity_browser_qa() -> None:
         body_bg = page.evaluate("window.getComputedStyle(document.body).backgroundColor")
         print(f"   Body Computed Background (Default): {body_bg}")
         # RGB for light mode default #f8fafc is rgb(248, 250, 252)
-        assert (
-            "rgb(248, 250, 252)" in body_bg or "248, 250, 252" in body_bg
-        ), f"Expected default Light Mode rgb(248, 250, 252), got {body_bg}"
+        assert "rgb(248, 250, 252)" in body_bg or "248, 250, 252" in body_bg, (
+            f"Expected default Light Mode rgb(248, 250, 252), got {body_bg}"
+        )
         page.screenshot(path=str(SCREENSHOTS_DIR / "qa_00_light_mode_default.png"))
         print("   PASS: Light Mode default (#f8fafc) verified.")
 
@@ -135,9 +135,9 @@ def run_anti_gravity_browser_qa() -> None:
         time.sleep(0.5)
         light_restored_bg = page.evaluate("window.getComputedStyle(document.body).backgroundColor")
         print(f"   Body Computed Background (Restored Light): {light_restored_bg}")
-        assert (
-            "rgb(248, 250, 252)" in light_restored_bg or "248, 250, 252" in light_restored_bg
-        ), f"Expected Light Mode restored, got {light_restored_bg}"
+        assert "rgb(248, 250, 252)" in light_restored_bg or "248, 250, 252" in light_restored_bg, (
+            f"Expected Light Mode restored, got {light_restored_bg}"
+        )
         print("   PASS: Switched back to Light Mode default successfully.")
 
         # Test Sidebar User Guide Modal
@@ -344,9 +344,9 @@ def run_anti_gravity_browser_qa() -> None:
         }""")
 
         assert layout_metrics["windowScrollY"] == 0, f"Window scrolled unexpectedly: {layout_metrics['windowScrollY']}"
-        assert (
-            layout_metrics["asideTopBefore"] == layout_metrics["asideTopAfter"]
-        ), f"Sidebar moved during main scroll! Before: {layout_metrics['asideTopBefore']}, After: {layout_metrics['asideTopAfter']}"
+        assert layout_metrics["asideTopBefore"] == layout_metrics["asideTopAfter"], (
+            f"Sidebar moved during main scroll! Before: {layout_metrics['asideTopBefore']}, After: {layout_metrics['asideTopAfter']}"
+        )
         print(
             f"   PASS: Sidebar is permanently fixed (top={layout_metrics['asideTopBefore']}px) while main scrolls independently (scrollTop={layout_metrics['mainScrollTop']}px)."
         )
@@ -453,9 +453,9 @@ def run_anti_gravity_browser_qa() -> None:
 
         # Verify rule badge dynamically updated to Global Scope
         updated_badge = page.locator(f"div[data-testid='rule-card-{new_rule_id}'] [data-testid^='rule-target-badge-']")
-        assert (
-            "Global Scope" in updated_badge.inner_text()
-        ), f"Expected Global Scope badge, got: {updated_badge.inner_text()}"
+        assert "Global Scope" in updated_badge.inner_text(), (
+            f"Expected Global Scope badge, got: {updated_badge.inner_text()}"
+        )
         print(
             "   PASS: Rule updated successfully; target scope reassigned to Global Scope and badge updated reactively."
         )
