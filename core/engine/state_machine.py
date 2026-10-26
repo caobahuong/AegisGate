@@ -83,7 +83,7 @@ class ExecutionStateMachine:
 
         # 1. Fetch active rules
         active_rules = self.rule_store.list_rules(target_id=target_id, is_active_only=True)
-        rules_payload = [r.model_dump() for r in active_rules]
+        rules_payload = [r.model_dump(mode="json") for r in active_rules]
 
         # 2. Call Plugin Dry-Run via Subprocess Client
         client = self.registry.get_client(target_id)

@@ -140,7 +140,7 @@ class _PersistentWorker:
         rid = self._next_id
         fut: asyncio.Future[dict[str, Any]] = self.loop.create_future()
         self._pending[rid] = fut
-        payload = json.dumps({"jsonrpc": "2.0", "method": method, "params": params, "id": rid}) + "\n"
+        payload = json.dumps({"jsonrpc": "2.0", "method": method, "params": params, "id": rid}, default=str) + "\n"
         try:
             self.proc.stdin.write(payload.encode("utf-8"))
             await self.proc.stdin.drain()
@@ -394,23 +394,23 @@ class PluginSubprocessClient:
 
     async def sync_knowledge(self, params: SyncKnowledgeParams) -> SyncKnowledgeResult:
         """Call plugin sync_knowledge method."""
-        raw = await self.send_rpc_command("sync_knowledge", params.model_dump(), timeout=30.0)
+        raw = await self.send_rpc_command("sync_knowledge", params.model_dump(mode="json"), timeout=30.0)
         return SyncKnowledgeResult.model_validate(raw)
 
     async def dry_run(self, params: DryRunParams) -> DryRunResult:
         """Call plugin dry_run method."""
-        raw = await self.send_rpc_command("dry_run", params.model_dump(), timeout=15.0)
+        raw = await self.send_rpc_command("dry_run", params.model_dump(mode="json"), timeout=15.0)
         return DryRunResult.model_validate(raw)
 
     async def execute(self, params: ExecuteParams, timeout: float | None = None) -> ExecuteResult:
         """Call plugin execute method."""
         call_timeout = timeout or params.timeout_seconds + 5.0
-        raw = await self.send_rpc_command("execute", params.model_dump(), timeout=call_timeout)
+        raw = await self.send_rpc_command("execute", params.model_dump(mode="json"), timeout=call_timeout)
         return ExecuteResult.model_validate(raw)
 
     async def abort(self, params: AbortParams) -> AbortResult:
         """Call plugin abort method."""
-        raw = await self.send_rpc_command("abort", params.model_dump(), timeout=10.0)
+        raw = await self.send_rpc_command("abort", params.model_dump(mode="json"), timeout=10.0)
         return AbortResult.model_validate(raw)
 
     async def reinit(self, params: ReinitParams, timeout: float | None = None) -> ReinitResult:
