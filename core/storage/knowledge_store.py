@@ -7,6 +7,7 @@ Adheres strictly to python_clean_code.md:
 """
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -25,11 +26,26 @@ class KnowledgeStore:
         self.docs_dir: Path = docs_dir or settings.KNOWLEDGE_DOCS_DIR
         self.docs_dir.mkdir(parents=True, exist_ok=True)
 
+    def _resolve_safe_doc_path(self, filename: str) -> Path:
+        """Ensure filename is a pure basename and resolves strictly within docs_dir."""
+        clean_name = filename.strip()
+        if not clean_name:
+            raise StorageError("Filename cannot be empty.")
+        if "\x00" in clean_name or "/" in clean_name or "\\" in clean_name or ".." in clean_name or ":" in clean_name:
+            raise StorageError(f"Unsafe filename with path traversal characters: {filename!r}")
+        target = (self.docs_dir / clean_name).resolve()
+        docs_root = self.docs_dir.resolve()
+        try:
+            target.relative_to(docs_root)
+        except ValueError as exc:
+            raise StorageError(f"Path traversal detected: {filename!r} is outside docs directory.") from exc
+        return target
+
     def _read_file_safe(self, filename: str | None) -> str:
         """Safely read text from a markdown doc file."""
         if not filename:
             return ""
-        filepath = self.docs_dir / filename
+        filepath = self._resolve_safe_doc_path(filename)
         if not filepath.exists():
             return ""
         try:
@@ -39,7 +55,7 @@ class KnowledgeStore:
 
     def _write_file_safe(self, filename: str, content: str) -> None:
         """Safely write text to a markdown doc file."""
-        filepath = self.docs_dir / filename
+        filepath = self._resolve_safe_doc_path(filename)
         try:
             filepath.write_text(content, encoding="utf-8")
         except OSError as exc:
@@ -161,14 +177,20 @@ class KnowledgeStore:
             return False
 
         if chunk.doc_file:
-            doc_path = self.docs_dir / chunk.doc_file
-            if doc_path.exists():
-                doc_path.unlink(missing_ok=True)
+            try:
+                doc_path = self._resolve_safe_doc_path(chunk.doc_file)
+                if doc_path.exists():
+                    doc_path.unlink(missing_ok=True)
+            except StorageError:
+                pass
 
         if chunk.skills_file:
-            skills_path = self.docs_dir / chunk.skills_file
-            if skills_path.exists():
-                skills_path.unlink(missing_ok=True)
+            try:
+                skills_path = self._resolve_safe_doc_path(chunk.skills_file)
+                if skills_path.exists():
+                    skills_path.unlink(missing_ok=True)
+            except StorageError:
+                pass
 
         self.session.delete(chunk)
         self.session.commit()
@@ -177,10 +199,12 @@ class KnowledgeStore:
     def ingest_plugin_catalog(self, target_id: str, catalog_partitions: list[dict[str, Any]]) -> list[KnowledgeChunk]:
         """Standard Ingest Sink for chunked structural catalog pushed from plugins."""
         saved_chunks: list[KnowledgeChunk] = []
+        safe_target_id = re.sub(r"[^A-Za-z0-9_-]", "_", target_id)
         for part in catalog_partitions:
-            partition_key = part.get("partition_key", "Default")
-            chunk_id = f"{target_id}_{partition_key.lower().replace(' ', '_')}"
-            title = part.get("title", f"{partition_key} Subsystem")
+            raw_key = str(part.get("partition_key", "Default")).strip()
+            safe_part_key = re.sub(r"[^A-Za-z0-9_-]", "_", raw_key.lower().replace(" ", "_"))
+            chunk_id = f"{safe_target_id}_{safe_part_key}"
+            title = part.get("title", f"{raw_key} Subsystem")
             schema_data = part.get("tables", part)
             schema_json = json.dumps(schema_data, indent=2)
 
@@ -200,7 +224,7 @@ class KnowledgeStore:
                 new_chunk = KnowledgeChunk(
                     id=chunk_id,
                     target_id=target_id,
-                    partition_key=partition_key,
+                    partition_key=raw_key,
                     title=title,
                     catalog_json=schema_json,
                     doc_file=doc_filename,
@@ -209,7 +233,7 @@ class KnowledgeStore:
                     updated_at=utc_now(),
                 )
                 # Initialize default documentation template
-                default_doc = f"# {title} Documentation\n\nOverview of tables and business rules for {partition_key}."
+                default_doc = f"# {title} Documentation\n\nOverview of tables and business rules for {raw_key}."
                 default_skills = f"# {title} Query Skills\n\nStandard query templates and performance guidelines."
                 self._write_file_safe(doc_filename, default_doc)
                 self._write_file_safe(skills_filename, default_skills)

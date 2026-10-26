@@ -249,3 +249,55 @@ def test_log_store_paginate_comprehensive(db_session: Session):
     # 4. Bad cursor format recovers gracefully
     items_bad_cur, _, _ = store.paginate_logs(cursor="bad_cursor!@#", limit=5)
     assert len(items_bad_cur) == 5
+
+
+def test_knowledge_store_path_traversal_protection(db_session: Session, tmp_path: Path):
+    """KnowledgeStore blocks path traversal attacks in read, write, delete, and ingest."""
+    docs_dir = tmp_path / "k_docs_sec"
+    docs_dir.mkdir(parents=True)
+    outside_file = tmp_path / "secret.txt"
+    outside_file.write_text("TOP_SECRET_DATA", encoding="utf-8")
+
+    store = KnowledgeStore(db_session, docs_dir=docs_dir)
+
+    # 1. Traversal reading outside docs_dir raises StorageError
+    with pytest.raises(StorageError, match="Unsafe filename"):
+        store._read_file_safe("../secret.txt")
+
+    with pytest.raises(StorageError, match="Unsafe filename"):
+        store._read_file_safe("..\\secret.txt")
+
+    # 2. Traversal writing outside docs_dir raises StorageError
+    with pytest.raises(StorageError, match="Unsafe filename"):
+        store._write_file_safe("../../hacked.txt", "MALICIOUS")
+
+    assert not (tmp_path.parent / "hacked.txt").exists()
+
+    # 3. delete_chunk with traversal doc_file cannot delete outside files
+    traversal_chunk = KnowledgeChunk(
+        id="c_sec_test",
+        target_id="t_sec",
+        partition_key="P_Sec",
+        title="Sec Title",
+        catalog_json="{}",
+        doc_file="../secret.txt",
+        skills_file="..\\secret.txt",
+        created_at=utc_now(),
+        updated_at=utc_now(),
+    )
+    db_session.add(traversal_chunk)
+    db_session.commit()
+
+    # Deleting the chunk should cleanly delete DB record without deleting outside secret.txt
+    assert store.delete_chunk("c_sec_test") is True
+    assert outside_file.exists()
+    assert outside_file.read_text(encoding="utf-8") == "TOP_SECRET_DATA"
+
+    # 4. Ingest with traversal partition_key creates sanitized filenames inside docs_dir
+    p_evil = [{"partition_key": "../../../evil_part", "title": "Evil Subsystem", "tables": []}]
+    chunks = store.ingest_plugin_catalog("target_sec", p_evil)
+    assert len(chunks) == 1
+    chunk = chunks[0]
+    assert "/" not in chunk.doc_file and "\\" not in chunk.doc_file and ".." not in chunk.doc_file
+    assert (docs_dir / chunk.doc_file).exists()
+    assert not (tmp_path / "evil_part_doc.md").exists()
