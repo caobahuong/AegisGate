@@ -8,9 +8,8 @@ Adheres strictly to python_clean_code.md:
 """
 
 import logging
-from collections.abc import AsyncGenerator, Callable
+from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
-from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -98,7 +97,7 @@ app.add_middleware(
 @app.middleware("http")
 async def security_guard_middleware(
     request: Request,
-    call_next: Callable[[Request], AsyncGenerator[Response, None] | Any],
+    call_next: Callable[[Request], Awaitable[Response]],
 ) -> Response:
     """Security guard middleware: CSRF defense, body size limit, and security headers."""
     # CSRF Protection via Fetch Metadata (Sec-Fetch-Site)
