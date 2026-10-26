@@ -8,7 +8,7 @@ Adheres strictly to python_clean_code.md:
 
 import json
 import logging
-from typing import Any
+from typing import Any, cast
 
 from sqlmodel import Session
 
@@ -24,15 +24,20 @@ from core.gateway.schemas import (
     ApproveExecutionRequest,
     CreateRuleRequest,
     ExecutionResponse,
+    ExecutionStatus,
     InstallGitPluginRequest,
     KnowledgeChunkResponse,
     McpConfigResponse,
     PluginCertificationResponse,
     PluginProfileResponse,
     PluginSchemaResponse,
+    PluginStatus,
+    QueryType,
     RegisterPluginRequest,
     RejectExecutionRequest,
     RuleResponse,
+    RuleSeverity,
+    RuleType,
     SubmitExecutionRequest,
     UpdateDocsRequest,
     UpdatePluginConfigRequest,
@@ -74,9 +79,9 @@ def format_execution_response(log: ExecutionLog) -> ExecutionResponse:
         id=log.id,
         target_id=log.target_id,
         query=log.query,
-        query_type=log.query_type,
+        query_type=cast(QueryType, log.query_type),
         reasoning=log.reasoning,
-        status=log.status,
+        status=cast(ExecutionStatus, log.status),
         explain_plan=plan_data,
         violations=violations,
         execution_time_ms=log.execution_time_ms,
@@ -201,7 +206,7 @@ class GatewayService:
             config=cfg,
             ui_schema=ui_schema,
             custom_card=custom_card,
-            status=p.status,
+            status=cast(PluginStatus, p.status),
             latency_ms=p.latency_ms,
             active_sessions_count=p.active_sessions_count,
             is_certified=getattr(p, "is_certified", False),
@@ -401,10 +406,10 @@ class GatewayService:
                 id=r.id,
                 name=r.name,
                 target_id=r.target_id,
-                rule_type=r.rule_type,
+                rule_type=cast(RuleType, r.rule_type),
                 expression=r.expression,
                 description=r.description,
-                severity=r.severity,
+                severity=cast(RuleSeverity, r.severity),
                 is_active=r.is_active,
                 created_at=r.created_at.isoformat(),
             )
@@ -446,10 +451,10 @@ class GatewayService:
             id=saved.id,
             name=saved.name,
             target_id=saved.target_id,
-            rule_type=saved.rule_type,
+            rule_type=cast(RuleType, saved.rule_type),
             expression=saved.expression,
             description=saved.description,
-            severity=saved.severity,
+            severity=cast(RuleSeverity, saved.severity),
             is_active=saved.is_active,
             created_at=saved.created_at.isoformat(),
         )
@@ -482,10 +487,10 @@ class GatewayService:
             id=updated.id,
             name=updated.name,
             target_id=updated.target_id,
-            rule_type=updated.rule_type,
+            rule_type=cast(RuleType, updated.rule_type),
             expression=updated.expression,
             description=updated.description,
-            severity=updated.severity,
+            severity=cast(RuleSeverity, updated.severity),
             is_active=updated.is_active,
             created_at=updated.created_at.isoformat(),
         )

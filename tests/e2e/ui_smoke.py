@@ -16,7 +16,6 @@ Executes end-to-end browser verification using Playwright, verifying:
 All screenshots saved to report/screenshots/phase2_s{1..11}_<description>.png.
 """
 
-import sys
 import time
 from pathlib import Path
 

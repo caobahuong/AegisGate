@@ -764,7 +764,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "active" | "inactive" | "error";
+            status: "active" | "inactive" | "error" | "disabled";
             /** Latency Ms */
             latency_ms: number;
             /** Active Sessions Count */

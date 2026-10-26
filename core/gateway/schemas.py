@@ -38,7 +38,7 @@ RuleType = Literal[
 
 RuleSeverity = Literal["CRITICAL", "HIGH", "MEDIUM", "LOW"]
 
-PluginStatus = Literal["active", "inactive", "error"]
+PluginStatus = Literal["active", "inactive", "error", "disabled"]
 
 # --- Monitor & Execution Schemas ---
 
