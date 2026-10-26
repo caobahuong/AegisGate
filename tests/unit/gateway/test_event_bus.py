@@ -78,15 +78,43 @@ async def test_db_outbox_bus_publish_and_replay(db_engine):
 async def test_sse_broadcaster_frames_and_replay():
     bus = get_event_bus()
 
-    # 1. Test sse_broadcaster adapter yields formatted SSE frames
-    gen = sse_broadcaster.subscribe(last_event_id=0)
-    init_frame = await anext(gen)
-    assert "id: 0" in init_frame
-    assert "event: connected" in init_frame
+    # 1. Test live subscription
+    frames: list[str] = []
+
+    async def reader() -> None:
+        async for frame in sse_broadcaster.subscribe():
+            frames.append(frame)
+            if len(frames) >= 2:
+                break
+
+    read_task = asyncio.create_task(reader())
+    await asyncio.sleep(0.05)
+
+    # First frame received is connected
+    assert len(frames) == 1
+    assert "id: 0" in frames[0]
+    assert "event: connected" in frames[0]
 
     # 2. Publish an event to the bus and verify next frame format
-    await bus.publish("execution_queued", {"id": "exec_test_sse"})
-    event_frame = await anext(gen)
-    assert "event: execution_queued" in event_frame
-    assert "exec_test_sse" in event_frame
-    assert "id: " in event_frame
+    ev_id = await bus.publish("execution_queued", {"id": "exec_test_sse"})
+    await asyncio.wait_for(read_task, timeout=2.0)
+
+    assert len(frames) == 2
+    assert "event: execution_queued" in frames[1]
+    assert "exec_test_sse" in frames[1]
+    assert f"id: {ev_id}" in frames[1]
+
+    # 3. Test replay format from specific last_event_id
+    replay_frames: list[str] = []
+
+    async def replay_reader() -> None:
+        async for frame in sse_broadcaster.subscribe(last_event_id=ev_id - 1):
+            replay_frames.append(frame)
+            if len(replay_frames) >= 2:
+                break
+
+    await asyncio.wait_for(replay_reader(), timeout=2.0)
+    assert len(replay_frames) == 2
+    assert "event: connected" in replay_frames[0]
+    assert "event: execution_queued" in replay_frames[1]
+    assert f"id: {ev_id}" in replay_frames[1]

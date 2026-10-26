@@ -78,6 +78,17 @@ def tmp_plugins_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 
 @pytest.fixture(autouse=True)
+def isolate_event_bus(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, None]:
+    """Ensure tests run with an isolated InMemoryBus unless explicitly overridden."""
+    from core.gateway.event_bus import set_event_bus
+
+    monkeypatch.setattr(settings, "EVENT_BUS", "memory")
+    set_event_bus(None)
+    yield
+    set_event_bus(None)
+
+
+@pytest.fixture(autouse=True)
 async def worker_cleanup() -> AsyncGenerator[None, None]:
     """Ensure persistent worker subprocesses are cleanly terminated after each test."""
     yield

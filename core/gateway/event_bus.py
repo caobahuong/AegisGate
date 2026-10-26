@@ -301,3 +301,9 @@ def get_event_bus() -> EventBus:
             logger.info("Initializing InMemoryBus for single-process events")
             _event_bus_instance = InMemoryBus()
     return _event_bus_instance
+
+
+def set_event_bus(bus: EventBus | None) -> None:
+    """Set or reset the global EventBus instance (primarily for testing and lifecycle management)."""
+    global _event_bus_instance
+    _event_bus_instance = bus
