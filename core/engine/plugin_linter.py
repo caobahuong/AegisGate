@@ -22,6 +22,7 @@ from sqlmodel import Session, select
 
 from core.database import PluginProfile, utc_now
 from core.engine.plugin_client import PluginSubprocessClient
+from core.exceptions import JsonRpcProtocolError
 
 logger = logging.getLogger(__name__)
 
@@ -64,8 +65,8 @@ class PluginLinter:
                     timeout=TIMEOUT_PER_STAGE_SECONDS,
                 )
                 status_info = ping_res.get("status") if isinstance(ping_res, dict) else "ok"
-            except Exception:
-                # If ping is not specifically handled, try a lightweight command
+            except JsonRpcProtocolError:
+                # If ping method is not explicitly supported by plugin, RPC responsiveness is still verified
                 status_info = "rpc_ready"
 
             latency_ms = round((time.perf_counter() - t0) * 1000, 2)
