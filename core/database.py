@@ -221,19 +221,30 @@ def init_db(target_engine: Any = None) -> None:
     alembic_cfg.set_main_option("script_location", str(settings.BASE_DIR / "alembic"))
     alembic_cfg.set_main_option("sqlalchemy.url", str(active_engine.url))
 
-    with active_engine.connect() as conn:
-        alembic_cfg.attributes["connection"] = conn
+    has_alembic_version = False
+    if "alembic_version" in existing_tables:
+        with active_engine.connect() as conn:
+            try:
+                row = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
+                if row is not None:
+                    has_alembic_version = True
+            except Exception:
+                has_alembic_version = False
 
-        if "alembic_version" not in existing_tables:
-            if "execution_logs" in existing_tables:
-                # Existing database from Phases 1-3: stamp to baseline '001'
-                logger.info("Existing database schema detected without alembic_version; stamping baseline 001...")
+    if not has_alembic_version:
+        if "execution_logs" in existing_tables:
+            # Existing database from Phases 1-3: stamp to baseline '001'
+            logger.info("Existing database schema detected without valid alembic_version; stamping baseline 001...")
+            with active_engine.begin() as conn:
+                alembic_cfg.attributes["connection"] = conn
                 command.stamp(alembic_cfg, "001")
-            else:
-                # Completely empty database: create baseline tables via migration
-                logger.info("Fresh database detected; running full migrations from head...")
+        else:
+            # Completely empty database: create baseline tables via migration
+            logger.info("Fresh database detected; running full migrations from head...")
 
-        # Upgrade to latest revision (head)
+    # Upgrade to latest revision (head)
+    with active_engine.begin() as conn:
+        alembic_cfg.attributes["connection"] = conn
         command.upgrade(alembic_cfg, "head")
 
     with Session(active_engine) as session:

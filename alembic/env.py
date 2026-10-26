@@ -49,8 +49,7 @@ def run_migrations_online() -> None:
             target_metadata=target_metadata,
             render_as_batch=True,
         )
-        with context.begin_transaction():
-            context.run_migrations()
+        context.run_migrations()
         return
 
     url = get_url()
