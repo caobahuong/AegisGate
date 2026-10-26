@@ -48,8 +48,8 @@ def upgrade() -> None:
         sa.Column("partition_key", sa.String(), nullable=False),
         sa.Column("title", sa.String(), nullable=False),
         sa.Column("catalog_json", sa.Text(), nullable=False, server_default="{}"),
-        sa.Column("doc_markdown", sa.Text(), nullable=False, server_default=""),
-        sa.Column("skills_markdown", sa.Text(), nullable=False, server_default=""),
+        sa.Column("doc_file", sa.String(), nullable=True),
+        sa.Column("skills_file", sa.String(), nullable=True),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=False),
     )
