@@ -160,3 +160,49 @@ async def test_cluster_control_listener_handles_abort(db_engine):
 
             assert ctl.handled_at is not None
             mock_client.abort.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_cluster_manager_start_stop_loops(db_engine, monkeypatch):
+    """Verify ClusterManager start, heartbeat upsert, loops, and clean shutdown."""
+    from core.config import settings
+    monkeypatch.setattr(settings, "HEARTBEAT_INTERVAL_SECONDS", 0.01)
+
+    cluster = ClusterManager(owner_id="worker_lifecycle_test")
+    cluster.engine = db_engine
+    await cluster.start()
+    assert cluster._running is True
+    assert cluster._heartbeat_task is not None
+    assert cluster._janitor_task is not None
+    assert cluster._control_listener_task is not None
+
+    import asyncio
+    await asyncio.sleep(0.03)
+
+    # Verify heartbeat recorded in DB
+    with Session(db_engine) as session:
+        hb = session.exec(select(ProcessHeartbeat).where(ProcessHeartbeat.owner_id == "worker_lifecycle_test")).first()
+        assert hb is not None
+        assert hb.host == cluster.hostname
+
+    # Calling record_heartbeat updates existing heartbeat
+    cluster._record_heartbeat()
+
+    # Calling start() again when running returns early
+    await cluster.start()
+
+    # Stop cluster
+    await cluster.stop()
+    assert cluster._running is False
+    assert cluster._heartbeat_task is None
+
+    # Heartbeat deleted after stop
+    with Session(db_engine) as session:
+        hb_after = session.exec(select(ProcessHeartbeat).where(ProcessHeartbeat.owner_id == "worker_lifecycle_test")).first()
+        assert hb_after is None
+
+
+def test_try_acquire_lock_rollback_on_error(db_session: Session):
+    """try_acquire_lock rolls back and returns False on DB error."""
+    with patch.object(db_session, "commit", side_effect=Exception("DB write failure")):
+        assert try_acquire_lock(db_session, "fail_lock", "owner_fail", ttl_seconds=10.0) is False
