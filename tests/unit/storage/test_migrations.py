@@ -104,3 +104,19 @@ def test_migration_downgrade_and_upgrade(temp_db_path: Path):
 
         inspector = inspect(test_engine)
         assert "event_outbox" in inspector.get_table_names()
+
+
+def test_init_db_percent_encoded_url_handling(tmp_path: Path):
+    """Regression test: verify init_db handles percent-encoded engine URLs without ConfigParser interpolation error."""
+    special_dir = tmp_path / "space dir with % special"
+    special_dir.mkdir(parents=True, exist_ok=True)
+    db_file = special_dir / "percent_test.db"
+    test_engine = create_engine(f"sqlite:///{db_file}")
+
+    # Must execute cleanly without ValueError: invalid interpolation syntax
+    init_db(target_engine=test_engine)
+
+    inspector = inspect(test_engine)
+    assert "alembic_version" in inspector.get_table_names()
+    assert "execution_logs" in inspector.get_table_names()
+

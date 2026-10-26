@@ -219,7 +219,9 @@ def init_db(target_engine: Any = None) -> None:
     alembic_ini_path = settings.BASE_DIR / "alembic.ini"
     alembic_cfg = Config(str(alembic_ini_path))
     alembic_cfg.set_main_option("script_location", str(settings.BASE_DIR / "alembic"))
-    alembic_cfg.set_main_option("sqlalchemy.url", str(active_engine.url))
+    # Alembic ConfigParser uses '%' for interpolation syntax; escape percent-encoded URLs as '%%'
+    db_url_str = str(active_engine.url).replace("%", "%%")
+    alembic_cfg.set_main_option("sqlalchemy.url", db_url_str)
 
     has_alembic_version = False
     if "alembic_version" in existing_tables:
