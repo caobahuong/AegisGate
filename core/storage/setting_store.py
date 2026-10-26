@@ -4,6 +4,7 @@ Adheres strictly to python_clean_code.md:
 - Full type hinting
 """
 
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from core.database import SystemSetting, utc_now
@@ -24,7 +25,7 @@ class SettingStore:
         return setting.value
 
     def set_setting(self, key: str, value: str, description: str | None = None) -> str:
-        """Set or update setting value."""
+        """Set or update setting value with race-condition resilient upsert."""
         statement = select(SystemSetting).where(SystemSetting.key == key)
         setting = self.session.exec(statement).first()
         if setting:
@@ -41,7 +42,20 @@ class SettingStore:
                 updated_at=utc_now(),
             )
             self.session.add(setting)
-        self.session.commit()
+
+        try:
+            self.session.commit()
+        except IntegrityError:
+            self.session.rollback()
+            # Concurrent insertion won race; update the winning record
+            existing = self.session.exec(select(SystemSetting).where(SystemSetting.key == key)).first()
+            if existing:
+                existing.value = value
+                if description:
+                    existing.description = description
+                existing.updated_at = utc_now()
+                self.session.add(existing)
+                self.session.commit()
         return value
 
     def is_auto_approval_enabled(self) -> bool:
