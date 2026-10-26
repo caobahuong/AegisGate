@@ -46,6 +46,29 @@ def _split_command(cmd: str) -> list[str]:
     return [p[1:-1] if len(p) >= 2 and p[0] == p[-1] and p[0] in ("'", '"') else p for p in parts]
 
 
+SAFE_ENV_KEYS: frozenset[str] = frozenset(
+    {
+        "PATH",
+        "SYSTEMROOT",
+        "SYSTEMDRIVE",
+        "TEMP",
+        "TMP",
+        "USERPROFILE",
+        "HOME",
+        "WINDIR",
+        "COMSPEC",
+        "PATHEXT",
+        "PYTHONPATH",
+        "PYTHONUNBUFFERED",
+        "PYTHONHOME",
+        "LD_LIBRARY_PATH",
+        "LANG",
+        "LC_ALL",
+        "TERM",
+    }
+)
+
+
 class _PersistentWorker:
     """One long-lived plugin process shared by every call for a plugin.
 
@@ -70,7 +93,8 @@ class _PersistentWorker:
         return self.proc is not None and self.proc.returncode is None
 
     async def _spawn(self) -> None:
-        sub_env = os.environ.copy()
+        # Sanitize environment: do not pass sensitive host secrets/tokens to untrusted plugin
+        sub_env = {k: v for k, v in os.environ.items() if k.upper() in SAFE_ENV_KEYS}
         sub_env["PYTHONPATH"] = str(settings.BASE_DIR)
         sub_env["PYTHONUNBUFFERED"] = "1"
         kwargs: dict[str, Any] = {
@@ -81,12 +105,13 @@ class _PersistentWorker:
             "env": sub_env,
             "limit": settings.PLUGIN_MAX_MESSAGE_BYTES,
         }
+        argv = _split_command(self.cmd)
+        if not argv:
+            raise PluginProcessError(f"Invalid empty plugin command: {self.cmd!r}")
         try:
-            argv = _split_command(self.cmd)
             self.proc = await asyncio.create_subprocess_exec(*argv, **kwargs)
-        except (ValueError, OSError):
-            logger.debug("Falling back to shell launch for %s", self.cmd)
-            self.proc = await asyncio.create_subprocess_shell(self.cmd, **kwargs)
+        except (ValueError, OSError) as exc:
+            raise PluginProcessError(f"Failed to spawn plugin process safely without shell: {exc}") from exc
         _active_processes.add(self.proc)
         self._tasks = [
             asyncio.create_task(self._read_loop(self.proc)),

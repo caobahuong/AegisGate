@@ -5,9 +5,10 @@ Adheres to python_clean_code.md:
 - Strict validation models
 """
 
+import re
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from core.engine.governance import validate_rule_definition
 
@@ -97,6 +98,10 @@ class RejectExecutionRequest(BaseModel):
 # --- Plugin Schemas ---
 
 
+_SAFE_PLUGIN_ID = re.compile(r"^[a-zA-Z0-9_-]{1,64}$")
+_FORBIDDEN_SHELL_CHARS = re.compile(r"[;&|`$<>\r\n]")
+
+
 class RegisterPluginRequest(BaseModel):
     """Payload for registering a new plugin via Add Plugin Modal."""
 
@@ -110,6 +115,24 @@ class RegisterPluginRequest(BaseModel):
     ui_schema: list[dict[str, Any]] | None = None
     custom_card: dict[str, Any] | None = None
 
+    @field_validator("id")
+    @classmethod
+    def validate_plugin_id(cls, v: str) -> str:
+        val = v.strip()
+        if not _SAFE_PLUGIN_ID.fullmatch(val):
+            raise ValueError(
+                "Plugin ID must only contain alphanumeric characters, underscores, or hyphens (max 64 chars)."
+            )
+        return val
+
+    @field_validator("entrypoint", "abort_command")
+    @classmethod
+    def validate_command_safety(cls, v: str) -> str:
+        val = v.strip()
+        if _FORBIDDEN_SHELL_CHARS.search(val):
+            raise ValueError("Command contains forbidden shell metacharacters (; & | ` $ < > \\r \\n).")
+        return val
+
 
 class UpdatePluginConfigRequest(BaseModel):
     """Payload for updating a plugin's configuration via Edit Modal."""
@@ -120,6 +143,16 @@ class UpdatePluginConfigRequest(BaseModel):
     entrypoint: str | None = None
     dry_run_command: str | None = None
     abort_command: str | None = None
+
+    @field_validator("entrypoint", "abort_command")
+    @classmethod
+    def validate_command_safety(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        val = v.strip()
+        if _FORBIDDEN_SHELL_CHARS.search(val):
+            raise ValueError("Command contains forbidden shell metacharacters (; & | ` $ < > \\r \\n).")
+        return val
 
 
 class PluginProfileResponse(BaseModel):

