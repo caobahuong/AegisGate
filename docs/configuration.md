@@ -14,6 +14,13 @@ Configuration variables are read from system environment variables or a `.env` f
 | `APP_VERSION` | `str` | `"1.0.0"` | Semantic version reported by the service and `/health` endpoint. | Bumped during release versions. |
 | `DEBUG` | `bool` | `False` | Enables verbose SQL logging and stack traces in error responses. | Set to `true` during local debugging or unit testing; keep `false` in production. |
 | `API_HOST` | `str` | `"127.0.0.1"` | Network interface IP to bind the FastAPI Uvicorn server to. | Keep `127.0.0.1` for local zero-trust usage; change if containerized inside Docker/K8s network. |
+
+> [!WARNING]
+> **Host Binding & Zero-Auth Architecture Risk:**
+> AegisGate is intentionally designed as an internal tool without built-in authentication or authorization mechanisms.
+> Default binding is strictly `127.0.0.1` (localhost only).
+> **Binding to `0.0.0.0` or a public interface exposes all administrative endpoints (submitting and approving queries, installing plugins, modifying governance policies, and accessing audit logs) unauthenticated to any device on the network.**
+> If remote internal access is required, place AegisGate behind an authenticating reverse proxy (e.g. Nginx/Caddy with mutual TLS, VPN, or OAuth2-Proxy) and enforce strict network firewall rules.
 | `API_PORT` | `int` | `8000` | Network port for the FastAPI REST Gateway and SSE stream. | Change if port 8000 conflicts with another local service. |
 | `MCP_PORT` | `int` | `8001` | Network port allocated for the standalone FastMCP service. | Change if running dedicated FastMCP listener on an alternative port. |
 | `BASE_DIR` | `Path` | Root of repo | Absolute path to repository root containing `core/`. | Automatically resolved; override only if packaging into isolated execution roots. |
