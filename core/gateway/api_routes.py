@@ -7,6 +7,7 @@ Adheres strictly to python_clean_code.md:
 - Zero generic `except Exception:`, proper status codes
 """
 
+from datetime import datetime
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
@@ -30,6 +31,7 @@ from core.gateway.schemas import (
     InstallGitPluginRequest,
     KnowledgeChunkResponse,
     McpConfigResponse,
+    PaginatedExecutionsResponse,
     PluginCertificationResponse,
     PluginProfileResponse,
     PluginSchemaResponse,
@@ -77,6 +79,29 @@ async def sse_events(
             "Connection": "keep-alive",
             "X-Accel-Buffering": "no",
         },
+    )
+
+
+@router.get("/executions/page", response_model=PaginatedExecutionsResponse)
+def paginate_executions(
+    service: Annotated[GatewayService, Depends(get_service)],
+    cursor: str | None = Query(default=None, description="Opaque pagination cursor from previous page"),
+    limit: int = Query(default=50, ge=1, le=500),
+    status: str | None = Query(default=None, description="Status filter"),
+    target_id: str | None = Query(default=None, description="Plugin target ID filter"),
+    q: str | None = Query(default=None, description="Search term matching query, reasoning, or ID"),
+    from_date: datetime | None = Query(default=None, description="Earliest created_at timestamp"),
+    to_date: datetime | None = Query(default=None, description="Latest created_at timestamp"),
+) -> PaginatedExecutionsResponse:
+    """Cursor-paginated search endpoint for execution audit logs."""
+    return service.paginate_executions(
+        cursor=cursor,
+        limit=limit,
+        status=status,
+        target_id=target_id,
+        q=q,
+        from_date=from_date,
+        to_date=to_date,
     )
 
 

@@ -7,6 +7,37 @@ export interface FetchExecutionsParams {
   offset?: number;
 }
 
+export interface PaginatedExecutionsResponse {
+  items: ExecutionResponse[];
+  next_cursor: string | null;
+  total_count: number;
+}
+
+export interface FetchPaginatedParams {
+  cursor?: string;
+  limit?: number;
+  status?: string;
+  targetId?: string;
+  q?: string;
+  fromDate?: string;
+  toDate?: string;
+}
+
+export async function fetchPaginatedExecutions(
+  params?: FetchPaginatedParams
+): Promise<PaginatedExecutionsResponse> {
+  const queryParams: Record<string, string | number | undefined> = {
+    cursor: params?.cursor,
+    limit: params?.limit,
+    status: params?.status,
+    target_id: params?.targetId,
+    q: params?.q,
+    from_date: params?.fromDate,
+    to_date: params?.toDate,
+  };
+  return apiClient<PaginatedExecutionsResponse>("/executions/page", { params: queryParams });
+}
+
 export async function fetchExecutions(
   targetIdOrParams?: string | FetchExecutionsParams
 ): Promise<ExecutionResponse[]> {

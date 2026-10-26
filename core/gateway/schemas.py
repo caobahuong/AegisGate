@@ -73,6 +73,14 @@ class ExecutionResponse(BaseModel):
     finished_at: str | None = None
 
 
+class PaginatedExecutionsResponse(BaseModel):
+    """Cursor-paginated response for execution logs."""
+
+    items: list[ExecutionResponse]
+    next_cursor: str | None = None
+    total_count: int
+
+
 class ApproveExecutionRequest(BaseModel):
     """Payload for approving and resuming a paused execution."""
 

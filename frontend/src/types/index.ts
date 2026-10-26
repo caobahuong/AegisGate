@@ -64,6 +64,12 @@ export interface ExecutionResponse {
   finished_at: string | null;
 }
 
+export interface PaginatedExecutionsResponse {
+  items: ExecutionResponse[];
+  next_cursor: string | null;
+  total_count: number;
+}
+
 export type UiFieldType = "text" | "password" | "number" | "select" | "boolean" | "textarea";
 
 export interface UiFieldSchema {

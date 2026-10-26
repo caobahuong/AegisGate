@@ -9,6 +9,7 @@ Adheres strictly to python_clean_code.md:
 import asyncio
 import json
 import logging
+from datetime import datetime
 from typing import Any, cast
 
 from sqlmodel import Session
@@ -29,6 +30,7 @@ from core.gateway.schemas import (
     InstallGitPluginRequest,
     KnowledgeChunkResponse,
     McpConfigResponse,
+    PaginatedExecutionsResponse,
     PluginCertificationResponse,
     PluginProfileResponse,
     PluginSchemaResponse,
@@ -200,6 +202,32 @@ class GatewayService:
             limit=limit,
         )
         return [format_execution_response(log) for log in logs]
+
+    def paginate_executions(
+        self,
+        cursor: str | None = None,
+        limit: int = 50,
+        status: str | None = None,
+        target_id: str | None = None,
+        q: str | None = None,
+        from_date: datetime | None = None,
+        to_date: datetime | None = None,
+    ) -> PaginatedExecutionsResponse:
+        """Fetch cursor-paginated executions with search and filters."""
+        logs, next_cursor, total_count = self.log_store.paginate_logs(
+            cursor=cursor,
+            limit=limit,
+            status=status,
+            target_id=target_id,
+            query_search=q,
+            from_date=from_date,
+            to_date=to_date,
+        )
+        return PaginatedExecutionsResponse(
+            items=[format_execution_response(log) for log in logs],
+            next_cursor=next_cursor,
+            total_count=total_count,
+        )
 
     # --- Plugin Management Services ---
 
