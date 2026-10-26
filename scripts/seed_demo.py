@@ -32,6 +32,7 @@ if str(BASE_DIR) not in sys.path:
 from sqlmodel import Session, select
 
 from core.database import ExecutionLog, PluginProfile, Rule, engine, init_db, utc_now
+from core.engine.plugin_registry import PluginRegistry
 from core.gateway.services import GatewayService
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -56,6 +57,8 @@ async def seed_data(count: int = 0, force: bool = False) -> None:
     target_id = "sqlserver_prod"
 
     with Session(engine) as session:
+        registry = PluginRegistry(session)
+        registry.scan_and_load_manifests()
         profile = session.exec(select(PluginProfile).where(PluginProfile.id == target_id)).first()
         if not profile:
             logger.error("Target plugin '%s' not found in database. Ensure plugins are discovered.", target_id)
