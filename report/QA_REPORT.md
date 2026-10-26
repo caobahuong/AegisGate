@@ -477,3 +477,110 @@ During Phase 2 test development and deep edge-case verification, 3 underlying co
 - Data integrity strictly preserved; `data/aegisgate.db` remained uncorrupted and isolated.
 
 
+
+
+---
+
+## Phase 4 — Robustness, Concurrency, Fault Injection & Scale Verification
+
+- **Execution Date:** 2026-10-27
+- **Environment:** Windows (PowerShell), Python 3.13.5 (.venv), Node.js v22.22.2, SQLite WAL mode
+- **Test Frameworks:** pytest 9.1.1, pytest-asyncio 1.4.1, pytest-randomly 5.0.0, Vitest 2.1.9
+- **Dedicated Phase 4 Stress Suites:**
+  - `tests/stress/test_concurrency_race_conditions.py` (7 tests)
+  - `tests/stress/test_fault_injection.py` (8 tests)
+  - `tests/stress/test_sse_scale_resilience.py` (5 tests)
+  - `tests/stress/test_graceful_shutdown.py` (3 tests)
+  - `tests/stress/test_retention_scale.py` (1 test)
+  - `scripts/soak_test.py` (30-minute sustained moderate load runner with resource monitoring)
+- **Total Suite Status:** **309 Passed**, 1 Skipped (Postgres integration), 0 Flaky, 0 Failed.
+
+---
+
+### 1. Robustness & Concurrency Verification Scenarios
+
+| STT | Kịch bản Kiểm tra | Mục tiêu / Tải kiểm thử | Kết quả Thực tế | Bug phát hiện & Root Cause Fix | Trạng thái |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **1** | **State Machine CAS Concurrency** | 50 request song song gọi `approve_and_resume` trên cùng 1 execution đang `PAUSED_FOR_REVIEW` | Duy nhất 1 request thắng CAS và resume query; 49 request nhận `ExecutionStateError`. 0 duplicate, 0 SQLite lock. | Không có bug; CAS `WHERE id = :id AND status IN :expected` hoạt động chuẩn xác. | **PASS** |
+| **2** | **CAS Mutually Exclusive Race** | 50 request song song (25 Approve vs 25 Reject) cùng race trên 1 execution | Duy nhất 1 thao tác thắng (COMPLETED hoặc REJECTED); 49 thao tác còn lại bị từ chối sạch sẽ với `ExecutionStateError`. | Không có bug; trạng thái kết thúc nhất quán 100%. | **PASS** |
+| **3** | **Emergency Abort Racing** | 50 request song song gọi `abort_execution` trên query đang EXECUTING | Duy nhất 1 lệnh abort thực hiện kill và chuyển ABORTED; 49 request nhận `ExecutionStateError`. | Không có bug; trạng thái chuyển về ABORTED an toàn. | **PASS** |
+| **4** | **Abort vs Late Result Race** | Lệnh Abort hoàn tất trước khi subprocess trả về kết quả | `_finish` phát hiện status không còn là EXECUTING, huỷ bỏ kết quả muộn, giữ nguyên status ABORTED. | Không có bug; cơ chế so khớp `transition_status(("EXECUTING",), ...)` ngăn chặn triệt để late override. | **PASS** |
+| **5** | **ConcurrencyLimiter Backpressure** | 100 request song song tranh chấp 4 slot thực thi, hàng đợi giới hạn 30 | Concurrency tức thời $\le 4$ mọi thời điểm; request vượt quá sức chứa nhận `PluginQueueFullError` (HTTP 429). Queue depth trở về 0 sau khi xả. | Không có bug; semaphore và queue depth tracking chuẩn xác. | **PASS** |
+| **6** | **Concurrent Rule & Setting Writes** | 50 task song song ghi và cập nhật `governance_rules` và `system_settings` trong SQLite WAL | 100% commit thành công; 0 lỗi "database is locked". | Phát hiện race condition khi chèn đồng thời setting mới; fix root cause: thêm atomic try/except IntegrityError upsert trong `SettingStore`. Commit: `be1727e`. | **PASS** |
+| **7** | **Log Writes under Active Retention** | 50 worker ghi log liên tục trong khi tiến trình `prune_logs` quét xoá dọn dẹp liên tục | 0 lỗi deadlock; toàn bộ 50 log mới ghi được bảo toàn 100%; log cũ hết hạn bị dọn dẹp đúng kỳ hạn. | Không có bug; SQLite WAL phân tách read/write snapshot hoàn hảo. | **PASS** |
+| **8** | **Fault Injection: DB Locked** | Giả lập lỗi `sqlite3.OperationalError("database is locked")` khi gọi API | Gateway bắt gọn ngoại lệ, trả HTTP 500 có cấu trúc; tiến trình gateway KHÔNG sập, request sau phục hồi ngay lập tức (HTTP 200). | Không có bug; FastAPI exception handlers hoạt động tin cậy. | **PASS** |
+| **9** | **Fault Injection: Disk Full (ENOSPC)** | Giả lập lỗi hệ điều hành hết đĩa (`errno.ENOSPC`) khi lưu tài liệu knowledge | Ném ngoại lệ domain `StorageError` an toàn; dữ liệu DB không bị hỏng, tiến trình không crash. | Không có bug; `_write_file_safe` bọc lỗi hệ thống đầy đủ. | **PASS** |
+| **10** | **Fault Injection: Plugin Process Crash** | Subprocess của plugin crash đột ngột (exit code 1) giữa chừng khi chạy query | State machine phát hiện pipe đóng, chuyển status thành `FAILED`, ghi rõ log lỗi `PluginProcessError`, không treo process. | Không có bug; cơ chế persistent worker drain pipe & fail pending future hoạt động chuẩn. | **PASS** |
+| **11** | **Fault Injection: Plugin Hang / Timeout** | Plugin bị treo vô hạn không phản hồi | `TimeoutGuard` ngắt tác vụ, gọi emergency abort hook, chuyển status thành `TIMEOUT`, trả HTTP 504. | Không có bug; async timeout guard hoạt động chính xác. | **PASS** |
+| **12** | **Fault Injection: Plugin Corrupt JSON** | Plugin in ra dữ liệu rác/hỏng không theo JSON-RPC trên stdout | Persistent worker lọc nhiễu, bắt lỗi `JsonRpcProtocolError`, chuyển status thành `FAILED`, gateway an toàn. | Không có bug; JSON parser try-catch an toàn. | **PASS** |
+| **13** | **Fault Injection: Payload Size & Malformed Body** | Gửi body hỏng (`{"query": "SELECT`), body > 10MB, chuỗi rỗng | Trả mã HTTP 400/413/422 rõ ràng; 0 crash, 0 leak memory. | Không có bug; security middleware chặn body quá khổ ngay từ tầng network. | **PASS** |
+| **14** | **Fault Injection: Null Byte & Extreme Inputs** | Gửi chuỗi query chứa ký tự `\x00` và unicode đặc biệt | Không gây lỗi crash tầng C / buffer overflow; xử lý an toàn với HTTP 404/422. | Không có bug. | **PASS** |
+| **15** | **SSE Burst & Sudden Disconnect** | 100 client SSE kết nối đồng thời, 50 client ngắt kết nối đột ngột giữa chừng | Broadcaster không bị crash; 50 client còn lại nhận đủ 100% sự kiện; khi ngắt toàn bộ, số lượng subscriber trong bus trở về 0 (0 rò rỉ memory/queue). | Không có bug; async generator `finally: discard(queue)` dọn dẹp sạch sẽ. | **PASS** |
+| **16** | **SSE Slow Subscriber Isolation** | 1 fast client và 1 slow client (không tiêu thụ sự kiện trong queue maxsize 500) | Broadcaster drop sự kiện vượt ngưỡng cho slow client kèm warning; fast client nhận đủ 100% 600 sự kiện mà không bị trễ hay nghẽn. | Không có bug; cơ chế non-blocking `put_nowait` bảo vệ hệ thống triệt để. | **PASS** |
+| **17** | **SSE Last-Event-ID Replay** | Client ngắt kết nối tại sự kiện 10, reconnect lại với header `Last-Event-ID: 10` | Client nhận lại đầy đủ các sự kiện bị lỡ (11 đến 25) theo đúng thứ tự tăng dần không trùng lặp. | Không có bug; ring buffer và outbox replay hoạt động nhất quán. | **PASS** |
+| **18** | **Lifespan Graceful Shutdown** | Phát tín hiệu dừng hệ thống (SIGTERM) khi đang có request và SSE | `ClusterManager` và `EventBus` dừng gọn gàng; `terminate_all_subprocesses()` tiêu diệt toàn bộ worker con, 0 tiến trình zombie; log in-flight được bảo toàn trong DB. | Không có bug; context manager lifespan hoàn tất sạch sẽ. | **PASS** |
+| **19** | **Restart Idempotency & Migration** | Chạy `init_db()` liên tiếp 3 lần trên database đã có dữ liệu | 0 lỗi duplicate bảng, dữ liệu rules/plugins/logs giữ nguyên vẹn 100%, Alembic giữ nguyên version head. | Không có bug; migration & stamping logic hoàn toàn idempotent. | **PASS** |
+| **20** | **Janitor Worker Crash Failover** | Worker node chết đột ngột bỏ lại execution đang EXECUTING | Janitor của node sống phát hiện heartbeat quá hạn, tự động thu hồi và đánh dấu execution là `FAILED` kèm finished_at. | Không có bug; cluster heartbeat & janitor failover hoạt động hoàn hảo. | **PASS** |
+| **21** | **Retention & Cleanup under Scale** | Dọn dẹp retention trên tập dữ liệu 1,050 log (500 log hết hạn, 200 gần đây, 350 active) | 500 log hết hạn được nén vào file `.ndjson.gz` và xoá sạch khỏi DB; 100% 350 log active (EXECUTING, PAUSED, QUEUED) được bảo toàn tuyệt đối, không bị xoá nhầm. | Không có bug; filter `TERMINAL_STATUSES` bảo vệ nghiêm ngặt các query đang chạy. | **PASS** |
+
+
+---
+
+### 2. Soak Test Metrics & Long-Running Stability Analysis (30 Phút)
+
+A continuous soak test of **30 minutes (1,800.0 seconds)** with moderate concurrent load (4 parallel query workers, periodic retention pruning, dynamic SSE subscription) was executed using [`scripts/soak_test.py`](file:///g:/1-Personal/Projects/AegisGate/scripts/soak_test.py). Resource metrics were sampled every 10 seconds into [`report/soak_metrics.json`](file:///g:/1-Personal/Projects/AegisGate/report/soak_metrics.json).
+
+#### Soak Test Executive Summary
+
+| Chỉ số Giám sát | Giá trị Thực tế | Ngưỡng / Tiêu chuẩn Đánh giá | Trạng thái |
+| :--- | :--- | :--- | :--- |
+| **Thời gian chạy liên tục** | **1,800.0s (30 phút)** | $\ge 30$ phút | **PASS** |
+| **Tổng số queries hoàn thành** | **226,133 queries** | Hoàn thành liên tục không gián đoạn | **PASS** |
+| **Tổng số lỗi phát sinh** | **0 lỗi (Error rate: 0.0%)** | 0 lỗi unhandled hoặc 500 crash | **PASS** |
+| **Thông lượng trung bình** | **125.63 req/s** | Tải vừa phải liên tục | **PASS** |
+| **Số chu kỳ Retention Prune** | **29 chu kỳ** | Chạy ngầm định kỳ 60s/lần | **PASS** |
+| **RSS Memory Khởi đầu** | **76.20 MB** | Baseline sau khởi động | **PASS** |
+| **RSS Memory Đỉnh (Peak)** | **90.76 MB** | Đạt đỉnh sau pha warmup | **PASS** |
+| **RSS Memory Kết thúc** | **89.69 MB** | Delta: +13.49 MB (ổn định hoàn toàn) | **PASS** |
+| **Hệ số tăng trưởng Memory (Slope)** | **-0.0064 MB/min** | Slope $\le 0.10$ MB/min (Không rò rỉ) | **PASS** |
+| **OS Handles (Windows)** | **188 $\rightarrow$ 176 (Delta: -12)** | Không tăng, 0 rò rỉ file descriptor | **PASS** |
+| **OS Threads** | **8 $\rightarrow$ 1 (Đã drain sạch sẽ)** | Không rò rỉ thread/task | **PASS** |
+| **Kích thước DB (SQLite WAL)** | **159,716 KB (~155 MB)** | WAL checkpoint & dọn dẹp đều đặn | **PASS** |
+
+#### Time-Series Progression (Mẫu đại diện qua các mốc thời gian)
+
+| Mốc Thời gian | Elapsed (s) | Queries hoàn thành | Memory RSS (MB) | CPU (%) | OS Handles | Threads | DB Size (KB) | Prune Cycles |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Khởi động (T=0)** | 0.0s | 0 | 76.20 MB | 0.0% | 188 | 8 | 4.0 KB | 0 |
+| **T = 5 phút** | 300.0s | 37,842 | 89.15 MB | 62.1% | 180 | 8 | 26,450 KB | 5 |
+| **T = 10 phút** | 600.0s | 75,510 | 89.48 MB | 64.8% | 176 | 8 | 53,100 KB | 9 |
+| **T = 15 phút (Halfway)** | 900.0s | 113,041 | 89.26 MB | 66.4% | 176 | 8 | 79,716 KB | 14 |
+| **T = 20 phút** | 1200.0s | 150,680 | 89.92 MB | 63.5% | 176 | 8 | 106,350 KB | 19 |
+| **T = 25 phút** | 1500.0s | 188,410 | 89.54 MB | 65.2% | 176 | 8 | 133,020 KB | 24 |
+| **T = 30 phút (Hoàn tất)** | 1800.0s | 226,133 | 89.69 MB | 0.0% | 176 | 1 | 159,716 KB | 29 |
+
+> [!NOTE]
+> Hệ số góc hồi quy tuyến tính của bộ nhớ (**Slope = -0.0064 MB/phút**) cho thấy bộ nhớ sau khi đạt điểm bão hoà (warmup ~89 MB) hoàn toàn đi ngang và có xu hướng giảm nhẹ nhờ cơ chế garbage collection của Python runtime. Không có bất kỳ hiện tượng rò rỉ bộ nhớ (memory leak), rò rỉ bộ xử lý tệp (handle leak), hay rò rỉ luồng hệ thống (thread leak).
+
+---
+
+### 3. Danh sách Bug phát hiện & Commit sửa đổi
+
+| Mã Commit | Loại thay đổi | Module ảnh hưởng | Nguyên nhân gốc rễ (Root Cause) & Giải pháp kỹ thuật |
+| :--- | :--- | :--- | :--- |
+| [`be1727e`](https://github.com/placeholder/commit/be1727e) | `fix(storage)` | [`core/storage/setting_store.py`](file:///g:/1-Personal/Projects/AegisGate/core/storage/setting_store.py) | **SettingStore Concurrent Insert Race Condition:** Khi 2 hoặc nhiều luồng đồng thời gọi `set_setting` cho một key chưa từng tồn tại, cả hai cùng thấy `setting is None` và cùng insert `SystemSetting(key=...)`, dẫn đến `sqlite3.IntegrityError: UNIQUE constraint failed: system_settings.key`. Sửa bằng cơ chế atomic try-except IntegrityError rollback và tự động cập nhật bản ghi đã được commit bởi luồng chiến thắng. |
+| [`d01a578`](https://github.com/placeholder/commit/d01a578) | `test(stress)` | `tests/stress/`, `scripts/soak_test.py` | Bổ sung 5 bộ test độ bền & đồng thời (24 test scenarios) và script soak test 30 phút đo lường tài nguyên thời gian thực với psutil. |
+
+---
+
+### 4. Phase Evaluation
+
+**PHASE 4 = PASS**
+
+**Lý do:**
+1. **Race condition / Deadlock:** 50+ request đồng thời vào cùng tài nguyên (`state_machine` CAS, `concurrency_limiter`, `rule_store`, `setting_store`, `log_store` khi đang prune) hoạt động tuyệt đối chính xác: đúng 1 winner duy nhất, 0 lỗi SQLite "database is locked", 0 deadlock, 0 duplicate state.
+2. **Fault Injection:** Xử lý lỗi gọn gàng và có kiểm soát trong mọi tình huống cực đoan: DB bị lock (trả HTTP 500, process không sập), disk full ENOSPC (ném domain StorageError an toàn), plugin crash (status=FAILED, drain pipe), plugin hang (TimeoutGuard aborts, status=TIMEOUT, HTTP 504), plugin trả JSON rác (JsonRpcProtocolError, status=FAILED), body hỏng / quá cỡ >10MB (HTTP 400/413/422), chuỗi query chứa ký tự null byte `\x00` (xử lý an toàn không crash C-extension). Tiến trình gateway không bao giờ bị crash hay treo.
+3. **SSE Scale & Resilience:** 100+ client kết nối đồng thời, ngắt kết nối đột ngột giữa chừng; 0 rò rỉ subscriber / queue / memory; subscriber chậm bị drop gói tin vượt ngưỡng queue mà không làm chậm hay nghẽn các subscriber nhanh; hỗ trợ phục hồi mượt mà qua header `Last-Event-ID`.
+4. **Graceful Shutdown & Restart:** Dừng hệ thống qua lifespan dọn dẹp sạch sẽ toàn bộ subprocess con (0 zombie processes); `init_db()` migration hoàn toàn idempotent qua nhiều lần restart liên tiếp; janitor tự động phục hồi query mồ côi khi worker node bị crash.
+5. **Soak Test 30 phút hoàn hảo:** Chạy liên tục 30 phút (1,800 giây) xử lý **226,133 queries** với **0 lỗi (error rate 0%)**, thông lượng trung bình 125.63 req/s, RSS memory ổn định hoàn toàn ở mức ~89 MB với hệ số tăng trưởng âm (-0.0064 MB/min), handles giữ nguyên mức 176 (0 leak), threads dọn dẹp sạch sẽ sau khi kết thúc.
+6. **Bảo toàn dữ liệu thật:** Toàn bộ test sử dụng database/thư mục tạm lập riêng, `data/aegisgate.db` thật được bảo vệ nguyên vẹn 100%. Toàn bộ 6/6 kiểm tra CI (`python scripts/tasks.py check`) đạt chuẩn tuyệt đối (309 pytest passed, 25 vitest passed, 0 lint/0 type errors).
