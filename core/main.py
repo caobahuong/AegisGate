@@ -8,6 +8,7 @@ Adheres strictly to python_clean_code.md:
 """
 
 import logging
+import re
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
 
@@ -103,10 +104,13 @@ async def security_guard_middleware(
     # CSRF Protection via Fetch Metadata (Sec-Fetch-Site)
     sec_fetch_site = request.headers.get("sec-fetch-site")
     if sec_fetch_site == "cross-site" and request.method in ("POST", "PUT", "DELETE", "PATCH"):
-        return JSONResponse(
-            status_code=403,
-            content={"detail": "Cross-site state-changing request blocked (CSRF protection)."},
-        )
+        origin = request.headers.get("origin") or ""
+        # Allow internal origins (e.g. localhost/127.0.0.1 on local ports)
+        if not re.match(r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$", origin):
+            return JSONResponse(
+                status_code=403,
+                content={"detail": "Cross-site state-changing request blocked (CSRF protection)."},
+            )
 
     # Request body size limits
     max_bytes = (
