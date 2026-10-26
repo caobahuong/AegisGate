@@ -33,7 +33,11 @@ export const QuerySimulatorPane: React.FC<QuerySimulatorPaneProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim() || isSubmitting) return;
-    await onSubmitQuery(targetId, query, reasoning);
+    try {
+      await onSubmitQuery(targetId, query, reasoning);
+    } catch {
+      // Toast notification already handled in useExecutions hook
+    }
   };
 
   return (
