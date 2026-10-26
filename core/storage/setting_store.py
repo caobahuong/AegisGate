@@ -11,17 +11,23 @@ from core.database import SystemSetting, utc_now
 
 
 class SettingStore:
-    """Manages persistent system configuration in SQLite."""
+    """Manages persistent system configuration in SQLite with session-scoped caching."""
 
     def __init__(self, session: Session) -> None:
         self.session: Session = session
+        self._settings_cache: dict[str, str] = {}
 
     def get_setting(self, key: str, default: str = "") -> str:
         """Fetch setting value by key."""
+        if key in self._settings_cache:
+            return self._settings_cache[key]
+
         statement = select(SystemSetting).where(SystemSetting.key == key)
         setting = self.session.exec(statement).first()
         if not setting:
             return default
+
+        self._settings_cache[key] = setting.value
         return setting.value
 
     def set_setting(self, key: str, value: str, description: str | None = None) -> str:
@@ -56,6 +62,8 @@ class SettingStore:
                 existing.updated_at = utc_now()
                 self.session.add(existing)
                 self.session.commit()
+
+        self._settings_cache.clear()
         return value
 
     def is_auto_approval_enabled(self) -> bool:

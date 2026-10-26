@@ -152,11 +152,8 @@ class DbOutboxBus(EventBus):
             self._tail_task = None
         logger.info("DbOutboxBus stopped")
 
-    async def publish(self, event_type: str, data: dict[str, Any]) -> int:
-        now = datetime.now(UTC)
-        payload_str = json.dumps(data)
-
-        # Write to database outbox table
+    def _write_outbox_sync(self, event_type: str, payload_str: str, now: datetime) -> int:
+        """Synchronously persist outbox entry in threadpool."""
         with Session(self._engine) as session:
             outbox_entry = EventOutbox(
                 event_type=event_type,
@@ -168,6 +165,14 @@ class DbOutboxBus(EventBus):
             session.refresh(outbox_entry)
             event_id = outbox_entry.id
             assert event_id is not None
+            return event_id
+
+    async def publish(self, event_type: str, data: dict[str, Any]) -> int:
+        now = datetime.now(UTC)
+        payload_str = json.dumps(data)
+
+        # Offload synchronous database outbox insert to threadpool to prevent blocking the asyncio event loop
+        event_id = await asyncio.to_thread(self._write_outbox_sync, event_type, payload_str, now)
 
         # Discard payload for notification
         msg = EventMessage(

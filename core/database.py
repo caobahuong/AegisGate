@@ -180,10 +180,10 @@ pool_kwargs: dict[str, Any] = {}
 
 if settings.DATABASE_URL.startswith("sqlite"):
     connect_args["check_same_thread"] = False
-    connect_args["timeout"] = 15.0
-    pool_kwargs["pool_size"] = 20
-    pool_kwargs["max_overflow"] = 30
-    pool_kwargs["pool_timeout"] = 30.0
+    connect_args["timeout"] = 20.0
+    pool_kwargs["pool_size"] = 50
+    pool_kwargs["max_overflow"] = 150
+    pool_kwargs["pool_timeout"] = 15.0
 
 engine = create_engine(
     settings.DATABASE_URL,
@@ -200,7 +200,10 @@ if settings.DATABASE_URL.startswith("sqlite"):
             cursor = dbapi_connection.cursor()
             cursor.execute("PRAGMA journal_mode=WAL")
             cursor.execute("PRAGMA synchronous=NORMAL")
-            cursor.execute("PRAGMA busy_timeout=15000")
+            cursor.execute("PRAGMA busy_timeout=20000")
+            cursor.execute("PRAGMA cache_size=-64000")
+            cursor.execute("PRAGMA temp_store=MEMORY")
+            cursor.execute("PRAGMA mmap_size=268435456")
             cursor.close()
 
 

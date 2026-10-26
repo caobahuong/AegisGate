@@ -56,27 +56,40 @@ logger = logging.getLogger(__name__)
 
 
 def format_execution_response(log: ExecutionLog) -> ExecutionResponse:
-    """Helper to convert ExecutionLog entity to ExecutionResponse schema."""
-    plan_data = None
+    """Helper to convert ExecutionLog entity to ExecutionResponse schema with fast JSON parsing."""
+    plan_data: Any = None
     if log.explain_plan_json:
-        try:
-            plan_data = json.loads(log.explain_plan_json)
-        except (json.JSONDecodeError, TypeError):
-            plan_data = log.explain_plan_json
+        if log.explain_plan_json == "{}" or log.explain_plan_json == '""':
+            plan_data = {}
+        elif log.explain_plan_json == "null":
+            plan_data = None
+        else:
+            try:
+                plan_data = json.loads(log.explain_plan_json)
+            except (json.JSONDecodeError, TypeError):
+                plan_data = log.explain_plan_json
 
-    violations = []
+    violations: list[str] = []
     if log.violations_json:
-        try:
-            violations = json.loads(log.violations_json)
-        except (json.JSONDecodeError, TypeError):
+        if log.violations_json == "[]" or log.violations_json == '""':
             violations = []
+        else:
+            try:
+                violations = json.loads(log.violations_json)
+            except (json.JSONDecodeError, TypeError):
+                violations = []
 
-    res_summary = None
+    res_summary: Any = None
     if log.result_summary:
-        try:
-            res_summary = json.loads(log.result_summary)
-        except (json.JSONDecodeError, TypeError):
-            res_summary = log.result_summary
+        if log.result_summary == "{}" or log.result_summary == '""':
+            res_summary = {}
+        elif log.result_summary == "null":
+            res_summary = None
+        else:
+            try:
+                res_summary = json.loads(log.result_summary)
+            except (json.JSONDecodeError, TypeError):
+                res_summary = log.result_summary
 
     return ExecutionResponse(
         id=log.id,
