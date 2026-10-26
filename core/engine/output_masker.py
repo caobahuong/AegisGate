@@ -67,6 +67,20 @@ class OutputMasker:
         # REMOVE wins over REDACT when both name the same field.
         redact -= remove
 
+        if not redact and not remove:
+
+            def has_secret(node: Any) -> bool:
+                if isinstance(node, str):
+                    return any(pat.search(node) for pat, _ in _SECRET_PATTERNS)
+                if isinstance(node, list):
+                    return any(has_secret(item) for item in node)
+                if isinstance(node, dict):
+                    return any(has_secret(v) for v in node.values())
+                return False
+
+            if not has_secret(data):
+                return data, []
+
         hit: dict[str, str] = {}  # lower-cased name -> first-seen original casing
 
         def walk(node: Any) -> Any:
