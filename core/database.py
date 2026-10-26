@@ -13,11 +13,11 @@ from collections.abc import Generator
 from datetime import UTC, datetime
 from typing import Any
 
+from alembic.config import Config
 from sqlalchemy import Index, event, inspect, text
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 
 from alembic import command
-from alembic.config import Config
 from core.config import settings
 
 logger = logging.getLogger("AegisGate.Database")
