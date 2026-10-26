@@ -173,9 +173,12 @@ Generated types are written to `frontend/src/types/api.generated.ts` and cleanly
 4. Run certification tests using `core.engine.plugin_linter.PluginLinter`.
 
 ### 3. Adding a New UI Feature
-1. Place React components in `frontend/src/components/`.
-2. Strictly type component props in `frontend/src/types/index.ts`.
-3. Add unit test assertions in `frontend/src/__tests__/components.test.tsx`.
+AegisGate follows a strict feature-oriented frontend architecture. Refer to [docs/frontend-architecture.md](docs/frontend-architecture.md) for full architectural standards:
+1. Place feature modules under `frontend/src/features/<featureName>/` with `components/`, `hooks/`, and `index.ts`.
+2. Reuse shared UI primitives from `frontend/src/shared/ui/` (`Button`, `Badge`, `Card`, `Modal`, `Drawer`, etc.).
+3. Adhere strictly to the line-count limit: **no component file above ~250 lines**, and keep `page.tsx` under 150 lines.
+4. Enforce zero `alert()` usage — use the accessible `useToast()` hook.
+5. Add unit and axe-core accessibility tests in `frontend/src/__tests__/` and verify with `npm run test`, `npm run typecheck`, and `npm run lint`.
 
 ---
 
