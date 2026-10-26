@@ -111,7 +111,7 @@ def ensure_frontend_deps() -> None:
             sys.exit(res.returncode)
 
 
-def run_dev(host: str = "127.0.0.1", port: int = 8000) -> None:
+def run_dev(host: str = "127.0.0.1", port: int = 8000, reload: bool = True) -> None:
     """Run backend (uvicorn) and frontend (Next.js) concurrently with prefixed logs."""
     ensure_frontend_deps()
     print_banner("Starting AegisGate Development Servers (Backend + Frontend)", CYAN)
@@ -125,8 +125,9 @@ def run_dev(host: str = "127.0.0.1", port: int = 8000) -> None:
         host,
         "--port",
         str(port),
-        "--reload",
     ]
+    if reload:
+        backend_cmd.extend(["--reload", "--reload-dir", "core", "--reload-dir", "plugins"])
     frontend_cmd = ["npm", "run", "dev"]
     if sys.platform == "win32":
         frontend_cmd = ["cmd", "/c", "npm", "run", "dev"]
@@ -329,6 +330,7 @@ def main() -> None:
     dev_parser = subparsers.add_parser("dev", help="Run backend and frontend servers together.")
     dev_parser.add_argument("--host", default="127.0.0.1", help="Backend host interface (default: 127.0.0.1)")
     dev_parser.add_argument("--port", type=int, default=8000, help="Backend port (default: 8000)")
+    dev_parser.add_argument("--no-reload", action="store_true", help="Disable uvicorn auto-reloading")
 
     # test
     subparsers.add_parser("test", help="Run backend unit tests and frontend vitest.")
@@ -345,7 +347,7 @@ def main() -> None:
     args, extra = parser.parse_known_args()
 
     if args.command == "dev":
-        run_dev(host=args.host, port=args.port)
+        run_dev(host=args.host, port=args.port, reload=not args.no_reload)
     elif args.command == "test":
         run_test()
     elif args.command == "check":
