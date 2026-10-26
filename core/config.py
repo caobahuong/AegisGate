@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = f"sqlite:///{BASE_DIR / 'data' / 'aegisgate.db'}"
     KNOWLEDGE_DOCS_DIR: Path = BASE_DIR / "data" / "knowledge_docs"
     PLUGINS_DIR: Path = BASE_DIR / "plugins"
+    ARCHIVE_DIR: Path = BASE_DIR / "data" / "archive"
 
     # Execution Timeout Guards (Strict limits per plan.md & tech.md)
     READ_TIMEOUT_SECONDS: float = 15.0
@@ -58,6 +59,20 @@ class Settings(BaseSettings):
 
     # SSE Heartbeat
     SSE_HEARTBEAT_INTERVAL_SECONDS: float = 2.0
+
+    # Phase 4 Scale & Multi-Process Controls
+    EVENT_BUS: str = "memory"  # "memory" or "db"
+    PLUGIN_MAX_CONCURRENCY: int = 8
+    PLUGIN_QUEUE_TIMEOUT_SECONDS: float = 30.0
+    PLUGIN_QUEUE_MAXSIZE: int = 100
+    RESULT_MAX_BYTES: int = 50_000
+    LOG_RETENTION_DAYS: int = 30
+    RESULT_RETENTION_DAYS: int = 7
+    ARCHIVE_BEFORE_DELETE: bool = True
+    HEARTBEAT_INTERVAL_SECONDS: float = 3.0
+    HEARTBEAT_TIMEOUT_SECONDS: float = 30.0
+    OUTBOX_POLL_INTERVAL_SECONDS: float = 0.2
+    OUTBOX_RETENTION_HOURS: int = 24
 
 
 settings = Settings()
