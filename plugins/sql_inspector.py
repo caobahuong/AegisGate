@@ -9,6 +9,7 @@ treated as the *safer* outcome by callers (WRITE, unbounded, multi-statement).
 """
 
 import re
+import unicodedata
 from dataclasses import dataclass
 from typing import Literal
 
@@ -82,6 +83,7 @@ class Token:
 
 def tokenize(query: str) -> list[Token]:
     """Split SQL into tokens, dropping comments and whitespace."""
+    query = unicodedata.normalize("NFKC", query)
     tokens: list[Token] = []
     i, n = 0, len(query)
     while i < n:
@@ -132,14 +134,74 @@ def tokenize(query: str) -> list[Token]:
     return tokens
 
 
+_STATEMENT_BREAKERS: frozenset[str] = frozenset(
+    {
+        "DROP",
+        "ALTER",
+        "TRUNCATE",
+        "EXEC",
+        "EXECUTE",
+        "GRANT",
+        "REVOKE",
+        "DENY",
+        "BACKUP",
+        "RESTORE",
+        "KILL",
+        "SHUTDOWN",
+        "DBCC",
+        "CREATE",
+        "INSERT",
+        "DELETE",
+    }
+)
+
+
 def split_statements(tokens: list[Token]) -> list[list[Token]]:
-    """Split on top-level ``;`` and drop empty statements."""
+    """Split on top-level ``;`` or un-delimited statement boundaries and drop empty statements."""
     statements: list[list[Token]] = [[]]
+    depth = 0
+    in_with = False
+    prev_word: str | None = None
     for tok in tokens:
-        if tok.kind == PUNCT and tok.text == ";":
-            statements.append([])
-        else:
+        if tok.kind == PUNCT and tok.text == "(":
+            depth += 1
             statements[-1].append(tok)
+            prev_word = None
+            continue
+        elif tok.kind == PUNCT and tok.text == ")":
+            depth = max(0, depth - 1)
+            statements[-1].append(tok)
+            prev_word = None
+            continue
+
+        if depth == 0:
+            if tok.kind == PUNCT and tok.text == ";":
+                statements.append([])
+                prev_word = None
+                in_with = False
+                continue
+            elif tok.kind == WORD:
+                if tok.text == "WITH":
+                    in_with = True
+                elif in_with and tok.text in ("SELECT", "INSERT", "UPDATE", "DELETE", "MERGE"):
+                    in_with = False
+                elif statements[-1]:
+                    is_breaker = tok.text in _STATEMENT_BREAKERS
+                    is_select_breaker = tok.text == "SELECT" and prev_word not in (
+                        "UNION",
+                        "INTERSECT",
+                        "EXCEPT",
+                        "ALL",
+                        "DISTINCT",
+                    )
+                    is_update_breaker = tok.text == "UPDATE" and prev_word != "FOR"
+                    if is_breaker or is_select_breaker or is_update_breaker:
+                        statements.append([])
+                        in_with = False
+
+        statements[-1].append(tok)
+        if tok.kind == WORD:
+            prev_word = tok.text
     return [s for s in statements if s]
 
 
@@ -300,6 +362,33 @@ def _split_top(tokens: list[Token], keyword: str) -> list[list[Token]]:
     return parts
 
 
+_CONSTANT_WORDS: frozenset[str] = frozenset(
+    {
+        "AND",
+        "OR",
+        "NOT",
+        "TRUE",
+        "FALSE",
+        "NULL",
+        "IS",
+        "LIKE",
+        "BETWEEN",
+        "IN",
+        "EXISTS",
+        "CASE",
+        "WHEN",
+        "THEN",
+        "ELSE",
+        "END",
+    }
+)
+
+
+def _has_column_reference(tokens: list[Token]) -> bool:
+    """True if tokens contain at least one column/identifier reference."""
+    return any(t.kind == IDENT or (t.kind == WORD and t.text not in _CONSTANT_WORDS) for t in tokens)
+
+
 def _is_tautology(tokens: list[Token]) -> bool:
     tokens = _strip_parens(tokens)
     if not tokens:
@@ -319,24 +408,42 @@ def _is_tautology(tokens: list[Token]) -> bool:
         same = left.kind == right.kind and left.text == right.text
         if op.text in ("=", "<=", ">=") and same:
             return True
-        if op.text in ("<>", "!=") and not same and left.kind in (NUMBER, STRING) and right.kind in (NUMBER, STRING):
-            return True
-        if op.text == "=" and left.kind in (NUMBER, STRING) and right.kind in (NUMBER, STRING) and same:
-            return True
-    return False
+        if left.kind == NUMBER and right.kind == NUMBER:
+            try:
+                nl, nr = float(left.text), float(right.text)
+                if op.text == "=" and nl == nr:
+                    return True
+                if op.text in ("<>", "!=") and nl != nr:
+                    return True
+                if op.text == "<" and nl < nr:
+                    return True
+                if op.text == "<=" and nl <= nr:
+                    return True
+                if op.text == ">" and nl > nr:
+                    return True
+                if op.text == ">=" and nl >= nr:
+                    return True
+            except ValueError:
+                pass
+        if left.kind == STRING and right.kind == STRING:
+            if op.text == "=" and same:
+                return True
+            if op.text in ("<>", "!=") and not same:
+                return True
+    return not _has_column_reference(tokens)
 
 
 def is_unbounded_scan(query: str) -> bool:
     """True if any SELECT ... FROM statement lacks a *meaningful* top-level WHERE.
 
     ``-- WHERE`` comments, ``WHERE`` inside a subquery only, and tautologies such as
-    ``WHERE 1=1`` / ``WHERE 'a'='a'`` / ``WHERE TRUE`` do not count as a filter.
+    ``WHERE 1=1`` / ``WHERE 'a'='a'`` / ``WHERE TRUE`` / ``WHERE 1 < 2`` do not count as a filter.
     """
     for stmt in split_statements(tokenize(query)):
         if not (any(t.is_kw("SELECT") for t in stmt) and any(t.is_kw("FROM") for t in stmt)):
             continue
         where = _top_level_where(stmt)
-        if where is None or _is_tautology(where):
+        if where is None or _is_tautology(where) or not _has_column_reference(where):
             return True
     return False
 

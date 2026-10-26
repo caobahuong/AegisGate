@@ -149,3 +149,69 @@ def test_governance_custom_pattern_fail_closed():
     assert len(violations) == 1
     assert "broken_rule" in violations[0]
     assert "unusable" in violations[0]
+
+
+def test_governance_unicode_lookalike_normalization():
+    """Verify full-width Unicode characters cannot bypass classification and rules."""
+    from plugins.sql_inspector import classify_query, statement_count
+
+    # Full-width DROP TABLE
+    evil_query = "ＤＲＯＰ ＴＡＢＬＥ users"
+    assert classify_query(evil_query) == "WRITE"
+
+    # Full-width multi-statement
+    evil_multi = "ＳＥＬＥＣＴ 1; ＤＲＯＰ ＴＡＢＬＥ users"
+    assert statement_count(evil_multi) == 2
+
+
+def test_governance_multi_statement_without_semicolon():
+    """Verify queries with multiple un-delimited SQL statements are blocked."""
+    from plugins.sql_inspector import statement_count
+
+    query_no_semi = "SELECT * FROM users\nDROP TABLE orders"
+    assert statement_count(query_no_semi) == 2
+
+    violations = GovernanceEngine.inspect_query_and_plan(query=query_no_semi, rules=[])
+    assert any("Multiple SQL statements" in v for v in violations)
+
+
+def test_governance_tautology_and_constant_unbounded_scans():
+    """Verify various tautology and constant condition bypasses are caught as unbounded scans."""
+    from plugins.sql_inspector import is_unbounded_scan
+
+    # Comparison tautologies
+    assert is_unbounded_scan("SELECT * FROM users WHERE 1 < 2") is True
+    assert is_unbounded_scan("SELECT * FROM users WHERE 2 > 1") is True
+    assert is_unbounded_scan("SELECT * FROM users WHERE 1 <= 2") is True
+    assert is_unbounded_scan("SELECT * FROM users WHERE 2 >= 1") is True
+    assert is_unbounded_scan("SELECT * FROM users WHERE 5 = 5") is True
+    assert is_unbounded_scan("SELECT * FROM users WHERE 'a' = 'a'") is True
+    assert is_unbounded_scan("SELECT * FROM users WHERE 1 <> 2") is True
+
+    # Pure constant expressions with no column references
+    assert is_unbounded_scan("SELECT * FROM users WHERE 1 IS NOT NULL") is True
+    assert is_unbounded_scan("SELECT * FROM users WHERE TRUE") is True
+
+    # Legitimate bounded query referencing real columns
+    assert is_unbounded_scan("SELECT * FROM users WHERE user_id = 42") is False
+    assert is_unbounded_scan("SELECT * FROM users WHERE [Status] = 'active'") is False
+
+
+def test_governance_custom_rule_comment_tricks():
+    """Verify inline comments and unicode cannot bypass CUSTOM governance rules."""
+    rule = make_rule(
+        id="forbid_delete",
+        rule_type="CUSTOM",
+        expression=r"DELETE\s+FROM",
+        description="Delete forbidden",
+    )
+
+    # 1. Inline comment trick DELETE/**/FROM
+    comment_trick = "DELETE/**/FROM users WHERE id = 1"
+    v1 = GovernanceEngine.inspect_query_and_plan(query=comment_trick, rules=[rule])
+    assert any("forbid_delete" in v for v in v1)
+
+    # 2. Unicode lookalike ＤＥＬＥＴＥ ＦＲＯＭ
+    unicode_trick = "ＤＥＬＥＴＥ ＦＲＯＭ users WHERE id = 1"
+    v2 = GovernanceEngine.inspect_query_and_plan(query=unicode_trick, rules=[rule])
+    assert any("forbid_delete" in v for v in v2)
