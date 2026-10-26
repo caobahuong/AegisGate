@@ -6,6 +6,7 @@ Strictly adheres to python_clean_code.md:
 - Separation of Engine from Router
 """
 
+import asyncio
 import json
 import logging
 from typing import Any
@@ -13,7 +14,8 @@ from typing import Any
 from sqlmodel import Session
 
 from core.config import settings
-from core.database import ExecutionLog, utc_now
+from core.database import ExecutionControl, ExecutionLog, utc_now
+from core.engine.cluster import get_owner_id
 from core.engine.governance import GovernanceEngine
 from core.engine.output_masker import OutputMasker
 from core.engine.plugin_registry import PluginRegistry
@@ -149,12 +151,16 @@ class ExecutionStateMachine:
             log.auto_approved = True
             log.approved_by = "System (Auto Approval ON)"
             log.status = "EXECUTING"
+            log.owner_id = get_owner_id()
+            log.started_at = utc_now()
             self.log_store.update_log(
                 log.id,
                 {
                     "auto_approved": True,
                     "approved_by": log.approved_by,
                     "status": log.status,
+                    "owner_id": log.owner_id,
+                    "started_at": log.started_at,
                     "explain_plan_json": log.explain_plan_json,
                     "violations_json": log.violations_json,
                 },
@@ -202,7 +208,12 @@ class ExecutionStateMachine:
         won = self.log_store.transition_status(
             log.id,
             ("PAUSED_FOR_REVIEW",),
-            {"status": "EXECUTING", "approved_by": approved_by},
+            {
+                "status": "EXECUTING",
+                "approved_by": approved_by,
+                "owner_id": get_owner_id(),
+                "started_at": utc_now(),
+            },
         )
         if not won:
             raise ExecutionStateError(
@@ -268,17 +279,38 @@ class ExecutionStateMachine:
                 f"Execution '{execution_id}' finished before it could be aborted (status '{log.status}')."
             )
 
-        # 2) Then really stop the query on the target (persistent worker: SQLCancel + KILL <spid>).
+        # 2) Dispatched abort locally or cross-process
         if was_executing:
-            try:
-                client = self.registry.get_client(log.target_id)
-                abort_res = await client.abort(AbortParams(execution_id=execution_id))
-                if not abort_res.success:
-                    message += f" WARNING: plugin could not confirm the kill ({abort_res.message})."
-            except Exception as exc:
-                logger.warning("Plugin abort failed for %s: %s", execution_id, exc)
-                message += f" WARNING: plugin abort failed ({exc}); the query may still be running on the target."
-            if "WARNING" in message:
+            ctl = ExecutionControl(execution_id=execution_id, command="ABORT")
+            self.session.add(ctl)
+            self.session.commit()
+
+            current_owner = get_owner_id()
+            if log.owner_id == current_owner or log.owner_id is None:
+                # Locally owned execution
+                try:
+                    client = self.registry.get_client(log.target_id)
+                    abort_res = await client.abort(AbortParams(execution_id=execution_id))
+                    if not abort_res.success:
+                        message += f" WARNING: plugin could not confirm the kill ({abort_res.message})."
+                except Exception as exc:
+                    logger.warning("Plugin abort failed for %s: %s", execution_id, exc)
+                    message += f" WARNING: plugin abort failed ({exc}); the query may still be running on the target."
+
+                ctl.handled_at = utc_now()
+                self.session.add(ctl)
+                self.session.commit()
+            else:
+                # Remote execution owned by another worker process
+                for _ in range(30):
+                    await asyncio.sleep(0.05)
+                    self.session.refresh(ctl)
+                    if ctl.handled_at is not None:
+                        break
+                if ctl.handled_at is None:
+                    message += f" (Dispatched remote abort to owner process '{log.owner_id}')"
+
+            if "WARNING" in message or "Dispatched" in message:
                 self.log_store.update_log(log.id, {"error_message": message})
                 self.session.refresh(log)
 
@@ -372,7 +404,7 @@ class ExecutionStateMachine:
         except Exception as exc:
             return await self._finish(
                 log,
-                {"status": "REJECTED", "error_message": f"Execution failed: {exc}"},
+                {"status": "FAILED", "error_message": f"Execution failed: {exc}"},
                 "execution_failed",
-                {"error": str(exc)},
+                {"error": str(exc), "status": "FAILED"},
             )

@@ -2,6 +2,7 @@
 
 import React, { memo } from "react";
 import {
+  AlertCircle,
   AlertTriangle,
   CheckCircle2,
   Clock,
@@ -48,6 +49,22 @@ const renderOutputSummary = (log: ExecutionResponse) => {
       </span>
     );
   }
+  if (log.status === "FAILED") {
+    return (
+      <span className="inline-flex items-center text-[10px] font-semibold text-red-600 dark:text-red-400 bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20">
+        <AlertCircle className="h-2.5 w-2.5 mr-1 text-red-500 dark:text-red-400 flex-shrink-0" />
+        <span>Execution Failed</span>
+      </span>
+    );
+  }
+  if (log.status === "QUEUED") {
+    return (
+      <span className="inline-flex items-center text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+        <Clock className="h-2.5 w-2.5 mr-1 text-indigo-500 dark:text-indigo-400 flex-shrink-0" />
+        <span>Queued</span>
+      </span>
+    );
+  }
   if (log.status === "REJECTED") {
     return (
       <span className="inline-flex items-center text-[10px] font-semibold text-red-600 dark:text-red-400 bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20">
@@ -89,6 +106,12 @@ const getStatusBadge = (status: string) => {
           <Clock className="h-3 w-3 mr-1" /> PAUSED
         </span>
       );
+    case "QUEUED":
+      return (
+        <span className="inline-flex items-center text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+          <Clock className="h-3 w-3 mr-1" /> QUEUED
+        </span>
+      );
     case "EXECUTING":
       return (
         <span className="inline-flex items-center text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20 animate-pulse">
@@ -111,6 +134,12 @@ const getStatusBadge = (status: string) => {
       return (
         <span className="inline-flex items-center text-[10px] font-semibold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-300 dark:border-slate-700">
           <StopCircle className="h-3 w-3 mr-1" /> ABORTED
+        </span>
+      );
+    case "FAILED":
+      return (
+        <span className="inline-flex items-center text-[10px] font-semibold text-red-600 dark:text-red-400 bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20">
+          <AlertCircle className="h-3 w-3 mr-1" /> FAILED
         </span>
       );
     default:

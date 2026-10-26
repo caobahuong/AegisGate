@@ -66,10 +66,12 @@ export const AuditLogs: React.FC<AuditLogsProps> = (props) => {
             <option value="ALL">All Statuses</option>
             <option value="COMPLETED">COMPLETED</option>
             <option value="PAUSED_FOR_REVIEW">PAUSED</option>
+            <option value="QUEUED">QUEUED</option>
             <option value="EXECUTING">EXECUTING</option>
             <option value="REJECTED">REJECTED</option>
             <option value="TIMEOUT">TIMEOUT</option>
             <option value="ABORTED">ABORTED</option>
+            <option value="FAILED">FAILED</option>
           </select>
         </div>
       </div>

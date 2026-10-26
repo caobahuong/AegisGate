@@ -39,7 +39,13 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
   const [sessionFilter, setSessionFilter] = useState<SessionFilter>("ALL");
 
   const pendingSessions = useMemo(
-    () => executions.filter((ex) => ex.status === "PAUSED_FOR_REVIEW" || ex.status === "DRY_RUN"),
+    () =>
+      executions.filter(
+        (ex) =>
+          ex.status === "PAUSED_FOR_REVIEW" ||
+          ex.status === "DRY_RUN" ||
+          ex.status === "QUEUED"
+      ),
     [executions]
   );
   const runningSessions = useMemo(
@@ -49,7 +55,11 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
   const blockedSessions = useMemo(
     () =>
       executions.filter(
-        (ex) => ex.status === "REJECTED" || ex.status === "TIMEOUT" || ex.status === "ABORTED"
+        (ex) =>
+          ex.status === "REJECTED" ||
+          ex.status === "TIMEOUT" ||
+          ex.status === "ABORTED" ||
+          ex.status === "FAILED"
       ),
     [executions]
   );

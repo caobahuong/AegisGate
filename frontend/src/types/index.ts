@@ -23,7 +23,15 @@ export type GeneratedPluginSchemaResponse = components["schemas"]["PluginSchemaR
 export type GeneratedMcpConfigResponse = components["schemas"]["McpConfigResponse"];
 
 export type ExecutionStatus =
-  "DRY_RUN" | "PAUSED_FOR_REVIEW" | "EXECUTING" | "COMPLETED" | "REJECTED" | "TIMEOUT" | "ABORTED";
+  | "DRY_RUN"
+  | "QUEUED"
+  | "PAUSED_FOR_REVIEW"
+  | "EXECUTING"
+  | "COMPLETED"
+  | "REJECTED"
+  | "TIMEOUT"
+  | "ABORTED"
+  | "FAILED";
 
 export type QueryType = "READ" | "WRITE";
 

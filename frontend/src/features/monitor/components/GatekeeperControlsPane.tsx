@@ -2,6 +2,7 @@
 
 import React from "react";
 import {
+  AlertCircle,
   AlertTriangle,
   CheckCircle2,
   Clock,
@@ -27,6 +28,12 @@ const renderStatusBadge = (status: string) => {
       return (
         <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded text-xs font-semibold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 animate-pulse">
           <Clock className="h-3 w-3 mr-1" /> PAUSED FOR REVIEW
+        </span>
+      );
+    case "QUEUED":
+      return (
+        <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded text-xs font-semibold bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 border border-indigo-500/30">
+          <Clock className="h-3 w-3 mr-1" /> QUEUED
         </span>
       );
     case "EXECUTING":
@@ -57,6 +64,12 @@ const renderStatusBadge = (status: string) => {
       return (
         <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-400 border border-slate-300 dark:border-slate-700">
           <StopCircle className="h-3 w-3 mr-1" /> ABORTED
+        </span>
+      );
+    case "FAILED":
+      return (
+        <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded text-xs font-semibold bg-red-500/15 text-red-700 dark:text-red-400 border border-red-500/30">
+          <AlertCircle className="h-3 w-3 mr-1" /> FAILED
         </span>
       );
     default:
@@ -186,7 +199,8 @@ export const GatekeeperControlsPane: React.FC<GatekeeperControlsPaneProps> = ({
 
             {(selectedExecution.status === "REJECTED" ||
               selectedExecution.status === "TIMEOUT" ||
-              selectedExecution.status === "ABORTED") && (
+              selectedExecution.status === "ABORTED" ||
+              selectedExecution.status === "FAILED") && (
               <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-700 dark:text-red-300 space-y-1">
                 <div className="font-bold flex items-center space-x-1 text-red-600 dark:text-red-400">
                   <AlertTriangle className="h-3.5 w-3.5" />

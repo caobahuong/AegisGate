@@ -15,6 +15,7 @@ from core.engine.governance import validate_rule_definition
 
 ExecutionStatus = Literal[
     "DRY_RUN",
+    "QUEUED",
     "PAUSED_FOR_REVIEW",
     "EXECUTING",
     "COMPLETED",

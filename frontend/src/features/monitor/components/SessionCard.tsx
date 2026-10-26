@@ -1,7 +1,7 @@
 "use client";
 
 import React, { memo } from "react";
-import { Clock, RotateCw, CheckCircle2, XCircle, AlertTriangle, StopCircle } from "lucide-react";
+import { Clock, RotateCw, CheckCircle2, XCircle, AlertTriangle, StopCircle, AlertCircle } from "lucide-react";
 import { ExecutionResponse } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +19,13 @@ const renderCompactStatus = (status: string) => {
         <span className="flex items-center text-amber-600 dark:text-amber-400 font-semibold text-[11px]">
           <Clock className="h-3 w-3 mr-1 animate-pulse" />
           Pending Review
+        </span>
+      );
+    case "QUEUED":
+      return (
+        <span className="flex items-center text-indigo-600 dark:text-indigo-400 font-semibold text-[11px]">
+          <Clock className="h-3 w-3 mr-1" />
+          Queued
         </span>
       );
     case "EXECUTING":
@@ -56,6 +63,13 @@ const renderCompactStatus = (status: string) => {
           Aborted
         </span>
       );
+    case "FAILED":
+      return (
+        <span className="flex items-center text-red-600 dark:text-red-400 font-semibold text-[11px]">
+          <AlertCircle className="h-3 w-3 mr-1" />
+          Failed
+        </span>
+      );
     default:
       return (
         <span className="text-slate-600 dark:text-slate-400 text-[11px] font-mono">{status}</span>
@@ -64,12 +78,16 @@ const renderCompactStatus = (status: string) => {
 };
 
 export const SessionCard = memo<SessionCardProps>(({ execution, isSelected, onSelect }) => {
-  const isPending = execution.status === "PAUSED_FOR_REVIEW" || execution.status === "DRY_RUN";
+  const isPending =
+    execution.status === "PAUSED_FOR_REVIEW" ||
+    execution.status === "DRY_RUN" ||
+    execution.status === "QUEUED";
   const isRunning = execution.status === "EXECUTING";
   const isBlocked =
     execution.status === "REJECTED" ||
     execution.status === "TIMEOUT" ||
-    execution.status === "ABORTED";
+    execution.status === "ABORTED" ||
+    execution.status === "FAILED";
   const isCompleted = execution.status === "COMPLETED";
 
   return (

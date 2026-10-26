@@ -17,6 +17,7 @@ from sqlmodel import Session
 
 from core.config import settings
 from core.database import engine, init_db
+from core.engine.cluster import cluster_manager
 from core.engine.plugin_client import terminate_all_subprocesses
 from core.engine.plugin_registry import PluginRegistry
 from core.gateway.api_routes import router as api_router
@@ -39,6 +40,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     bus = get_event_bus()
     await bus.start()
 
+    # Start cluster manager (heartbeats, stale execution janitor, cross-process abort)
+    await cluster_manager.start()
+
     # Automatically discover manifests in plugins directory
     with Session(engine) as session:
         registry = PluginRegistry(session)
@@ -47,6 +51,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     yield
     logger.info("Shutting down AegisGate Core Engine...")
+    await cluster_manager.stop()
     await bus.stop()
     stopped = await terminate_all_subprocesses()
     logger.info("Stopped %d plugin worker process(es)", stopped)

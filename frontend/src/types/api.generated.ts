@@ -599,7 +599,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "DRY_RUN" | "PAUSED_FOR_REVIEW" | "EXECUTING" | "COMPLETED" | "REJECTED" | "TIMEOUT" | "ABORTED" | "PENDING" | "FAILED";
+            status: "DRY_RUN" | "QUEUED" | "PAUSED_FOR_REVIEW" | "EXECUTING" | "COMPLETED" | "REJECTED" | "TIMEOUT" | "ABORTED" | "PENDING" | "FAILED";
             /** Explain Plan */
             explain_plan?: unknown | null;
             /** Violations */
