@@ -61,16 +61,21 @@ class ExecutionStateMachine:
 
         query_type = GovernanceEngine.determine_query_type(query)
 
-        log = ExecutionLog(
-            id=execution_id,
-            target_id=target_id,
-            query=query,
-            query_type=query_type,
-            reasoning=reasoning,
-            status="DRY_RUN",
-            created_at=utc_now(),
-        )
-        self.log_store.create_log(log)
+        existing_log = self.log_store.get_log(execution_id) if execution_id else None
+        if existing_log:
+            log = existing_log
+            log.query_type = query_type
+        else:
+            log = ExecutionLog(
+                id=execution_id,
+                target_id=target_id,
+                query=query,
+                query_type=query_type,
+                reasoning=reasoning,
+                status="DRY_RUN",
+                created_at=utc_now(),
+            )
+            self.log_store.create_log(log)
 
         await sse_broadcaster.broadcast(
             "execution_created",

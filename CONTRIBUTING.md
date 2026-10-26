@@ -64,6 +64,9 @@ python scripts/gen_api_types.py
 # Seed demo data against simulated plugin
 python scripts/tasks.py seed
 
+# Prune and archive old execution audit logs (with --dry-run option)
+python scripts/tasks.py prune [--dry-run]
+
 # Clean temporary build and cache artifacts
 python scripts/tasks.py clean
 ```

@@ -298,3 +298,98 @@ The contract between backend FastAPI endpoints and frontend React components is 
 3. `frontend/src/types/index.ts` re-exports and aliases these types for consumption by React hooks and components.
 4. CI checks for drift by re-running the generation script and failing if `git diff` is non-empty.
 
+---
+
+## 9. Multi-Process Scale & Data Lifecycle Architecture
+
+To scale beyond a single Uvicorn process and sustain heavy production workloads, AegisGate implements a distributed, multi-process architecture with zero external runtime dependencies (using SQLite in WAL mode or PostgreSQL).
+
+```mermaid
+flowchart TD
+    subgraph MultiProcess_Cluster ["AegisGate Multi-Process Deployment"]
+        direction TB
+        subgraph Node_A ["Uvicorn Process A (:8000)"]
+            Owner_A["Owner ID: worker_a\nPID: 1234"]
+            Bus_A["DbOutboxBus\n(Tailing event_outbox)"]
+            Control_A["Control Poller\n(execution_control)"]
+            Janitor["Cluster Janitor\n(DistributedLock lease)"]
+            Limiter_A["Plugin Limiter\n(Max 8 concurrent)"]
+        end
+
+        subgraph Node_B ["Uvicorn Process B (:8002)"]
+            Owner_B["Owner ID: worker_b\nPID: 5678"]
+            Bus_B["DbOutboxBus\n(Tailing event_outbox)"]
+            Control_B["Control Poller\n(execution_control)"]
+            Limiter_B["Plugin Limiter\n(Max 8 concurrent)"]
+        end
+    end
+
+    subgraph Shared_Storage ["Shared Persistence Store (SQLite WAL / PostgreSQL)"]
+        direction TB
+        OutboxTable[("event_outbox\n(Monotonic Sequence)")]
+        HeartbeatTable[("process_heartbeat\n(Node Liveness)")]
+        ControlTable[("execution_control\n(Cross-Process Aborts)")]
+        LockTable[("distributed_lock\n(Leader Leases)")]
+        LogsTable[("execution_logs\n(WAL Mode, Compound Indexes)")]
+    end
+
+    subgraph Archival_Storage ["Compressed Cold Storage"]
+        GzArchive["data/archive/YYYY-MM.ndjson.gz\n(Pruned Terminal Audits)"]
+    end
+
+    Bus_A <--> OutboxTable
+    Bus_B <--> OutboxTable
+    Owner_A -->|Heartbeat| HeartbeatTable
+    Owner_B -->|Heartbeat| HeartbeatTable
+    Janitor -->|Inspect Liveness| HeartbeatTable
+    Janitor -->|Fail Orphaned| LogsTable
+    Janitor <-->|Lease| LockTable
+
+    Control_A <--> ControlTable
+    Control_B <--> ControlTable
+
+    Node_A --> LogsTable
+    Node_B --> LogsTable
+
+    LogsTable -.->|prune_logs| GzArchive
+```
+
+### 9.1 Database Engine Concurrency & SQLite WAL Mode
+- **WAL Journaling**: Configured with `PRAGMA journal_mode=WAL` and `PRAGMA synchronous=NORMAL`, enabling non-blocking concurrent reads alongside active writes.
+- **QueuePool Tuning**: Replaced default `NullPool` with SQLAlchemy `QueuePool(pool_size=20, max_overflow=30, pool_timeout=30.0)` and `PRAGMA busy_timeout=15000` to eliminate connection starvation under high concurrency.
+- **Alembic Schema Evolution**: Programmatic migration execution with programmatic autostamp (`001_initial_baseline`, `002_scale_infrastructure`).
+
+### 9.2 Distributed Event Bus & SSE Replay
+- Abstract `EventBus` contract decoupling event publication from transport.
+- `InMemoryBus`: Circular ring buffer of 200 events for single-process local development.
+- `DbOutboxBus`: Writes monotonic events to `event_outbox` table and tails changes every 150ms.
+- **SSE Last-Event-ID**: Dashboard reconnects transparently replay missed events using standard `Last-Event-ID` header or `?last_event_id=` query parameter.
+
+### 9.3 Process Ownership, Cross-Process Aborts & Heartbeat Janitor
+- **Process Ownership**: Each process instance generates a unique `owner_id`. Executions record their `owner_id` and `started_at` upon transitioning into `EXECUTING`.
+- **Cross-Process Abort**: When an operator aborts an execution on Node A that is running on Node B:
+  1. Node A claims `ABORTED` status via atomic CAS in `execution_logs`.
+  2. Node A enqueues an `ABORT` command in `execution_control`.
+  3. Node B's background control poller receives the instruction, cancels the running query / kills the target SPID via its local worker, and records `handled_at`.
+- **Cluster Janitor**: Uses `DistributedLock` to elect a single leader. Detects stranded executions whose owner process has crashed (`last_seen > 30s`) and marks them `FAILED` with error `"owner process died"`.
+
+### 9.4 Bounded Concurrency Queues & Backpressure
+- Per-plugin `PluginConcurrencyLimiter` enforces bounded concurrency (default: 8 concurrent executions per adapter).
+- Queries exceeding slot availability wait in state `QUEUED` and emit `execution_queued` SSE events.
+- If queue depth exceeds `PLUGIN_QUEUE_MAXSIZE` (100), requests are rejected with `HTTP 429 Too Many Requests`.
+- Non-blocking submission (`POST /api/monitor/executions?wait=false`) returns `HTTP 201 Created` immediately with execution ID while dispatching background workers.
+
+### 9.5 Cursor Pagination & Result Truncation
+- Stable cursor encoding based on `(created_at, id)` via endpoint `GET /api/executions/page`.
+- Substring search across `query`, `reasoning`, and `id`.
+- Enforcement of `RESULT_MAX_BYTES` (50,000 bytes) truncating massive result payloads while preserving row counts.
+
+### 9.6 Data Retention & Archival
+- `core/storage/retention.py` provides automated log lifecycle management:
+  - Prunes terminal logs (`COMPLETED`, `REJECTED`, `TIMEOUT`, `ABORTED`, `FAILED`) older than `LOG_RETENTION_DAYS`.
+  - Never touches active executions (`QUEUED`, `EXECUTING`, `PAUSED_FOR_REVIEW`, `DRY_RUN`).
+  - Automatically exports pruned logs to compressed `data/archive/YYYY-MM.ndjson.gz` archives.
+  - Scrubs bulky `result_summary` fields for surviving logs older than `RESULT_RETENTION_DAYS`.
+  - Prunes stale outbox events older than `OUTBOX_RETENTION_HOURS` (24h).
+
+

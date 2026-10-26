@@ -153,6 +153,11 @@ python scripts/tasks.py check
 # Seed or refresh demo data
 python scripts/tasks.py seed
 
+# Prune old audit logs and archive to ndjson.gz
+python scripts/tasks.py prune [--dry-run]
+
 # Remove temporary files and build caches
 python scripts/tasks.py clean
 ```
+
+For advanced multi-process deployment, clustering, and retention runbooks, see [docs/operations.md](docs/operations.md).
