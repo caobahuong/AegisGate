@@ -24,20 +24,20 @@
   --color-warning: 217 119 6; /* #d97706 (amber-600) */
   --color-danger: 225 29 72; /* #e11d48 (rose-600) */
 
-  /* Slate Scale (Inverted for Light Mode) */
-  --color-slate-950: 248 250 252; /* Main page background: #f8fafc */
-  --color-slate-900: 255 255 255; /* Surface/Cards/Sidebar/Header: #ffffff */
-  --color-slate-850: 241 245 249; /* Inner table row hover: #f1f5f9 */
-  --color-slate-800: 226 232 240; /* Card & panel borders: #e2e8f0 */
-  --color-slate-750: 218 226 237; /* Button hover: #dae2ed */
-  --color-slate-700: 203 213 225; /* Input borders / secondary borders: #cbd5e1 */
-  --color-slate-600: 148 163 184; /* Placeholder / disabled text: #94a3b8 */
-  --color-slate-500: 100 116 139; /* Muted captions: #64748b */
-  --color-slate-400: 71 85 105; /* Subtitle / secondary text: #475569 */
-  --color-slate-300: 51 65 85; /* Body text: #334155 */
-  --color-slate-200: 30 41 59; /* Prominent text & field labels: #1e293b */
-  --color-slate-100: 15 23 42; /* Primary headings / brand title: #0f172a */
-  --color-slate-50: 2 6 23; /* Deepest text: #020617 */
+  /* Slate Scale (Standard natural palette) */
+  --color-slate-50: 248 250 252; /* #f8fafc */
+  --color-slate-100: 241 245 249; /* #f1f5f9 */
+  --color-slate-200: 226 232 240; /* #e2e8f0 */
+  --color-slate-300: 203 213 225; /* #cbd5e1 */
+  --color-slate-400: 148 163 184; /* #94a3b8 */
+  --color-slate-500: 100 116 139; /* #64748b */
+  --color-slate-600: 71 85 105; /* #475569 */
+  --color-slate-700: 51 65 85; /* #334155 */
+  --color-slate-750: 40 53 74; /* #28354a */
+  --color-slate-800: 30 41 59; /* #1e293b */
+  --color-slate-850: 23 32 51; /* #172033 */
+  --color-slate-900: 15 23 42; /* #0f172a */
+  --color-slate-950: 2 6 23; /* #020617 */
 
   /* High-Contrast Colored Accents for Light Backgrounds */
   --color-emerald-400: 5 150 105; /* #059669 (emerald-600) */
@@ -91,8 +91,8 @@
 }
 
 body {
-  background-color: rgb(var(--color-slate-950));
-  color: rgb(var(--color-slate-100));
+  background-color: rgb(var(--color-background));
+  color: rgb(var(--color-text-primary));
   font-family:
     "Inter",
     -apple-system,
@@ -113,15 +113,27 @@ body {
 }
 
 ::-webkit-scrollbar-track {
+  background: rgb(var(--color-slate-100));
+}
+
+.dark ::-webkit-scrollbar-track {
   background: rgb(var(--color-slate-900));
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgb(var(--color-slate-700));
+  background: rgb(var(--color-slate-300));
   border-radius: 3px;
 }
 
+.dark ::-webkit-scrollbar-thumb {
+  background: rgb(var(--color-slate-700));
+}
+
 ::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--color-slate-400));
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
   background: rgb(var(--color-slate-600));
 }
 

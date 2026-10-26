@@ -28,7 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body
-        className="bg-slate-950 text-slate-100 h-full overflow-hidden antialiased"
+        className="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 h-full overflow-hidden antialiased"
         suppressHydrationWarning
       >
         {children}
