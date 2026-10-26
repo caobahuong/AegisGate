@@ -106,7 +106,7 @@ class DryRunParams(BaseModel):
 class DryRunResult(BaseModel):
     """Payload returned by dry_run."""
 
-    is_valid: bool
+    is_valid: bool = True
     violations: list[str] = Field(default_factory=list)
     explain_plan: dict[str, Any] | str = Field(default_factory=dict)
     estimated_time_ms: float = 0.0

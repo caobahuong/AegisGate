@@ -33,31 +33,41 @@ class StarterDatabasePlugin(BasePlugin):
     def sync_knowledge(self, config: dict[str, Any]) -> dict[str, Any]:
         """Extract database catalog, schemas, tables, and columns."""
         database_name = config.get("database", "sample_db")
+        tables = [
+            {
+                "name": "users",
+                "schema_name": "public",
+                "columns": [
+                    {"name": "id", "data_type": "INT", "is_nullable": False, "is_primary_key": True},
+                    {"name": "email", "data_type": "VARCHAR(255)", "is_nullable": False, "is_primary_key": False},
+                    {"name": "created_at", "data_type": "TIMESTAMP", "is_nullable": False, "is_primary_key": False},
+                ],
+                "indexes": [{"name": "PK_users_id", "columns": ["id"], "is_unique": True}],
+            },
+            {
+                "name": "transactions",
+                "schema_name": "analytics",
+                "columns": [
+                    {"name": "txn_id", "data_type": "BIGINT", "is_nullable": False, "is_primary_key": True},
+                    {"name": "user_id", "data_type": "INT", "is_nullable": False, "is_primary_key": False},
+                    {"name": "amount", "data_type": "DECIMAL(12,2)", "is_nullable": False, "is_primary_key": False},
+                    {"name": "status", "data_type": "VARCHAR(32)", "is_nullable": False, "is_primary_key": False},
+                ],
+                "indexes": [{"name": "PK_transactions_id", "columns": ["txn_id"], "is_unique": True}],
+            },
+        ]
         return {
-            "schemas": ["public", "analytics"],
-            "tables": [
+            "partitions": [
                 {
-                    "name": "users",
-                    "schema": "public",
-                    "columns": [
-                        {"name": "id", "type": "INT", "nullable": False, "is_pk": True},
-                        {"name": "email", "type": "VARCHAR(255)", "nullable": False},
-                        {"name": "created_at", "type": "TIMESTAMP", "nullable": False},
-                    ],
-                    "indexes": ["PK_users_id", "UQ_users_email"],
-                },
-                {
-                    "name": "transactions",
-                    "schema": "analytics",
-                    "columns": [
-                        {"name": "txn_id", "type": "BIGINT", "nullable": False, "is_pk": True},
-                        {"name": "user_id", "type": "INT", "nullable": False},
-                        {"name": "amount", "type": "DECIMAL(12,2)", "nullable": False},
-                        {"name": "status", "type": "VARCHAR(32)", "nullable": False},
-                    ],
-                    "indexes": ["PK_transactions_id", "IX_transactions_user_id"],
-                },
+                    "partition_key": "General",
+                    "title": "General Subsystem",
+                    "tables": tables,
+                }
             ],
+            "target_id": str(config.get("target_id") or "starter_plugin"),
+            "timestamp": "2026-10-26T00:00:00Z",
+            "schemas": ["public", "analytics"],
+            "tables": tables,
             "views": [{"name": "active_users_view", "schema": "public"}],
             "database": database_name,
         }
@@ -84,6 +94,7 @@ class StarterDatabasePlugin(BasePlugin):
         }
 
         return {
+            "is_valid": True,
             "explain_plan": explain_plan,
             "risk_score": 75 if has_cross_join else (25 if "WHERE" not in normalized else 5),
             "estimated_rows": 10 if "WHERE" in normalized else 50000,
