@@ -15,9 +15,9 @@ from typing import Any
 import httpx
 
 try:
-    from mcp.server.fastmcp import FastMCP
-except Exception:
-    from mcp.server.mcpserver import MCPServer as FastMCP  # type: ignore[no-redef, import-not-found]
+    from mcp.server.mcpserver import MCPServer as FastMCP
+except ImportError:
+    from mcp.server.fastmcp import FastMCP  # type: ignore[no-redef, attr-defined]
 from sqlmodel import Session
 
 from core.database import engine
