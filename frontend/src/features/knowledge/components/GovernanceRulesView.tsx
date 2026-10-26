@@ -38,8 +38,8 @@ export const GovernanceRulesView: React.FC<GovernanceRulesViewProps> = ({
           data-testid="create-rule-btn"
           variant="primary"
           size="sm"
+          leftIcon={<Plus className="h-4 w-4" />}
         >
-          <Plus className="h-4 w-4 mr-1.5" />
           Create Rule
         </Button>
       </div>

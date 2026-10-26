@@ -96,9 +96,14 @@ export const QuerySimulatorPane: React.FC<QuerySimulatorPaneProps> = ({
           />
         </div>
 
-        <Button type="submit" disabled={isSubmitting} isLoading={isSubmitting} className="w-full">
-          <Send className="h-3.5 w-3.5 mr-1.5" />
-          <span>{isSubmitting ? "Submitting..." : "Send Query to AegisGate"}</span>
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          isLoading={isSubmitting}
+          leftIcon={<Send className="h-3.5 w-3.5" />}
+          className="w-full"
+        >
+          {isSubmitting ? "Submitting..." : "Send Query to AegisGate"}
         </Button>
       </form>
 

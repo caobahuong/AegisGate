@@ -59,18 +59,15 @@ export const KnowledgeEditorPane: React.FC<KnowledgeEditorPaneProps> = ({
           isLoading={isSavingDocs}
           variant="primary"
           size="sm"
+          leftIcon={
+            saveSuccess ? (
+              <Check className="h-3.5 w-3.5 text-emerald-300" />
+            ) : (
+              <Save className="h-3.5 w-3.5" />
+            )
+          }
         >
-          {saveSuccess ? (
-            <>
-              <Check className="h-3.5 w-3.5 text-emerald-300 mr-1" />
-              <span>Saved!</span>
-            </>
-          ) : (
-            <>
-              <Save className="h-3.5 w-3.5 mr-1" />
-              <span>Save Docs &amp; Skills</span>
-            </>
-          )}
+          {saveSuccess ? "Saved!" : "Save Docs & Skills"}
         </Button>
       </div>
 

@@ -146,18 +146,18 @@ export const GatekeeperControlsPane: React.FC<GatekeeperControlsPaneProps> = ({
                     disabled={actionLoading}
                     isLoading={actionLoading}
                     variant="primary"
+                    leftIcon={<Play className="h-3.5 w-3.5" />}
                     className="bg-emerald-600 hover:bg-emerald-500"
                   >
-                    <Play className="h-3.5 w-3.5 mr-1" />
-                    <span>Approve &amp; Run</span>
+                    Approve &amp; Run
                   </Button>
                   <Button
                     onClick={() => onReject(selectedExecution.id)}
                     disabled={actionLoading}
                     variant="danger"
+                    leftIcon={<XCircle className="h-3.5 w-3.5" />}
                   >
-                    <XCircle className="h-3.5 w-3.5 mr-1" />
-                    <span>Reject</span>
+                    Reject
                   </Button>
                 </div>
               </div>
@@ -173,10 +173,10 @@ export const GatekeeperControlsPane: React.FC<GatekeeperControlsPaneProps> = ({
                   onClick={() => onAbort(selectedExecution.id)}
                   disabled={actionLoading}
                   variant="danger"
+                  leftIcon={<StopCircle className="h-3.5 w-3.5" />}
                   className="w-full"
                 >
-                  <StopCircle className="h-3.5 w-3.5 mr-1" />
-                  <span>Stop &amp; KILL Session Now</span>
+                  Stop &amp; KILL Session Now
                 </Button>
               </div>
             )}
