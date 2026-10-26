@@ -13,9 +13,29 @@ export interface paths {
         };
         /**
          * Sse Events
-         * @description Server-Sent Events endpoint streaming real-time execution states.
+         * @description Server-Sent Events endpoint streaming real-time execution states with replay.
          */
         get: operations["sse_events_api_monitor_events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/executions/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Paginate Executions
+         * @description Cursor-paginated search endpoint for execution audit logs.
+         */
+        get: operations["paginate_executions_api_executions_page_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -536,7 +556,6 @@ export interface components {
         Body_install_plugin_zip_api_plugins_install_zip_post: {
             /**
              * File
-             * Format: binary
              * @description ZIP archive containing plugin files and manifest.json
              */
             file: string;
@@ -710,6 +729,18 @@ export interface components {
             client_configs?: {
                 [key: string]: unknown;
             };
+        };
+        /**
+         * PaginatedExecutionsResponse
+         * @description Cursor-paginated response for execution logs.
+         */
+        PaginatedExecutionsResponse: {
+            /** Items */
+            items: components["schemas"]["ExecutionResponse"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+            /** Total Count */
+            total_count: number;
         };
         /**
          * PluginCertificationResponse
@@ -992,6 +1023,10 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+            /** Input */
+            input?: unknown;
+            /** Context */
+            ctx?: Record<string, never>;
         };
     };
     responses: never;
@@ -1004,7 +1039,9 @@ export type $defs = Record<string, never>;
 export interface operations {
     sse_events_api_monitor_events_get: {
         parameters: {
-            query?: never;
+            query?: {
+                last_event_id?: number | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1018,6 +1055,58 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    paginate_executions_api_executions_page_get: {
+        parameters: {
+            query?: {
+                /** @description Opaque pagination cursor from previous page */
+                cursor?: string | null;
+                limit?: number;
+                /** @description Status filter */
+                status?: string | null;
+                /** @description Plugin target ID filter */
+                target_id?: string | null;
+                /** @description Search term matching query, reasoning, or ID */
+                q?: string | null;
+                /** @description Earliest created_at timestamp */
+                from_date?: string | null;
+                /** @description Latest created_at timestamp */
+                to_date?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedExecutionsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -1057,7 +1146,10 @@ export interface operations {
     };
     submit_execution_api_monitor_executions_post: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Wait for execution to finish (true) or dispatch in background (false) */
+                wait?: boolean;
+            };
             header?: never;
             path?: never;
             cookie?: never;

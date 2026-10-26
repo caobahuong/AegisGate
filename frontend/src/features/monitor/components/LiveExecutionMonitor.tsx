@@ -42,9 +42,7 @@ export const LiveExecutionMonitor: React.FC<LiveExecutionMonitorProps> = ({
     () =>
       executions.filter(
         (ex) =>
-          ex.status === "PAUSED_FOR_REVIEW" ||
-          ex.status === "DRY_RUN" ||
-          ex.status === "QUEUED"
+          ex.status === "PAUSED_FOR_REVIEW" || ex.status === "DRY_RUN" || ex.status === "QUEUED"
       ),
     [executions]
   );

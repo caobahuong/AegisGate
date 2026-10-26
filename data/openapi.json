@@ -12,14 +12,198 @@
           "AegisGate Gateway"
         ],
         "summary": "Sse Events",
-        "description": "Server-Sent Events endpoint streaming real-time execution states.",
+        "description": "Server-Sent Events endpoint streaming real-time execution states with replay.",
         "operationId": "sse_events_api_monitor_events_get",
+        "parameters": [
+          {
+            "name": "last_event_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Last Event Id"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/executions/page": {
+      "get": {
+        "tags": [
+          "AegisGate Gateway"
+        ],
+        "summary": "Paginate Executions",
+        "description": "Cursor-paginated search endpoint for execution audit logs.",
+        "operationId": "paginate_executions_api_executions_page_get",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Opaque pagination cursor from previous page",
+              "title": "Cursor"
+            },
+            "description": "Opaque pagination cursor from previous page"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Status filter",
+              "title": "Status"
+            },
+            "description": "Status filter"
+          },
+          {
+            "name": "target_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Plugin target ID filter",
+              "title": "Target Id"
+            },
+            "description": "Plugin target ID filter"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search term matching query, reasoning, or ID",
+              "title": "Q"
+            },
+            "description": "Search term matching query, reasoning, or ID"
+          },
+          {
+            "name": "from_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Earliest created_at timestamp",
+              "title": "From Date"
+            },
+            "description": "Earliest created_at timestamp"
+          },
+          {
+            "name": "to_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Latest created_at timestamp",
+              "title": "To Date"
+            },
+            "description": "Latest created_at timestamp"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedExecutionsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
@@ -114,6 +298,20 @@
         "summary": "Submit Execution",
         "description": "Submit an AI query for Dry-Run and Execution lifecycle.",
         "operationId": "submit_execution_api_monitor_executions_post",
+        "parameters": [
+          {
+            "name": "wait",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Wait for execution to finish (true) or dispatch in background (false)",
+              "default": true,
+              "title": "Wait"
+            },
+            "description": "Wait for execution to finish (true) or dispatch in background (false)"
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -1442,7 +1640,7 @@
         "properties": {
           "file": {
             "type": "string",
-            "format": "binary",
+            "contentMediaType": "application/octet-stream",
             "title": "File",
             "description": "ZIP archive containing plugin files and manifest.json"
           }
@@ -1553,6 +1751,7 @@
             "type": "string",
             "enum": [
               "DRY_RUN",
+              "QUEUED",
               "PAUSED_FOR_REVIEW",
               "EXECUTING",
               "COMPLETED",
@@ -1851,6 +2050,39 @@
         ],
         "title": "McpConfigResponse",
         "description": "Response containing standard MCP JSON configuration for AI clients."
+      },
+      "PaginatedExecutionsResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ExecutionResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "total_count": {
+            "type": "integer",
+            "title": "Total Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total_count"
+        ],
+        "title": "PaginatedExecutionsResponse",
+        "description": "Cursor-paginated response for execution logs."
       },
       "PluginCertificationResponse": {
         "properties": {
@@ -2488,6 +2720,13 @@
           "type": {
             "type": "string",
             "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
           }
         },
         "type": "object",
