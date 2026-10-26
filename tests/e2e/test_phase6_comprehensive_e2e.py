@@ -18,8 +18,9 @@ import sys
 import time
 from pathlib import Path
 from typing import Any
+
 import httpx
-from playwright.sync_api import Page, sync_playwright
+from playwright.sync_api import sync_playwright
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 SCREENSHOTS_DIR = BASE_DIR / "report" / "screenshots"
@@ -148,15 +149,14 @@ def run_phase6_e2e_suite() -> None:
             page_errors: list[str] = []
 
             def on_console(msg: Any) -> None:
-                if msg.type == "error":
-                    # Filter out benign favicon or expected test mock rejections
-                    if (
-                        "favicon" not in msg.text.lower()
-                        and "status of 500" not in msg.text
-                        and "500 (internal server error)" not in msg.text.lower()
-                    ):
-                        console_errors.append(f"[{msg.type}] {msg.text}")
-                        print(f"       Browser Console Error: {msg.text}")
+                if (
+                    msg.type == "error"
+                    and "favicon" not in msg.text.lower()
+                    and "status of 500" not in msg.text
+                    and "500 (internal server error)" not in msg.text.lower()
+                ):
+                    console_errors.append(f"[{msg.type}] {msg.text}")
+                    print(f"       Browser Console Error: {msg.text}")
 
             page.on("console", on_console)
             page.on("pageerror", lambda err: page_errors.append(str(err)))
@@ -210,7 +210,9 @@ def run_phase6_e2e_suite() -> None:
                 assert btn.is_visible(), f"Nav tab {tab_sel} not visible"
                 btn.click()
                 time.sleep(0.4)
-                assert page.locator(f"text={expected_header}").first.is_visible(), f"Header '{expected_header}' not shown"
+                assert page.locator(f"text={expected_header}").first.is_visible(), (
+                    f"Header '{expected_header}' not shown"
+                )
 
             page.screenshot(path=str(SCREENSHOTS_DIR / "phase6_s2_navigation_sidebar.png"))
             print("       PASS: Navigated across all primary views successfully!")
@@ -411,7 +413,9 @@ def run_phase6_e2e_suite() -> None:
             print("       PASS: Modal opens with Enter and dismisses cleanly with Escape key!")
 
             # Assert ZERO console errors during normal operations (S1-S11, responsive, a11y)
-            assert len(console_errors) == 0, f"Critical console errors detected during interactive flows: {console_errors}"
+            assert len(console_errors) == 0, (
+                f"Critical console errors detected during interactive flows: {console_errors}"
+            )
             assert len(page_errors) == 0, f"Uncaught page JavaScript errors detected: {page_errors}"
             print("       PASS: ZERO console errors or page crashes across all S1-S11 views and viewports!")
 
@@ -419,6 +423,7 @@ def run_phase6_e2e_suite() -> None:
             # Backend Resilience & Error Toast Verification
             # =====================================================================
             print("\n>>> [Backend Fault Injection] Testing Frontend Graceful Error Handling...")
+
             # Mock /api/monitor/executions to return 500
             def handle_route(route: Any) -> None:
                 route.fulfill(
