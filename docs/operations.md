@@ -52,8 +52,15 @@ HEARTBEAT_TIMEOUT_SECONDS=30.0
 
 When running multiple processes against SQLite:
 1. **WAL Journaling**: AegisGate automatically executes `PRAGMA journal_mode=WAL` and `PRAGMA synchronous=NORMAL`. This allows concurrent read operations to proceed uninterrupted while another worker is writing.
-2. **Busy Timeout**: `PRAGMA busy_timeout=15000` is enforced on all connections so transactions queue rather than throwing immediate database locked errors.
-3. **Connection Pooling**: SQLAlchemy `QueuePool` is tuned to `pool_size=20, max_overflow=30, pool_timeout=30.0`.
+2. **Busy Timeout**: `PRAGMA busy_timeout=20000` (20.0s) is enforced on all connections so transactions queue rather than throwing immediate database locked errors.
+3. **Memory & Cache Optimizations**:
+   - `PRAGMA cache_size=-64000` (64 MB page cache in memory)
+   - `PRAGMA temp_store=MEMORY` (in-memory temporary tables and indices)
+   - `PRAGMA mmap_size=268435456` (256 MB memory-mapped I/O for high read throughput)
+4. **Connection Pooling**: SQLAlchemy `QueuePool` is tuned for high concurrency with:
+   - `pool_size=50`
+   - `max_overflow=150`
+   - `pool_timeout=15.0`
 
 ### Database Schema Migrations (Alembic)
 Schema migrations are handled programmatically at startup via Alembic:
