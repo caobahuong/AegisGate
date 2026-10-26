@@ -62,7 +62,12 @@ export async function updatePluginConfig(
 export async function deletePlugin(
   pluginId: string,
   hardDelete: boolean = false
-): Promise<{ success: boolean; plugin_id: string; mode: string; message: string }> {
+): Promise<{
+  success: boolean;
+  plugin_id: string;
+  mode: string;
+  message: string;
+}> {
   return apiClient(`/plugins/${encodeURIComponent(pluginId)}`, {
     method: "DELETE",
     params: { hard_delete: hardDelete },

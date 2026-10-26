@@ -947,7 +947,11 @@ describe("Frontend Component Tests", () => {
           badge: "CERTIFIED_READY",
           checks: {
             handshake: { status: "PASSED", latency_ms: 5.2, details: "OK" },
-            sync_knowledge: { status: "PASSED", latency_ms: 12.0, details: "2 tables" },
+            sync_knowledge: {
+              status: "PASSED",
+              latency_ms: 12.0,
+              details: "2 tables",
+            },
             dry_run: { status: "PASSED", latency_ms: 15.1, details: "Plan OK" },
             abort: { status: "PASSED", latency_ms: 3.0, details: "Kill OK" },
           },

@@ -91,10 +91,26 @@ export const McpConfigModal: React.FC<McpConfigModalProps> = ({
   };
 
   const tabItems = [
-    { id: "claude", label: "Claude Desktop / Code", icon: <Sparkles className="h-3.5 w-3.5" /> },
-    { id: "cursor", label: "Cursor (.cursor/mcp.json)", icon: <Cpu className="h-3.5 w-3.5" /> },
-    { id: "cline", label: "Cline (VS Code)", icon: <Terminal className="h-3.5 w-3.5" /> },
-    { id: "raw", label: "Raw JSON", icon: <ExternalLink className="h-3.5 w-3.5" /> },
+    {
+      id: "claude",
+      label: "Claude Desktop / Code",
+      icon: <Sparkles className="h-3.5 w-3.5" />,
+    },
+    {
+      id: "cursor",
+      label: "Cursor (.cursor/mcp.json)",
+      icon: <Cpu className="h-3.5 w-3.5" />,
+    },
+    {
+      id: "cline",
+      label: "Cline (VS Code)",
+      icon: <Terminal className="h-3.5 w-3.5" />,
+    },
+    {
+      id: "raw",
+      label: "Raw JSON",
+      icon: <ExternalLink className="h-3.5 w-3.5" />,
+    },
   ];
 
   const currentInstruction =

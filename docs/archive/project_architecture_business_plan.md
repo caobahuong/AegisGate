@@ -5,8 +5,8 @@
 
 # KẾ HOẠCH TỔNG THỂ & ĐẶC TẢ NGHIỆP VỤ DỰ ÁN AEGISGATE (`plan.md`)
 
-**Tên định danh dự án:** AegisGate  
-**Bản chất hệ thống:** Nền tảng Proxy và bộ khung điều phối (AI Execution Proxy & Pluggable Harness Platform) đứng giữa **AI Agent** và **Bất kỳ Hệ thống Bên thứ 3 nào**.  
+**Tên định danh dự án:** AegisGate
+**Bản chất hệ thống:** Nền tảng Proxy và bộ khung điều phối (AI Execution Proxy & Pluggable Harness Platform) đứng giữa **AI Agent** và **Bất kỳ Hệ thống Bên thứ 3 nào**.
 **Phạm vi tài liệu:** Tài liệu này định nghĩa bài toán, triết lý thiết kế lõi, phân ranh giới trách nhiệm giữa Nền tảng (AegisGate Core) và các Mô-đun mở rộng (Plugins), cùng các luồng nghiệp vụ vận hành. *(Các quyết định về công nghệ, ngôn ngữ lập trình và thiết kế cơ sở dữ liệu chi tiết sẽ được quy định ở một tài liệu Kỹ thuật riêng).*
 
 ---
@@ -27,7 +27,7 @@ Trong thực tế, nhu cầu cho phép AI kết nối trực tiếp vào các h�
 Điểm đặc biệt nhất và là giá trị cốt lõi của sản phẩm này nằm ở kiến trúc **Tách biệt Hoàn toàn (Total Decoupling)**:
 
 ### 2.1. Tool Proxy đứng giữa: "Không thiết kế để xử lý bất kỳ bên thứ 3 cụ thể nào"
-* **Bản chất của Tool Proxy (Core Platform):** Bản thân Tool Proxy hoàn toàn "mù" (agnostic) về bên thứ 3. Trong lõi của Tool **không hề tồn tại** khái niệm SQL Server, MongoDB, bảng (table), cột (column) hay câu lệnh SQL. 
+* **Bản chất của Tool Proxy (Core Platform):** Bản thân Tool Proxy hoàn toàn "mù" (agnostic) về bên thứ 3. Trong lõi của Tool **không hề tồn tại** khái niệm SQL Server, MongoDB, bảng (table), cột (column) hay câu lệnh SQL.
 * **Vai trò của Tool Proxy:** Nó chỉ đóng vai trò là **Nền tảng Giao tiếp, Lưu trữ và Điều phối (Platform & Harness)**:
   * Mở cổng giao tiếp chuẩn cho mọi loại AI (qua API, MCP...).
   * Cung cấp nơi lưu trữ tập trung cho các tri thức của hệ thống: `Rule` (Luật lệ), `Skill` (Kỹ năng), `doc.md` (Tài liệu hướng dẫn cho AI), và `Kho dữ liệu cấu trúc` (đóng vai trò như bộ nhớ đệm bền vững về cấu trúc của bên thứ 3 để AI tra cứu mà không cần chạm vào hệ thống thật).
@@ -107,7 +107,7 @@ Trong thực tế, nhu cầu cho phép AI kết nối trực tiếp vào các h�
 
 ### Luồng 1: Nhúng Plugin và Xây dựng Kho Tri thức (Onboarding & Cataloging Flow)
 1. **Nhúng Plugin:** Người dùng thêm một Plugin (ví dụ: Plugin SQL Server hoặc Plugin MongoDB) vào Tool Proxy và cấu hình thông tin kết nối bên trong Plugin đó.
-2. **Thu thập & Chia nhỏ Cấu trúc:** 
+2. **Thu thập & Chia nhỏ Cấu trúc:**
    * Người dùng bấm nút cập nhật hoặc hệ thống lập lịch (Scheduler) tự động gọi lệnh đồng bộ của Plugin.
    * Plugin kết nối tới bên thứ 3, lấy toàn bộ thông tin cấu trúc (bảng, trường, chỉ mục/index, quan hệ...), tự phân loại và chia thành các phần nhỏ hợp lý, sau đó đẩy qua **Đầu nhận Cấu trúc** của Tool Proxy.
    * Tool Proxy lưu trữ bền vững toàn bộ thông tin này.

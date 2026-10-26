@@ -28,7 +28,8 @@ export const parseResultSummary = (
       ? (parsed as Record<string, unknown>[])
       : null;
 
-  const rows = typeof pObj.rows_affected === "number" ? pObj.rows_affected : (data?.length ?? null);
+  const fallbackRows = data?.length ?? null;
+  const rows = typeof pObj.rows_affected === "number" ? pObj.rows_affected : fallbackRows;
   const cols = data && data.length > 0 && typeof data[0] === "object" ? Object.keys(data[0]) : [];
 
   return {

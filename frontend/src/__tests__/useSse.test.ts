@@ -83,7 +83,9 @@ describe("useSse Hook", () => {
 
     act(() => {
       MockEventSource.instances[0].simulateOpen();
-      MockEventSource.instances[0].simulateEvent("execution_created", { id: "exec_123" });
+      MockEventSource.instances[0].simulateEvent("execution_created", {
+        id: "exec_123",
+      });
     });
 
     expect(onEvent).toHaveBeenCalledWith(

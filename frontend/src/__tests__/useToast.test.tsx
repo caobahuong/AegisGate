@@ -41,7 +41,9 @@ describe("Toast System", () => {
     expect(screen.getByText("Error alert")).toBeDefined();
 
     // Click dismiss button on error toast
-    const dismissButtons = screen.getAllByRole("button", { name: "Dismiss notification" });
+    const dismissButtons = screen.getAllByRole("button", {
+      name: "Dismiss notification",
+    });
     fireEvent.click(dismissButtons[1]);
 
     expect(screen.queryByText("Error alert")).toBeNull();

@@ -40,4 +40,3 @@ python tests/test_adapter.py
 2. Truy cập AegisGate Dashboard -> tab **Pluggable Targets** -> bấm **Add Pluggable Target**.
 3. Chuyển sang tab **Upload ZIP Package** và tải file `.zip` lên.
 4. Hệ thống sẽ tự động tạo Virtualenv cô lập, cài đặt `requirements.txt`, chạy **Certification Linter (4 bước)** và kích hoạt ngay lập tức!
-

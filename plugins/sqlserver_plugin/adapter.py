@@ -97,15 +97,15 @@ def _odbc_braced(value: str) -> str:
 
 def _jsonable(value: Any, max_chars: int = DEFAULT_MAX_CELL_CHARS) -> Any:
     """Convert a pyodbc cell into something json.dumps accepts."""
-    if value is None or isinstance(value, (bool, int, float)):
+    if value is None or isinstance(value, bool | int | float):
         return value
     if isinstance(value, str):
         return value if len(value) <= max_chars else value[:max_chars] + "...[truncated]"
     if isinstance(value, Decimal):
         return float(value)
-    if isinstance(value, (datetime, date, dt_time)):
+    if isinstance(value, datetime | date | dt_time):
         return value.isoformat()
-    if isinstance(value, (bytes, bytearray)):
+    if isinstance(value, bytes | bytearray):
         head = bytes(value[:64]).hex()
         return f"0x{head}" + ("..." if len(value) > 64 else "")
     if isinstance(value, uuid.UUID):

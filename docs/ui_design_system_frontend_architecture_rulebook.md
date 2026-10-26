@@ -1,6 +1,6 @@
 # UI DESIGN SYSTEM & FRONTEND ARCHITECTURE RULEBOOK (`design.md`)
 
-**Tên tài liệu:** Quy chuẩn Thiết kế Giao diện & Kiến trúc Frontend (Design System & UI Rules)  
+**Tên tài liệu:** Quy chuẩn Thiết kế Giao diện & Kiến trúc Frontend (Design System & UI Rules)
 **Mục tiêu:** Tài liệu này đóng vai trò là "Luật bất thành văn" (Rulebook) bắt buộc mọi AI Coding Agent hoặc Developer phải tuân thủ khi xây dựng, mở rộng hoặc chỉnh sửa giao diện Frontend cho dự án **AegisGate**.
 
 ---

@@ -18,4 +18,3 @@
 - [ ] Code adheres to project clean code standards (English only, 100% type hints)
 - [ ] No database files (`*.db`), credentials, or tokens are committed
 - [ ] Documentation updated if relevant
-

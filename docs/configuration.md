@@ -57,4 +57,3 @@ Located in `frontend/.env.local` (see `frontend/.env.example`):
 | :--- | :--- | :--- |
 | `NEXT_PUBLIC_API_URL` | `http://127.0.0.1:8000` | Base URL of the AegisGate Core REST API Gateway. |
 | `NEXT_PUBLIC_SSE_URL` | `http://127.0.0.1:8000/api/monitor/events` | SSE endpoint URL for real-time state streaming to the Next.js dashboard. |
-

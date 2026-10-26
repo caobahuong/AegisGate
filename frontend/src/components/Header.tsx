@@ -119,7 +119,9 @@ export const Header: React.FC<HeaderProps> = ({
             data-testid="theme-toggle-btn"
             aria-label={`Switch to ${theme === "light" ? "Dark" : "Light"} mode`}
             className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-600 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-800 dark:text-slate-200 text-xs font-semibold transition-all shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-            title={`Current theme: ${theme}. Click to switch to ${theme === "light" ? "Dark" : "Light"} Mode`}
+            title={`Current theme: ${theme}. Click to switch to ${
+              theme === "light" ? "Dark" : "Light"
+            } Mode`}
           >
             {theme === "light" ? (
               <>

@@ -26,4 +26,3 @@ seed:
 
 clean:
 	python scripts/tasks.py clean
-

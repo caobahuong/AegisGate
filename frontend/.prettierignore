@@ -5,4 +5,3 @@ build
 coverage
 *.generated.ts
 package-lock.json
-

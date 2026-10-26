@@ -26,4 +26,3 @@ A clear description of what you expected to happen.
 
 **Logs / Screenshots**
 If applicable, add console logs or error outputs.
-

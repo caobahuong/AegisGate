@@ -20,12 +20,12 @@ flowchart TD
         direction TB
         MCP_Gate["FastMCP Gateway (:8001 / Stdio)"]
         REST_Gate["REST API Gateway (:8000)"]
-        
+
         SM["Execution State Machine"]
         Gov["Governance Rule Engine"]
         Masker["Output Masker & Redactor"]
         Guard["Timeout & Abort Guard (15s/30s)"]
-        
+
         KS["Knowledge Store (SQLite + MD)"]
         RS["Rule Store (SQLite)"]
         LS["Execution Log Store (SQLite)"]
@@ -58,7 +58,7 @@ flowchart TD
     SM --> Guard
     SM --> Masker
     SM --> KS & RS & LS
-    
+
     KS --> DB & Docs
     RS --> DB
     LS --> DB
@@ -96,7 +96,7 @@ sequenceDiagram
     %% Dry-Run Step
     SM->>Plugin: dry_run(query)
     Plugin-->>SM: Explain Plan / Estimated Cost
-    
+
     %% Governance Inspection
     SM->>Gov: inspect(query, explain_plan, rules)
     alt Rule Violation Detected (e.g. FORBID_JOIN)
@@ -107,7 +107,7 @@ sequenceDiagram
         API-->>AI: Query Rejected with Violation Reason
     else Passed Governance Rules
         Gov-->>SM: Passed (No Violations)
-        
+
         alt Auto-Approval Mode is OFF (Default)
             SM->>DB: Update status=PAUSED_FOR_REVIEW
             SM->>SSE: Broadcast "execution_paused"
@@ -117,7 +117,7 @@ sequenceDiagram
         else Auto-Approval Mode is ON
             SM->>DB: Update status=EXECUTING (auto_approved=true)
         end
-        
+
         %% Execution Step with Timeout Guard
         critical Timeout Guard (15s Read / 30s Write)
             SM->>Plugin: execute(query, timeout_seconds)
@@ -147,20 +147,20 @@ The query lifecycle is formalized into a strict state machine:
 ```mermaid
 stateDiagram-v2
     [*] --> DRY_RUN : Query Submitted
-    
+
     DRY_RUN --> REJECTED : Governance Rule Violation\nor Dry-Run Failure (Fail-Closed)
     DRY_RUN --> PAUSED_FOR_REVIEW : Passed Dry-Run (Auto-Approval OFF)
     DRY_RUN --> EXECUTING : Passed Dry-Run (Auto-Approval ON)
-    
+
     PAUSED_FOR_REVIEW --> EXECUTING : Admin Clicks "Approve & Run"
     PAUSED_FOR_REVIEW --> REJECTED : Admin Clicks "Reject"
     PAUSED_FOR_REVIEW --> ABORTED : Admin Clicks "Stop"
-    
+
     EXECUTING --> COMPLETED : Query Success (Masked & Logged)
     EXECUTING --> TIMEOUT : Exceeded Timeout Guard (15s/30s)
     EXECUTING --> ABORTED : Emergency Kill Dispatched (KILL SPID)
     EXECUTING --> REJECTED : Target Execution Error
-    
+
     COMPLETED --> [*]
     REJECTED --> [*]
     TIMEOUT --> [*]
@@ -391,5 +391,3 @@ flowchart TD
   - Automatically exports pruned logs to compressed `data/archive/YYYY-MM.ndjson.gz` archives.
   - Scrubs bulky `result_summary` fields for surviving logs older than `RESULT_RETENTION_DAYS`.
   - Prunes stale outbox events older than `OUTBOX_RETENTION_HOURS` (24h).
-
-

@@ -30,12 +30,32 @@ export interface UserGuideModalProps {
 type GuideSection = "overview" | "mcp" | "plugins" | "rules" | "execution" | "audit";
 
 const SECTIONS = [
-  { id: "overview" as GuideSection, label: "1. Overview & Architecture", icon: Layers },
-  { id: "mcp" as GuideSection, label: "2. AI Connection via MCP", icon: Terminal },
+  {
+    id: "overview" as GuideSection,
+    label: "1. Overview & Architecture",
+    icon: Layers,
+  },
+  {
+    id: "mcp" as GuideSection,
+    label: "2. AI Connection via MCP",
+    icon: Terminal,
+  },
   { id: "plugins" as GuideSection, label: "3. Pluggable Targets", icon: Boxes },
-  { id: "rules" as GuideSection, label: "4. Governance Rules & Scope", icon: Shield },
-  { id: "execution" as GuideSection, label: "5. Live Monitor & Approvals", icon: Activity },
-  { id: "audit" as GuideSection, label: "6. Audit Logs Input / Output", icon: FileText },
+  {
+    id: "rules" as GuideSection,
+    label: "4. Governance Rules & Scope",
+    icon: Shield,
+  },
+  {
+    id: "execution" as GuideSection,
+    label: "5. Live Monitor & Approvals",
+    icon: Activity,
+  },
+  {
+    id: "audit" as GuideSection,
+    label: "6. Audit Logs Input / Output",
+    icon: FileText,
+  },
 ];
 
 export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose }) => {

@@ -35,7 +35,7 @@ flowchart TD
         VenvManager["Venv & Dependency Manager<br/>(Isolated venv + pip install)"]
         LinterEngine["Plugin Certification Engine<br/>(Handshake, Sync, Dry-Run, Abort)"]
         Registry["SQLite Plugin Registry & SSE Broadcaster"]
-        
+
         APIInstall --> InstallerEngine
         InstallerEngine --> VenvManager
         VenvManager --> LinterEngine
@@ -76,7 +76,7 @@ from typing import Any, Dict, List, Optional
 
 class BasePlugin(ABC):
     """Lớp trừu tượng định nghĩa chuẩn 4 phương thức bắt buộc."""
-    
+
     @abstractmethod
     def sync_knowledge(self, config: Dict[str, Any]) -> Dict[str, Any]:
         """Thu thập catalog database (tables, views, columns, indexes)."""
@@ -118,7 +118,7 @@ class PluginServer:
             req_id = req.get("id")
             method = req.get("method")
             params = req.get("params", {})
-            
+
             try:
                 if method == "sync_knowledge":
                     result = self.plugin.sync_knowledge(params.get("config", {}))
@@ -130,11 +130,11 @@ class PluginServer:
                     result = self.plugin.abort(params.get("spid"), params.get("config", {}))
                 else:
                     raise ValueError(f"Unknown JSON-RPC method: {method}")
-                
+
                 resp = {"jsonrpc": "2.0", "id": req_id, "result": result}
             except Exception as exc:
                 resp = {"jsonrpc": "2.0", "id": req_id, "error": {"code": -32603, "message": str(exc)}}
-            
+
             sys.stdout.write(json.dumps(resp) + "\n")
             sys.stdout.flush()
 ```
@@ -284,4 +284,3 @@ if __name__ == "__main__":
    * Pytest Backend đạt 100% Pass cho cả SDK, Installer và Linter.
    * Vitest Frontend đạt 100% Pass cho modal upload và badge certified.
    * Anti-Gravity Browser verification chạy qua Chrome Debugging không có lỗi console.
-

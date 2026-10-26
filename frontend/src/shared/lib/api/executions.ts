@@ -35,7 +35,9 @@ export async function fetchPaginatedExecutions(
     from_date: params?.fromDate,
     to_date: params?.toDate,
   };
-  return apiClient<PaginatedExecutionsResponse>("/executions/page", { params: queryParams });
+  return apiClient<PaginatedExecutionsResponse>("/executions/page", {
+    params: queryParams,
+  });
 }
 
 export async function fetchExecutions(

@@ -1,5 +1,5 @@
 # TECHNICAL SPECIFICATION & TECH STACK (`tech.md`)
-**Tên dự án:** AegisGate  
+**Tên dự án:** AegisGate
 **Mục tiêu tài liệu:** Cung cấp chi tiết các lựa chọn về Công nghệ (Tech Stack), Kiến trúc Kỹ thuật thực thi, Giao thức truyền thông giữa Core và Plugin, cũng như cấu trúc mã nguồn để đội ngũ phát triển hoặc AI Coding Agent bắt tay vào hiện thực hóa hệ thống AegisGate.
 
 ---
@@ -95,7 +95,7 @@ AegisGate/
 
 ### 4.2. Hệ thống Lưu trữ Core (SQLite + Markdown)
 * **SQLite Database (`aegisgate.db`):** Quản lý thông tin kết nối, ánh xạ trạng thái execution logs, rule cấu hình, và metadata của Knowledge Chunks.
-* **Knowledge Store (Hybrid):** 
+* **Knowledge Store (Hybrid):**
   * Metadata dạng cấu trúc bảng/cột lưu trong SQLite.
   * Nội dung giải thích chi tiết (`doc.md`, `skills.md`) lưu trực tiếp thành file text trong thư mục `data/knowledge_docs/` để lập trình viên hoặc AI dễ dàng đọc/ghi bằng các công cụ code thông thường.
 

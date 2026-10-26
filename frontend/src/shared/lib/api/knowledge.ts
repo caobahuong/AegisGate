@@ -18,6 +18,9 @@ export async function updateKnowledgeDocs(
 ): Promise<{ success: boolean }> {
   return apiClient<{ success: boolean }>(`/knowledge/${encodeURIComponent(chunkId)}/docs`, {
     method: "PUT",
-    body: JSON.stringify({ doc_content: docContent, skills_content: skillsContent }),
+    body: JSON.stringify({
+      doc_content: docContent,
+      skills_content: skillsContent,
+    }),
   });
 }

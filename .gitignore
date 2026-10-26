@@ -2,6 +2,7 @@
 node_modules/
 .pnp/
 .pnp.js
+*.egg-info/
 
 # Testing and Cache
 .pytest_cache/
@@ -11,6 +12,7 @@ __pycache__/
 .coverage
 htmlcov/
 .vitest/
+coverage/
 *.tsbuildinfo
 
 # Next.js
