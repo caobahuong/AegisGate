@@ -9,6 +9,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+
 from playwright.sync_api import Page, sync_playwright
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")

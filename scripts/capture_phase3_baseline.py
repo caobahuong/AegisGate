@@ -5,6 +5,7 @@ Captures all views and modals in both Light and Dark themes.
 
 import time
 from pathlib import Path
+
 from playwright.sync_api import sync_playwright
 
 BASE_URL = "http://localhost:3000"
@@ -16,10 +17,7 @@ def set_theme(page, theme: str):
     """Ensure page is in desired theme ('light' or 'dark')."""
     is_dark = page.evaluate("document.documentElement.classList.contains('dark')")
     toggle_btn = page.locator("[data-testid='theme-toggle-btn']")
-    if theme == "dark" and not is_dark:
-        toggle_btn.click()
-        time.sleep(0.3)
-    elif theme == "light" and is_dark:
+    if theme == "dark" and not is_dark or theme == "light" and is_dark:
         toggle_btn.click()
         time.sleep(0.3)
 

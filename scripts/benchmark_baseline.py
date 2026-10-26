@@ -5,10 +5,10 @@ FastAPI backend and calculates p50, p95 latency, throughput, and DB size.
 """
 
 import asyncio
-import os
 import statistics
 import time
 from pathlib import Path
+
 import httpx
 
 API_URL = "http://127.0.0.1:8000/api/monitor/executions"

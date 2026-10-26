@@ -34,6 +34,7 @@ if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(BASE_DIR))
 FRONTEND_DIR = BASE_DIR / "frontend"
 
 # ANSI color codes
@@ -318,6 +319,33 @@ def run_clean() -> None:
     print(f"\n{GREEN}[OK] Clean completed.{RESET}\n")
 
 
+def run_prune(dry_run: bool = False, log_days: int | None = None, result_days: int | None = None) -> None:
+    """Execute data lifecycle pruning and ndjson.gz archival."""
+    banner = "Simulating Data Retention Prune (DRY-RUN)" if dry_run else "Executing Data Retention Prune"
+    print_banner(banner, YELLOW if dry_run else MAGENTA)
+
+    from sqlmodel import Session
+
+    from core.database import engine
+    from core.storage.retention import prune_logs
+
+    with Session(engine) as session:
+        report = prune_logs(
+            session=session,
+            log_retention_days=log_days,
+            result_retention_days=result_days,
+            dry_run=dry_run,
+        )
+
+    print(f"Pruned terminal logs:   {report.pruned_logs_count}")
+    print(f"Archived logs:          {report.archived_logs_count}")
+    print(f"Scrubbed result bodies: {report.scrubbed_results_count}")
+    print(f"Pruned outbox events:   {report.pruned_outbox_count}")
+    if report.archived_files:
+        print(f"Archived file(s):       {', '.join(report.archived_files)}")
+    print(f"\n{GREEN}[OK] Prune completed successfully.{RESET}\n")
+
+
 def main() -> None:
     """Main CLI entrypoint."""
     parser = argparse.ArgumentParser(
@@ -344,6 +372,12 @@ def main() -> None:
     # clean
     subparsers.add_parser("clean", help="Remove cache, build artifacts, and temporary files.")
 
+    # prune
+    prune_parser = subparsers.add_parser("prune", help="Prune and archive old execution logs and outbox events.")
+    prune_parser.add_argument("--dry-run", action="store_true", help="Simulate pruning without modifying database")
+    prune_parser.add_argument("--log-days", type=int, default=None, help="Retention days for terminal execution logs")
+    prune_parser.add_argument("--result-days", type=int, default=None, help="Retention days for bulky result payloads")
+
     args, extra = parser.parse_known_args()
 
     if args.command == "dev":
@@ -356,6 +390,8 @@ def main() -> None:
         run_seed(extra)
     elif args.command == "clean":
         run_clean()
+    elif args.command == "prune":
+        run_prune(dry_run=args.dry_run, log_days=args.log_days, result_days=args.result_days)
 
 
 if __name__ == "__main__":
