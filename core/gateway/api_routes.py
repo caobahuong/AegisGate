@@ -19,6 +19,7 @@ from core.exceptions import (
     ExecutionTimeoutError,
     PluginExecutionError,
     PluginNotFoundError,
+    PluginQueueFullError,
     RuleViolationError,
 )
 from core.gateway.schemas import (
@@ -109,12 +110,17 @@ def get_execution(
 async def submit_execution(
     req: SubmitExecutionRequest,
     service: Annotated[GatewayService, Depends(get_service)],
+    wait: bool = Query(
+        default=True, description="Wait for execution to finish (true) or dispatch in background (false)"
+    ),
 ) -> ExecutionResponse:
     """Submit an AI query for Dry-Run and Execution lifecycle."""
     try:
-        return await service.submit_execution(req)
+        return await service.submit_execution(req, wait=wait)
     except PluginNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=exc.message) from exc
+    except PluginQueueFullError as exc:
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=exc.message) from exc
     except (RuleViolationError, ExecutionStateError) as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=exc.message) from exc
     except ExecutionTimeoutError as exc:

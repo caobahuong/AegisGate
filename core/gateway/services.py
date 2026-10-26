@@ -6,6 +6,7 @@ Adheres strictly to python_clean_code.md:
 - Clean custom exception handling
 """
 
+import asyncio
 import json
 import logging
 from typing import Any, cast
@@ -13,7 +14,7 @@ from typing import Any, cast
 from sqlmodel import Session
 
 from core.database import ExecutionLog, PluginProfile, Rule, utc_now
-from core.engine.governance import validate_rule_definition
+from core.engine.governance import GovernanceEngine, validate_rule_definition
 from core.engine.plugin_client import terminate_all_subprocesses
 from core.engine.plugin_installer import PluginInstaller
 from core.engine.plugin_linter import PluginLinter
@@ -109,8 +110,43 @@ class GatewayService:
 
     # --- Execution & Monitor Services ---
 
-    async def submit_execution(self, req: SubmitExecutionRequest) -> ExecutionResponse:
+    async def submit_execution(self, req: SubmitExecutionRequest, wait: bool = True) -> ExecutionResponse:
         """Submit an AI query for Dry-Run and Execution lifecycle."""
+        if not wait:
+            import uuid
+
+            execution_id = f"exec_{uuid.uuid4().hex[:8]}"
+
+            # Run pipeline in a background task
+            async def _run_bg() -> None:
+                from core.database import get_session
+
+                with next(get_session()) as bg_session:
+                    sm = ExecutionStateMachine(bg_session)
+                    try:
+                        await sm.initiate_execution(
+                            target_id=req.target_id,
+                            query=req.query,
+                            reasoning=req.reasoning,
+                            execution_id=execution_id,
+                        )
+                    except Exception as exc:
+                        logger.warning("Background execution failed for %s: %s", execution_id, exc)
+
+            query_type = GovernanceEngine.determine_query_type(req.query)
+            init_log = ExecutionLog(
+                id=execution_id,
+                target_id=req.target_id,
+                query=req.query,
+                query_type=query_type,
+                reasoning=req.reasoning,
+                status="DRY_RUN",
+                created_at=utc_now(),
+            )
+            self.log_store.create_log(init_log)
+            asyncio.create_task(_run_bg())
+            return format_execution_response(init_log)
+
         log = await self.state_machine.initiate_execution(
             target_id=req.target_id,
             query=req.query,
