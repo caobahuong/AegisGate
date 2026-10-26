@@ -13,18 +13,8 @@ from alembic.config import Config
 from sqlalchemy import create_engine, inspect
 from sqlmodel import SQLModel
 
+import core.database  # noqa: F401
 from alembic import command
-from core.database import (  # Ensure all models are registered in SQLModel.metadata
-    DistributedLock,
-    EventOutbox,
-    ExecutionControl,
-    ExecutionLog,
-    KnowledgeChunk,
-    PluginProfile,
-    ProcessHeartbeat,
-    Rule,
-    SystemSetting,
-)
 
 
 def test_alembic_full_lifecycle_and_schema_drift(tmp_path: Path):
@@ -92,4 +82,6 @@ def test_alembic_full_lifecycle_and_schema_drift(tmp_path: Path):
         assert not missing_columns, f"Schema Drift: Table '{table_name}' is missing columns in DB: {missing_columns}"
 
         unexpected_columns = db_column_names - set(model_columns.keys())
-        assert not unexpected_columns, f"Schema Drift: Table '{table_name}' has extra columns in DB: {unexpected_columns}"
+        assert not unexpected_columns, (
+            f"Schema Drift: Table '{table_name}' has extra columns in DB: {unexpected_columns}"
+        )

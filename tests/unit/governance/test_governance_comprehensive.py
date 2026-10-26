@@ -1,8 +1,5 @@
 """Comprehensive unit tests for GovernanceEngine rule evaluation and pattern validation."""
 
-import pytest
-
-from core.database import Rule
 from core.engine.governance import (
     GovernanceEngine,
     validate_custom_pattern,

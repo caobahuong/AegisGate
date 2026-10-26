@@ -1,6 +1,6 @@
 """Comprehensive unit tests for ClusterManager, distributed locks, heartbeats, and failover."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -43,7 +43,7 @@ def test_distributed_lock_full_lifecycle(db_session: Session):
     assert try_acquire_lock(db_session, lock_name, owner_a, ttl_seconds=20.0) is True
 
     # 4. Simulate expiration of Owner A's lock
-    lock.expires_at = datetime.now(timezone.utc) - timedelta(seconds=1)
+    lock.expires_at = datetime.now(UTC) - timedelta(seconds=1)
     db_session.add(lock)
     db_session.commit()
 
@@ -89,9 +89,14 @@ async def test_cluster_manager_heartbeat_and_prune(db_engine):
         await cm._run_janitor_cleanup(session)
 
         # dead_worker_456 pruned, test_worker_123 remains
-        remaining_dead = session.exec(select(ProcessHeartbeat).where(ProcessHeartbeat.owner_id == "dead_worker_456")).first()
+        remaining_dead = session.exec(
+            select(ProcessHeartbeat).where(ProcessHeartbeat.owner_id == "dead_worker_456")
+        ).first()
         assert remaining_dead is None
-        assert session.exec(select(ProcessHeartbeat).where(ProcessHeartbeat.owner_id == "test_worker_123")).first() is not None
+        assert (
+            session.exec(select(ProcessHeartbeat).where(ProcessHeartbeat.owner_id == "test_worker_123")).first()
+            is not None
+        )
 
 
 @pytest.mark.asyncio
@@ -166,6 +171,7 @@ async def test_cluster_control_listener_handles_abort(db_engine):
 async def test_cluster_manager_start_stop_loops(db_engine, monkeypatch):
     """Verify ClusterManager start, heartbeat upsert, loops, and clean shutdown."""
     from core.config import settings
+
     monkeypatch.setattr(settings, "HEARTBEAT_INTERVAL_SECONDS", 0.01)
 
     cluster = ClusterManager(owner_id="worker_lifecycle_test")
@@ -177,6 +183,7 @@ async def test_cluster_manager_start_stop_loops(db_engine, monkeypatch):
     assert cluster._control_listener_task is not None
 
     import asyncio
+
     await asyncio.sleep(0.03)
 
     # Verify heartbeat recorded in DB
@@ -198,7 +205,9 @@ async def test_cluster_manager_start_stop_loops(db_engine, monkeypatch):
 
     # Heartbeat deleted after stop
     with Session(db_engine) as session:
-        hb_after = session.exec(select(ProcessHeartbeat).where(ProcessHeartbeat.owner_id == "worker_lifecycle_test")).first()
+        hb_after = session.exec(
+            select(ProcessHeartbeat).where(ProcessHeartbeat.owner_id == "worker_lifecycle_test")
+        ).first()
         assert hb_after is None
 
 

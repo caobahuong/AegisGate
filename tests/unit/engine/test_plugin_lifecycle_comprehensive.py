@@ -22,10 +22,10 @@ from core.engine.plugin_linter import PluginLinter
 from core.engine.plugin_registry import PluginRegistry
 from core.exceptions import PluginNotFoundError
 
-
 # ---------------------------------------------------------------------------
 # 1. Plugin Linter Failure Modes
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_linter_corrupt_config_json_fallback(db_session: Session):
@@ -44,7 +44,9 @@ async def test_linter_corrupt_config_json_fallback(db_session: Session):
     db_session.commit()
 
     linter = PluginLinter(db_session)
-    with patch.object(PluginSubprocessClient, "send_rpc_command", AsyncMock(side_effect=Exception("Connection refused"))):
+    with patch.object(
+        PluginSubprocessClient, "send_rpc_command", AsyncMock(side_effect=Exception("Connection refused"))
+    ):
         report = await linter.verify_plugin("bad_cfg_plugin")
         assert report["certified"] is False
         assert report["badge"] == "COMPATIBILITY_WARNING"
@@ -69,14 +71,18 @@ async def test_linter_stage_1_handshake_timeout_and_error(db_session: Session):
     linter = PluginLinter(db_session)
 
     # 1. TimeoutError
-    with patch.object(PluginSubprocessClient, "send_rpc_command", AsyncMock(side_effect=TimeoutError("Ping timed out"))):
+    with patch.object(
+        PluginSubprocessClient, "send_rpc_command", AsyncMock(side_effect=TimeoutError("Ping timed out"))
+    ):
         rep = await linter.verify_plugin("s1_test")
         assert rep["certified"] is False
         assert rep["checks"]["handshake"]["status"] == "FAILED"
         assert "timed out" in rep["checks"]["handshake"]["error"].lower()
 
     # 2. General Exception
-    with patch.object(PluginSubprocessClient, "send_rpc_command", AsyncMock(side_effect=RuntimeError("Subprocess crashed"))):
+    with patch.object(
+        PluginSubprocessClient, "send_rpc_command", AsyncMock(side_effect=RuntimeError("Subprocess crashed"))
+    ):
         rep = await linter.verify_plugin("s1_test")
         assert rep["certified"] is False
         assert rep["checks"]["handshake"]["status"] == "FAILED"
@@ -200,6 +206,7 @@ async def test_linter_stage_4_abort_failures(db_session: Session):
 # 2. Plugin Installer Manifest & Zip Validation
 # ---------------------------------------------------------------------------
 
+
 def test_installer_manifest_validation_rules(db_session: Session, tmp_path: Path):
     """PluginInstaller should reject manifests with missing fields, reserved names, and dangerous commands."""
     installer = PluginInstaller(db_session, plugins_dir=tmp_path / "plugins")
@@ -210,7 +217,9 @@ def test_installer_manifest_validation_rules(db_session: Session, tmp_path: Path
 
     # 2. Reserved ID
     with pytest.raises(PluginInstallerError, match="is reserved"):
-        installer._validate_manifest({"id": "templates", "name": "Templates", "driver": "generic", "entrypoint": "python x.py"})
+        installer._validate_manifest(
+            {"id": "templates", "name": "Templates", "driver": "generic", "entrypoint": "python x.py"}
+        )
 
     # 3. Malicious shell characters in entrypoint (tested via _validate_entrypoint)
     with pytest.raises(PluginInstallerError, match="forbidden shell characters"):
@@ -260,9 +269,8 @@ def test_installer_safe_extract_zip_security(db_session: Session, tmp_path: Path
     dest_dir = tmp_path / "extract_dest"
     dest_dir.mkdir(parents=True, exist_ok=True)
 
-    with pytest.raises(PluginInstallerError, match="escapes the target directory"):
-        with zipfile.ZipFile(buf, "r") as zf:
-            installer._safe_extract(zf, dest_dir)
+    with pytest.raises(PluginInstallerError, match="escapes the target directory"), zipfile.ZipFile(buf, "r") as zf:
+        installer._safe_extract(zf, dest_dir)
 
 
 def test_installer_find_manifest_nested_and_missing(db_session: Session, tmp_path: Path):
@@ -297,6 +305,7 @@ def test_installer_find_manifest_nested_and_missing(db_session: Session, tmp_pat
 # ---------------------------------------------------------------------------
 # 3. Plugin Registry Management & Metrics
 # ---------------------------------------------------------------------------
+
 
 def test_registry_update_metrics_and_profiles(db_session: Session):
     """PluginRegistry update_metrics and profile updates."""

@@ -17,10 +17,8 @@ Tests:
 - /api/logs (list with limit and filters)
 """
 
-import io
 import json
-import zipfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
@@ -66,7 +64,7 @@ def test_sse_events_header_and_query(api_client: TestClient):
 def test_executions_cursor_pagination_and_filters(api_client: TestClient, db_session: Session):
     """GET /api/executions/page handles filtering and cursor pagination."""
     # Seed logs
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     for i in range(5):
         log = ExecutionLog(
             id=f"page_exec_{i:02d}",
@@ -173,7 +171,9 @@ def test_submit_execution_error_mappings(api_client: TestClient):
         assert "Plugin missing" in r.json()["detail"]
 
     # 2. PluginQueueFullError -> 429
-    with patch.object(GatewayService, "submit_execution", AsyncMock(side_effect=PluginQueueFullError("Queue saturated"))):
+    with patch.object(
+        GatewayService, "submit_execution", AsyncMock(side_effect=PluginQueueFullError("Queue saturated"))
+    ):
         r = api_client.post("/api/monitor/executions", json=payload)
         assert r.status_code == 429
         assert "Queue saturated" in r.json()["detail"]
@@ -185,7 +185,9 @@ def test_submit_execution_error_mappings(api_client: TestClient):
         assert "Forbidden join" in r.json()["detail"]
 
     # 4. ExecutionTimeoutError -> 504
-    with patch.object(GatewayService, "submit_execution", AsyncMock(side_effect=ExecutionTimeoutError("Query timed out"))):
+    with patch.object(
+        GatewayService, "submit_execution", AsyncMock(side_effect=ExecutionTimeoutError("Query timed out"))
+    ):
         r = api_client.post("/api/monitor/executions", json=payload)
         assert r.status_code == 504
         assert "timed out" in r.json()["detail"]
@@ -217,17 +219,23 @@ def test_submit_execution_background_wait_false(api_client: TestClient, db_sessi
 
 def test_approve_reject_abort_state_error(api_client: TestClient):
     """POST /api/monitor/executions/{id}/approve, reject, and abort handle ExecutionStateError."""
-    with patch.object(GatewayService, "approve_execution", AsyncMock(side_effect=ExecutionStateError("Cannot approve non-paused"))):
+    with patch.object(
+        GatewayService, "approve_execution", AsyncMock(side_effect=ExecutionStateError("Cannot approve non-paused"))
+    ):
         r = api_client.post("/api/monitor/executions/e1/approve", json={"approved_by": "admin"})
         assert r.status_code == 400
         assert "Cannot approve" in r.json()["detail"]
 
-    with patch.object(GatewayService, "reject_execution", AsyncMock(side_effect=ExecutionStateError("Cannot reject non-paused"))):
+    with patch.object(
+        GatewayService, "reject_execution", AsyncMock(side_effect=ExecutionStateError("Cannot reject non-paused"))
+    ):
         r = api_client.post("/api/monitor/executions/e1/reject", json={"reason": "bad"})
         assert r.status_code == 400
         assert "Cannot reject" in r.json()["detail"]
 
-    with patch.object(GatewayService, "abort_execution", AsyncMock(side_effect=ExecutionStateError("Cannot abort finished"))):
+    with patch.object(
+        GatewayService, "abort_execution", AsyncMock(side_effect=ExecutionStateError("Cannot abort finished"))
+    ):
         r = api_client.post("/api/monitor/executions/e1/abort")
         assert r.status_code == 400
         assert "Cannot abort" in r.json()["detail"]
@@ -292,7 +300,9 @@ def test_plugin_management_endpoints(api_client: TestClient, db_session: Session
     assert api_client.post("/api/plugins/nonexistent/sync").status_code == 404
 
     # Sync plugin execution error -> 500
-    with patch.object(GatewayService, "sync_plugin_catalog", AsyncMock(side_effect=PluginExecutionError("Sync timeout"))):
+    with patch.object(
+        GatewayService, "sync_plugin_catalog", AsyncMock(side_effect=PluginExecutionError("Sync timeout"))
+    ):
         res_sync_err = api_client.post("/api/plugins/plugin_mgr_test/sync")
         assert res_sync_err.status_code == 500
 
@@ -436,14 +446,17 @@ async def test_gateway_service_execution_actions(db_session: Session):
     db_session.add(log)
     db_session.commit()
 
-    with patch.object(service.state_machine, "approve_and_resume", AsyncMock(return_value=log)), \
-         patch.object(service.state_machine, "reject", AsyncMock(return_value=log)), \
-         patch.object(service.state_machine, "abort_execution", AsyncMock(return_value=log)):
-
+    with (
+        patch.object(service.state_machine, "approve_and_resume", AsyncMock(return_value=log)),
+        patch.object(service.state_machine, "reject", AsyncMock(return_value=log)),
+        patch.object(service.state_machine, "abort_execution", AsyncMock(return_value=log)),
+    ):
         resp_app = await service.approve_execution("paused_act_test", ApproveExecutionRequest(approved_by="tester"))
         assert resp_app.id == "paused_act_test"
 
-        resp_rej = await service.reject_execution("paused_act_test", RejectExecutionRequest(rejected_by="tester", reason="bad"))
+        resp_rej = await service.reject_execution(
+            "paused_act_test", RejectExecutionRequest(rejected_by="tester", reason="bad")
+        )
         assert resp_rej.id == "paused_act_test"
 
         resp_ab = await service.abort_execution("paused_act_test")
@@ -451,4 +464,3 @@ async def test_gateway_service_execution_actions(db_session: Session):
 
         resp_stop = await service.stop_execution("paused_act_test")
         assert resp_stop.id == "paused_act_test"
-

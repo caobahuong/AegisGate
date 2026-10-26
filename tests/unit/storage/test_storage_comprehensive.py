@@ -8,7 +8,7 @@ Specifically verifies:
    queries never purged), dry-run retention report.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from unittest.mock import patch
 
@@ -101,13 +101,17 @@ def test_knowledge_store_oserror_handling(db_session: Session, tmp_path: Path):
     target_file = docs_dir / "fail.md"
     target_file.write_text("ok", encoding="utf-8")
 
-    with patch.object(Path, "read_text", side_effect=OSError("Disk read error")):
-        with pytest.raises(StorageError, match="Failed to read file"):
-            store._read_file_safe("fail.md")
+    with (
+        patch.object(Path, "read_text", side_effect=OSError("Disk read error")),
+        pytest.raises(StorageError, match="Failed to read file"),
+    ):
+        store._read_file_safe("fail.md")
 
-    with patch.object(Path, "write_text", side_effect=OSError("Disk write error")):
-        with pytest.raises(StorageError, match="Failed to write file"):
-            store._write_file_safe("fail.md", "content")
+    with (
+        patch.object(Path, "write_text", side_effect=OSError("Disk write error")),
+        pytest.raises(StorageError, match="Failed to write file"),
+    ):
+        store._write_file_safe("fail.md", "content")
 
 
 def test_setting_store_description_and_defaults(db_session: Session):
@@ -142,7 +146,7 @@ def test_retention_empty_database_and_boundaries(db_session: Session, tmp_path: 
 
     # 2. Exact boundary timing:
     # Cutoff is (now - 30 days)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     cutoff = now - timedelta(days=30)
 
     # Older than cutoff by 1 second (MUST be pruned)
@@ -207,7 +211,7 @@ def test_retention_empty_database_and_boundaries(db_session: Session, tmp_path: 
 def test_log_store_paginate_comprehensive(db_session: Session):
     """LogStore.paginate_logs handles dates, search, status=ALL, and decoded cursors."""
     store = LogStore(db_session)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     for i in range(10):
         log = ExecutionLog(
@@ -245,4 +249,3 @@ def test_log_store_paginate_comprehensive(db_session: Session):
     # 4. Bad cursor format recovers gracefully
     items_bad_cur, _, _ = store.paginate_logs(cursor="bad_cursor!@#", limit=5)
     assert len(items_bad_cur) == 5
-

@@ -26,7 +26,6 @@ from core.gateway.event_bus import (
     get_event_bus,
     set_event_bus,
 )
-from core.gateway.sse_broadcaster import SSEBroadcaster
 
 
 @pytest.mark.asyncio

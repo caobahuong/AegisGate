@@ -162,7 +162,9 @@ async def test_reject_paused_execution(db_session: Session, mock_plugin: PluginP
 
 
 @pytest.mark.asyncio
-async def test_dry_run_failure_fail_closed(db_session: Session, mock_plugin: PluginProfile, monkeypatch: pytest.MonkeyPatch):
+async def test_dry_run_failure_fail_closed(
+    db_session: Session, mock_plugin: PluginProfile, monkeypatch: pytest.MonkeyPatch
+):
     """Verify that when dry_run crashes, FAIL_CLOSED_ON_DRY_RUN_ERROR=True marks execution REJECTED."""
     monkeypatch.setattr(settings, "FAIL_CLOSED_ON_DRY_RUN_ERROR", True)
     sm = ExecutionStateMachine(db_session)
@@ -182,7 +184,9 @@ async def test_dry_run_failure_fail_closed(db_session: Session, mock_plugin: Plu
 
 
 @pytest.mark.asyncio
-async def test_dry_run_failure_fail_open_pauses_for_review(db_session: Session, mock_plugin: PluginProfile, monkeypatch: pytest.MonkeyPatch):
+async def test_dry_run_failure_fail_open_pauses_for_review(
+    db_session: Session, mock_plugin: PluginProfile, monkeypatch: pytest.MonkeyPatch
+):
     """Verify that when dry_run crashes and FAIL_CLOSED_ON_DRY_RUN_ERROR=False, execution forces PAUSED_FOR_REVIEW."""
     monkeypatch.setattr(settings, "FAIL_CLOSED_ON_DRY_RUN_ERROR", False)
     sm = ExecutionStateMachine(db_session)
@@ -215,7 +219,9 @@ async def test_governance_crash_fails_closed(db_session: Session, mock_plugin: P
 
     with (
         patch.object(sm.registry, "get_client", return_value=mock_client),
-        patch("core.engine.state_machine.GovernanceEngine.inspect_query_and_plan", side_effect=Exception("Corrupted AST")),
+        patch(
+            "core.engine.state_machine.GovernanceEngine.inspect_query_and_plan", side_effect=Exception("Corrupted AST")
+        ),
     ):
         log = await sm.initiate_execution(
             target_id=mock_plugin.id,

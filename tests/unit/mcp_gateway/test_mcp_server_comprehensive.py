@@ -1,7 +1,6 @@
 """Comprehensive tests for AegisGate MCP Server tools and CLI behavior."""
 
 import json
-import os
 from unittest.mock import AsyncMock, patch
 
 import httpx
@@ -20,7 +19,10 @@ def fixture_mcp_test_engine(tmp_path):
     db_file = tmp_path / "test_mcp.db"
     test_engine = create_engine(f"sqlite:///{db_file}", connect_args={"check_same_thread": False})
     SQLModel.metadata.create_all(test_engine)
-    with patch.object(mcp_server, "engine", test_engine), patch.object(settings, "KNOWLEDGE_DOCS_DIR", tmp_path / "docs"):
+    with (
+        patch.object(mcp_server, "engine", test_engine),
+        patch.object(settings, "KNOWLEDGE_DOCS_DIR", tmp_path / "docs"),
+    ):
         yield test_engine
 
 
@@ -228,7 +230,9 @@ async def test_submit_execution_various_statuses():
         "auto_approved": False,
         "explain_plan": {"cost": 42.0},
     }
-    with patch.object(httpx.AsyncClient, "post", AsyncMock(return_value=httpx.Response(201, json=body_paused, request=req))):
+    with patch.object(
+        httpx.AsyncClient, "post", AsyncMock(return_value=httpx.Response(201, json=body_paused, request=req))
+    ):
         out = json.loads(await mcp_server.submit_execution("UPDATE items SET price = 10", target_id="target_1"))
         assert out["status"] == "PAUSED_FOR_REVIEW"
         assert out["auto_approved"] is False
@@ -243,7 +247,9 @@ async def test_submit_execution_various_statuses():
         "auto_approved": False,
         "error_message": "Execution was aborted by operator",
     }
-    with patch.object(httpx.AsyncClient, "post", AsyncMock(return_value=httpx.Response(201, json=body_abort, request=req))):
+    with patch.object(
+        httpx.AsyncClient, "post", AsyncMock(return_value=httpx.Response(201, json=body_abort, request=req))
+    ):
         out = json.loads(await mcp_server.submit_execution("SELECT * FROM huge", target_id="target_1"))
         assert out["status"] == "ABORTED"
         assert out["error_message"] == "Execution was aborted by operator"
