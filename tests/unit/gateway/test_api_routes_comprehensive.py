@@ -417,3 +417,38 @@ def test_rules_update_validation_and_errors(api_client: TestClient, db_session: 
 
     # Delete nonexistent rule -> 404
     assert api_client.delete("/api/rules/nonexistent_rule").status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_gateway_service_execution_actions(db_session: Session):
+    """Directly test GatewayService approve, reject, abort, and stop execution methods."""
+    from core.gateway.schemas import ApproveExecutionRequest, RejectExecutionRequest
+
+    service = GatewayService(db_session)
+    log = ExecutionLog(
+        id="paused_act_test",
+        target_id="target_act",
+        status="PAUSED_FOR_REVIEW",
+        query="UPDATE acc SET bal = 0",
+        query_type="WRITE",
+        created_at=utc_now(),
+    )
+    db_session.add(log)
+    db_session.commit()
+
+    with patch.object(service.state_machine, "approve_and_resume", AsyncMock(return_value=log)), \
+         patch.object(service.state_machine, "reject", AsyncMock(return_value=log)), \
+         patch.object(service.state_machine, "abort_execution", AsyncMock(return_value=log)):
+
+        resp_app = await service.approve_execution("paused_act_test", ApproveExecutionRequest(approved_by="tester"))
+        assert resp_app.id == "paused_act_test"
+
+        resp_rej = await service.reject_execution("paused_act_test", RejectExecutionRequest(rejected_by="tester", reason="bad"))
+        assert resp_rej.id == "paused_act_test"
+
+        resp_ab = await service.abort_execution("paused_act_test")
+        assert resp_ab.id == "paused_act_test"
+
+        resp_stop = await service.stop_execution("paused_act_test")
+        assert resp_stop.id == "paused_act_test"
+
