@@ -119,4 +119,3 @@ def test_init_db_percent_encoded_url_handling(tmp_path: Path):
     inspector = inspect(test_engine)
     assert "alembic_version" in inspector.get_table_names()
     assert "execution_logs" in inspector.get_table_names()
-

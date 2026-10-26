@@ -13,16 +13,13 @@ Executes:
 - U9 Content & copy consistency check
 """
 
-import asyncio
 import json
 import logging
 import os
-import sys
-import time
 from pathlib import Path
 from typing import Any
 
-from playwright.sync_api import Browser, BrowserContext, Page, sync_playwright
+from playwright.sync_api import Page, sync_playwright
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("audit_t6_ui")
@@ -128,7 +125,9 @@ def run_ui_audit():
             axe_all_violations.append({"screen": "Plugins Tab", "violations": v_plugins})
 
         # Tab: Governance & Rules
-        rules_tab = page.locator("button:has-text('Rules'), [role='tab']:has-text('Rules'), [role='tab']:has-text('Governance')").first
+        rules_tab = page.locator(
+            "button:has-text('Rules'), [role='tab']:has-text('Rules'), [role='tab']:has-text('Governance')"
+        ).first
         if rules_tab.count() > 0:
             rules_tab.click()
             page.wait_for_timeout(400)
@@ -137,7 +136,9 @@ def run_ui_audit():
             axe_all_violations.append({"screen": "Governance Rules Tab", "violations": v_rules})
 
         # Tab: Audit & Logs
-        audit_tab = page.locator("button:has-text('Audit'), [role='tab']:has-text('Audit'), [role='tab']:has-text('Logs')").first
+        audit_tab = page.locator(
+            "button:has-text('Audit'), [role='tab']:has-text('Audit'), [role='tab']:has-text('Logs')"
+        ).first
         if audit_tab.count() > 0:
             audit_tab.click()
             page.wait_for_timeout(400)
@@ -175,7 +176,9 @@ def run_ui_audit():
             page.wait_for_timeout(300)
 
         # User Guide Modal
-        guide_btn = page.locator("button[aria-label*='guide' i], button[title*='guide' i], header button:has-text('?')").first
+        guide_btn = page.locator(
+            "button[aria-label*='guide' i], button[title*='guide' i], header button:has-text('?')"
+        ).first
         if guide_btn.count() > 0:
             guide_btn.click()
             page.wait_for_selector("[role='dialog']")
@@ -206,12 +209,9 @@ def run_ui_audit():
             scroll_w = page.evaluate("document.documentElement.scrollWidth")
             inner_w = page.evaluate("window.innerWidth")
             if scroll_w > inner_w + 5:
-                overflow_findings.append({
-                    "viewport": name,
-                    "width": w,
-                    "scrollWidth": scroll_w,
-                    "overflow_px": scroll_w - inner_w
-                })
+                overflow_findings.append(
+                    {"viewport": name, "width": w, "scrollWidth": scroll_w, "overflow_px": scroll_w - inner_w}
+                )
 
         # Reset to 1920x1080
         page.set_viewport_size({"width": 1920, "height": 1080})
@@ -230,6 +230,7 @@ def run_ui_audit():
 
         # Submit an execution containing XSS probes via backend REST API, then verify rendering in UI
         import httpx
+
         for idx, payload in enumerate(xss_payloads):
             try:
                 httpx.post(
@@ -260,7 +261,9 @@ def run_ui_audit():
             "dialogs_triggered": dialogs_triggered,
             "xss_exploitable": xss_triggered,
             "console_logs_count": len(console_logs),
-            "console_warnings_or_errors": [l for l in console_logs if l["type"] in ("error", "warning")],
+            "console_warnings_or_errors": [
+                log_entry for log_entry in console_logs if log_entry["type"] in ("error", "warning")
+            ],
             "page_errors": page_errors,
             "axe_violations_summary": [
                 {

@@ -9,20 +9,14 @@ Examines:
 
 import io
 import json
-import os
-import subprocess
-import sys
 import zipfile
 from pathlib import Path
 from typing import Any
 
-import psutil
 import pytest
 from sqlmodel import Session
 
-from core.config import settings
 from core.engine.plugin_installer import PluginInstaller, PluginInstallerError
-from core.engine.plugin_linter import PluginLinter
 from sdk.aegisgate_sdk.base import BasePlugin
 from sdk.aegisgate_sdk.server import PluginServer
 
@@ -32,6 +26,7 @@ pytestmark = [pytest.mark.audit, pytest.mark.e2e]
 # ==============================================================================
 # 1. Adversarial Installer Attacks
 # ==============================================================================
+
 
 def test_zip_slip_and_traversal_attacks(db_session: Session, tmp_path: Path):
     """Verify that Zip Slip variants, drive letters, and Windows ADS are blocked."""
@@ -44,27 +39,34 @@ def test_zip_slip_and_traversal_attacks(db_session: Session, tmp_path: Path):
         "C:\\Windows\\system32\\calc.exe",
         "D:\\payload.py",
         "normal.py:stream_name",  # NTFS Alternate Data Stream
-        "\x00hidden.py",           # NUL byte injection
+        "\x00hidden.py",  # NUL byte injection
     ]
 
     for idx, bad_name in enumerate(bad_filenames):
         bio = io.BytesIO()
         with zipfile.ZipFile(bio, "w") as zf:
             zf.writestr(bad_name, "print('exploit')")
-            zf.writestr("manifest.json", json.dumps({
-                "id": "exploit_plugin",
-                "name": "Exploit",
-                "driver": "custom",
-                "entrypoint": "python adapter.py --serve",
-            }))
+            zf.writestr(
+                "manifest.json",
+                json.dumps(
+                    {
+                        "id": "exploit_plugin",
+                        "name": "Exploit",
+                        "driver": "custom",
+                        "entrypoint": "python adapter.py --serve",
+                    }
+                ),
+            )
         bio.seek(0)
 
         target_dir = tmp_path / f"staged_{idx}"
         target_dir.mkdir(parents=True, exist_ok=True)
         # Empty / NUL filenames cause unhandled PermissionError (Defect D-006)
-        with pytest.raises((PluginInstallerError, PermissionError)) as exc_info:
-            with zipfile.ZipFile(bio) as zf_test:
-                installer._safe_extract(zf_test, target_dir)
+        with (
+            pytest.raises((PluginInstallerError, PermissionError)) as exc_info,
+            zipfile.ZipFile(bio) as zf_test,
+        ):
+            installer._safe_extract(zf_test, target_dir)
 
         if exc_info.type is PluginInstallerError:
             assert any(term in str(exc_info.value).lower() for term in ["unsafe", "escapes", "not allowed"])
@@ -134,9 +136,9 @@ def test_git_url_attacks(db_session: Session, tmp_path: Path):
         "-u attacker.com/repo.git",
         "--upload-pack=evil",
         "https://user:password@github.com/repo.git",  # credentials in URL
-        "https://evil-unapproved-host.com/repo.git",   # unapproved host
-        "https://github.com:8443/repo.git",           # non-standard port
-        "ssh://git@github.com/repo.git",              # non-https scheme
+        "https://evil-unapproved-host.com/repo.git",  # unapproved host
+        "https://github.com:8443/repo.git",  # non-standard port
+        "ssh://git@github.com/repo.git",  # non-https scheme
     ]
 
     for bad_url in malicious_git_urls:
@@ -148,9 +150,9 @@ def test_git_url_attacks(db_session: Session, tmp_path: Path):
 # 2. SDK Concurrency / Abort Defect (Defect D-005)
 # ==============================================================================
 
+
 def test_aegisgate_sdk_abort_unsupported_during_execution():
     """Verify that aegisgate_sdk.PluginServer cannot handle abort while execute() is running."""
-    import io
     import time
 
     class SlowPlugin(BasePlugin):
@@ -180,12 +182,9 @@ def test_aegisgate_sdk_abort_unsupported_during_execution():
     # `for raw_line in self.stdin:` blocks inside `handle_request()` -> `execute()`.
     # Therefore, handle_request cannot return or process line 2 until line 1 has completely finished!
     t0 = time.perf_counter()
-    resp1 = server.handle_request(json.dumps({
-        "jsonrpc": "2.0",
-        "id": 1,
-        "method": "execute",
-        "params": {"query": "SELECT * FROM HugeTable"}
-    }))
+    resp1 = server.handle_request(
+        json.dumps({"jsonrpc": "2.0", "id": 1, "method": "execute", "params": {"query": "SELECT * FROM HugeTable"}})
+    )
     duration = time.perf_counter() - t0
 
     assert duration >= 0.45
@@ -195,6 +194,7 @@ def test_aegisgate_sdk_abort_unsupported_during_execution():
 # ==============================================================================
 # 3. Truthfulness Audit: MongoDB Plugin & Templates
 # ==============================================================================
+
 
 def test_mongodb_plugin_is_mock_implementation():
     """Verify that plugins/mongodb_plugin/adapter.py is purely a simulated mock."""

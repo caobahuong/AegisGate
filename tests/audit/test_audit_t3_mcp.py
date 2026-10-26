@@ -9,7 +9,7 @@ Examines:
 """
 
 import json
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 import httpx
 import pytest
@@ -17,7 +17,6 @@ from sqlmodel import Session
 
 from core.database import ExecutionLog, utc_now
 from core.gateway import mcp_server
-from tests.factories import make_execution_log
 
 pytestmark = [pytest.mark.audit, pytest.mark.e2e]
 

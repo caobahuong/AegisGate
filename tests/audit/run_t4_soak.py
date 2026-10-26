@@ -46,25 +46,31 @@ async def run_soak(duration_seconds: int = 60, concurrency: int = 10) -> dict[st
 
     # Base environment for child uvicorn workers
     base_env = dict(os.environ)
-    base_env.update({
-        "DATABASE_URL": db_url,
-        "EVENT_BUS": "db",
-        "HEARTBEAT_INTERVAL_SECONDS": "1.0",
-        "HEARTBEAT_TIMEOUT_SECONDS": "5.0",
-        "OUTBOX_POLL_INTERVAL_SECONDS": "0.1",
-        "AUTO_APPROVAL_DEFAULT": "true",
-        "ARCHIVE_DIR": str(archive_dir),
-        "PYTHONUNBUFFERED": "1",
-    })
+    base_env.update(
+        {
+            "DATABASE_URL": db_url,
+            "EVENT_BUS": "db",
+            "HEARTBEAT_INTERVAL_SECONDS": "1.0",
+            "HEARTBEAT_TIMEOUT_SECONDS": "5.0",
+            "OUTBOX_POLL_INTERVAL_SECONDS": "0.1",
+            "AUTO_APPROVAL_DEFAULT": "true",
+            "ARCHIVE_DIR": str(archive_dir),
+            "PYTHONUNBUFFERED": "1",
+        }
+    )
 
     # Initialize DB schema
-    from core.database import init_db
     from sqlmodel import create_engine
+
+    from core.database import init_db
+
     init_db(target_engine=create_engine(db_url))
 
     # Also seed target plugin into test db
-    from core.database import PluginProfile, get_session
     from sqlmodel import Session
+
+    from core.database import PluginProfile
+
     with Session(create_engine(db_url)) as sess:
         profile = PluginProfile(
             id="sqlserver_prod",
@@ -81,13 +87,33 @@ async def run_soak(duration_seconds: int = 60, concurrency: int = 10) -> dict[st
     port_b = 8802
 
     proc_a = subprocess.Popen(
-        [sys.executable, "-m", "uvicorn", "core.main:app", "--host", "127.0.0.1", "--port", str(port_a), "--no-access-log"],
+        [
+            sys.executable,
+            "-m",
+            "uvicorn",
+            "core.main:app",
+            "--host",
+            "127.0.0.1",
+            "--port",
+            str(port_a),
+            "--no-access-log",
+        ],
         env=base_env,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
     proc_b = subprocess.Popen(
-        [sys.executable, "-m", "uvicorn", "core.main:app", "--host", "127.0.0.1", "--port", str(port_b), "--no-access-log"],
+        [
+            sys.executable,
+            "-m",
+            "uvicorn",
+            "core.main:app",
+            "--host",
+            "127.0.0.1",
+            "--port",
+            str(port_b),
+            "--no-access-log",
+        ],
         env=base_env,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
@@ -166,7 +192,6 @@ async def run_soak(duration_seconds: int = 60, concurrency: int = 10) -> dict[st
 
     # Metrics sampling loop
     start_time = time.time()
-    next_sample = start_time
 
     while time.time() - start_time < duration_seconds:
         now = time.time()
@@ -205,7 +230,11 @@ async def run_soak(duration_seconds: int = 60, concurrency: int = 10) -> dict[st
         samples.append(sample)
         logger.info(
             "T=%.1fs | Submits: %d | RSS: %.1f MB | Workers: %d | DB: %.1f KB",
-            elapsed, total_submissions, sample["total_rss_mb"], child_count, db_size_kb,
+            elapsed,
+            total_submissions,
+            sample["total_rss_mb"],
+            child_count,
+            db_size_kb,
         )
 
         await asyncio.sleep(10.0)

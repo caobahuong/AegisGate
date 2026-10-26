@@ -1,6 +1,7 @@
 import json
 
-data = json.load(open("report/phase-5-audit/t6_ui_audit_evidence.json", encoding="utf-8"))
+with open("report/phase-5-audit/t6_ui_audit_evidence.json", encoding="utf-8") as f:
+    data = json.load(f)
 seen = set()
 for item in data["axe_violations_summary"]:
     for v in item["critical_or_serious"]:
