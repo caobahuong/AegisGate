@@ -10,8 +10,8 @@ from alembic import context
 # Ensure repository root is on sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from core.config import settings
 import core.database  # noqa: F401 - ensures SQLModel metadata is loaded
+from core.config import settings
 
 config = context.config
 

@@ -5,14 +5,16 @@ Revises: None
 Create Date: 2026-10-26
 """
 
-from typing import Sequence, Union
-from alembic import op
+from collections.abc import Sequence
+
 import sqlalchemy as sa
 
+from alembic import op
+
 revision: str = "001"
-down_revision: Union[str, None] = None
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = None
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -80,8 +82,8 @@ def upgrade() -> None:
         sa.Column("query_type", sa.String(), nullable=False),
         sa.Column("reasoning", sa.Text(), nullable=False, server_default=""),
         sa.Column("status", sa.String(), nullable=False, server_default="PENDING"),
-        sa.Column("explain_plan_json", sa.Text(), nullable=False, server_default="{}"),
-        sa.Column("violations_json", sa.Text(), nullable=False, server_default="[]"),
+        sa.Column("explain_plan_json", sa.Text(), nullable=True),
+        sa.Column("violations_json", sa.Text(), nullable=True, server_default="[]"),
         sa.Column("execution_time_ms", sa.Float(), nullable=True),
         sa.Column("auto_approved", sa.Boolean(), nullable=False, server_default="0"),
         sa.Column("approved_by", sa.String(), nullable=True),
