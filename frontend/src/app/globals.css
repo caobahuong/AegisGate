@@ -12,7 +12,17 @@
   /* App Canvas & Card Surfaces */
   --color-background: 248 250 252; /* #f8fafc (slate-50 canvas) */
   --color-surface: 255 255 255; /* #ffffff (pure white card/sidebar) */
+  --color-surface-muted: 241 245 249; /* #f1f5f9 */
+  --color-surface-elevated: 255 255 255; /* #ffffff */
   --color-border: 226 232 240; /* #e2e8f0 (subtle card border) */
+  --color-border-muted: 241 245 249; /* #f1f5f9 */
+  --color-text-primary: 15 23 42; /* #0f172a */
+  --color-text-muted: 100 116 139; /* #64748b */
+  --color-accent: 79 70 229; /* #4f46e5 (indigo-600) */
+  --color-accent-muted: 224 231 255; /* #e0e7ff */
+  --color-success: 5 150 105; /* #059669 (emerald-600) */
+  --color-warning: 217 119 6; /* #d97706 (amber-600) */
+  --color-danger: 225 29 72; /* #e11d48 (rose-600) */
 
   /* Slate Scale (Inverted for Light Mode) */
   --color-slate-950: 248 250 252; /* Main page background: #f8fafc */
@@ -46,7 +56,17 @@
   /* App Canvas & Card Surfaces */
   --color-background: 2 6 23; /* #020617 (slate-950) */
   --color-surface: 15 23 42; /* #0f172a (slate-900) */
+  --color-surface-muted: 23 32 51; /* #172033 */
+  --color-surface-elevated: 30 41 59; /* #1e293b */
   --color-border: 30 41 59; /* #1e293b (slate-800) */
+  --color-border-muted: 23 32 51; /* #172033 */
+  --color-text-primary: 241 245 249; /* #f1f5f9 */
+  --color-text-muted: 148 163 184; /* #94a3b8 */
+  --color-accent: 129 140 248; /* #818cf8 */
+  --color-accent-muted: 49 46 129; /* #312e81 */
+  --color-success: 52 211 153; /* #34d399 */
+  --color-warning: 251 191 36; /* #fbbf24 */
+  --color-danger: 251 113 133; /* #fb7185 */
 
   /* Slate Scale (Native Dark Mode) */
   --color-slate-950: 2 6 23; /* #020617 */
