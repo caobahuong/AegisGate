@@ -13,7 +13,7 @@ export interface LiveExecutionMonitorProps {
   executions: ExecutionResponse[];
   selectedExecution: ExecutionResponse | null;
   onSelectExecution: (exec: ExecutionResponse) => void;
-  onSubmitQuery: (targetId: string, query: string, reasoning: string) => Promise<void>;
+  onSubmitQuery: (targetId: string, query: string, reasoning: string) => Promise<void | ExecutionResponse>;
   onApprove: (id: string) => Promise<void>;
   onReject: (id: string) => Promise<void>;
   onAbort: (id: string) => Promise<void>;

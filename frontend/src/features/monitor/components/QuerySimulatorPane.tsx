@@ -2,12 +2,12 @@
 
 import React, { useState } from "react";
 import { Send, Terminal } from "lucide-react";
-import { PluginProfileResponse } from "@/types";
+import { ExecutionResponse, PluginProfileResponse } from "@/types";
 import { Button } from "@/shared/ui/Button";
 
 export interface QuerySimulatorPaneProps {
   plugins: PluginProfileResponse[];
-  onSubmitQuery: (targetId: string, query: string, reasoning: string) => Promise<void>;
+  onSubmitQuery: (targetId: string, query: string, reasoning: string) => Promise<void | ExecutionResponse>;
   isSubmitting?: boolean;
   selectedExecutionId?: string | null;
 }
