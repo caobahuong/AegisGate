@@ -22,7 +22,10 @@ target_metadata = SQLModel.metadata
 
 
 def get_url() -> str:
-    return config.get_main_option("sqlalchemy.url") or settings.DATABASE_URL
+    url = config.get_main_option("sqlalchemy.url")
+    if not url or url.startswith("driver://"):
+        return settings.DATABASE_URL
+    return url
 
 
 def run_migrations_offline() -> None:
