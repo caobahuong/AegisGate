@@ -1,0 +1,247 @@
+[
+  {
+    "id": "D-001",
+    "title": "tasks.py seed crashes on fresh clone due to uninitialized plugin registry",
+    "severity": "S2",
+    "type": "DevEx/Build",
+    "tags": ["Onboarding", "DevEx"],
+    "area": "scripts/seed_demo.py",
+    "environment": "Windows 11, Python 3.13, clean clone / empty database",
+    "steps_to_reproduce": [
+      "1. Clone repo into fresh folder: git clone https://github.com/caobahuong/AegisGate.git fresh_dir",
+      "2. cd fresh_dir",
+      "3. python scripts/tasks.py seed"
+    ],
+    "expected": "Database is migrated and demo catalog, governance rules, and simulated executions are seeded cleanly.",
+    "actual": "Script fails with SystemExit 1 because 'sqlserver_prod' is not found in PluginProfile table.",
+    "repro_rate": "3/3",
+    "evidence_links": ["report/phase-5-audit/t0_baseline_seed_failure.txt"],
+    "suspected_cause": "scripts/seed_demo.py:59-62 queries PluginProfile without discovering or registering plugins via PluginRegistry first.",
+    "suggested_direction": "Invoke PluginRegistry.discover_and_register() or register bundled plugins prior to querying target_id in seed_demo.py.",
+    "related_defects": []
+  },
+  {
+    "id": "D-002",
+    "title": "CI workflow api-types drift check fails due to uncommitted Phase 4 TypeScript types",
+    "severity": "S2",
+    "type": "DevEx/Build",
+    "tags": ["CI", "DevEx"],
+    "area": "frontend/src/types/api.generated.ts",
+    "environment": "GitHub Actions CI / Local Ubuntu & Windows",
+    "steps_to_reproduce": [
+      "1. python scripts/gen_api_types.py",
+      "2. cd frontend && npm run gen:types",
+      "3. git diff --exit-code src/types/api.generated.ts"
+    ],
+    "expected": "git diff --exit-code exits with code 0 indicating no uncommitted API schema drift.",
+    "actual": "git diff exits with code 1 showing 100+ lines of changes for /api/executions/page, wait, and last_event_id.",
+    "repro_rate": "3/3",
+    "evidence_links": ["report/phase-5-audit/t0_api_types_drift.diff"],
+    "suspected_cause": "Phase 4 scale endpoints were merged into backend OpenAPI schema without updating and committing api.generated.ts.",
+    "suggested_direction": "Run npm run gen:types inside frontend/ and commit the generated api.generated.ts.",
+    "related_defects": []
+  },
+  {
+    "id": "D-003",
+    "title": "Frontend CI step Prettier Format Check fails on LiveExecutionMonitor.tsx and SessionCard.tsx",
+    "severity": "S2",
+    "type": "DevEx/Build",
+    "tags": ["CI", "Frontend"],
+    "area": "frontend/src/features/monitor/",
+    "environment": "GitHub Actions CI / Local node 20",
+    "steps_to_reproduce": [
+      "1. cd frontend",
+      "2. npm run format:check"
+    ],
+    "expected": "Prettier reports all files formatted cleanly and exits with code 0.",
+    "actual": "Exits with code 1: [warn] src/features/monitor/components/LiveExecutionMonitor.tsx and SessionCard.tsx.",
+    "repro_rate": "3/3",
+    "evidence_links": ["report/phase-5-audit/t0_prettier_check.log"],
+    "suspected_cause": "scripts/tasks.py check did not include npm run format:check, allowing unformatted code to pass local verification.",
+    "suggested_direction": "Run cd frontend && npm run format, and add npm run format:check to scripts/tasks.py check.",
+    "related_defects": []
+  },
+  {
+    "id": "D-004",
+    "title": "Governance rule type MAX_EXECUTION_TIME is completely ignored at runtime",
+    "severity": "S2",
+    "type": "Functional",
+    "tags": ["Governance", "Timeout"],
+    "area": "core/engine/governance.py",
+    "environment": "FastAPI Core Gateway, Python 3.13",
+    "steps_to_reproduce": [
+      "1. Create a governance rule with rule_type='MAX_EXECUTION_TIME', expression='1.0', is_active=True.",
+      "2. Submit query 'SELECT * FROM Users WHERE id = 1' through /api/monitor/executions.",
+      "3. Inspect GovernanceEngine.inspect_query_and_plan and TimeoutGuard.get_timeout_for_query."
+    ],
+    "expected": "Governance engine validates execution time threshold or TimeoutGuard enforces 1.0s limit instead of 15.0s default.",
+    "actual": "No violation is raised and TimeoutGuard defaults to 15.0s; rule expression has zero effect on execution.",
+    "repro_rate": "3/3",
+    "evidence_links": ["report/phase-5-audit/t1_backend_evidence.json"],
+    "suspected_cause": "core/engine/governance.py:66-124 lacks an elif rule_type == 'MAX_EXECUTION_TIME' clause, and state_machine.py:354 does not pass rule limits.",
+    "suggested_direction": "Parse active MAX_EXECUTION_TIME rules and pass custom_limit to TimeoutGuard.get_timeout_for_query in state_machine.py.",
+    "related_defects": []
+  },
+  {
+    "id": "D-005",
+    "title": "Plugins built with aegisgate_sdk.PluginServer cannot be aborted while executing",
+    "severity": "S2",
+    "type": "Robustness",
+    "tags": ["SDK", "Concurrency"],
+    "area": "sdk/aegisgate_sdk/server.py",
+    "environment": "Plugin Subprocess, Python 3.13",
+    "steps_to_reproduce": [
+      "1. Implement a BasePlugin whose execute() method runs a long query (e.g. 5 seconds).",
+      "2. Run via PluginServer(plugin).run().",
+      "3. Send 'execute' JSON-RPC request on stdin, followed immediately by 'abort' JSON-RPC request."
+    ],
+    "expected": "Server reads and processes 'abort' concurrently to terminate the active session.",
+    "actual": "Server blocks synchronously on execute() and does not read or handle 'abort' until execute() completes.",
+    "repro_rate": "3/3",
+    "evidence_links": ["tests/audit/test_audit_t2_plugins_installer.py"],
+    "suspected_cause": "sdk/aegisgate_sdk/server.py:106-110 iterates over sys.stdin synchronously on a single thread without concurrency.",
+    "suggested_direction": "Adopt a thread pool or concurrent abort handler in PluginServer matching plugins/sqlserver_plugin/adapter.py.",
+    "related_defects": []
+  },
+  {
+    "id": "D-006",
+    "title": "PluginInstaller._safe_extract crashes with unhandled PermissionError on empty/NUL entry name",
+    "severity": "S3",
+    "type": "Robustness",
+    "tags": ["Input-handling", "Security"],
+    "area": "core/engine/plugin_installer.py",
+    "environment": "FastAPI Core Gateway, Windows 11 / Linux",
+    "steps_to_reproduce": [
+      "1. Construct a ZIP archive containing an entry named '' or '\\x00hidden.py'.",
+      "2. Upload via POST /api/plugins/install/zip or call installer._safe_extract(zf, dest)."
+    ],
+    "expected": "PluginInstallerError('Unsafe or empty path in ZIP') is raised and HTTP 400/422 returned.",
+    "actual": "target resolves to dest_root directory; open(target, 'wb') crashes with PermissionError: [Errno 13] (HTTP 500).",
+    "repro_rate": "3/3",
+    "evidence_links": ["tests/audit/test_audit_t2_plugins_installer.py"],
+    "suspected_cause": "core/engine/plugin_installer.py:223 does not check if not name or not name.strip() before opening destination file.",
+    "suggested_direction": "Add validation if not name or not name.strip(): raise PluginInstallerError('Empty entry name in ZIP').",
+    "related_defects": []
+  },
+  {
+    "id": "D-007",
+    "title": "mcp_server.py submit_execution drops error_message when status is FAILED",
+    "severity": "S3",
+    "type": "Functional",
+    "tags": ["MCP"],
+    "area": "core/gateway/mcp_server.py",
+    "environment": "FastMCP Stdio Server, Python 3.13",
+    "steps_to_reproduce": [
+      "1. Submit execution that fails with status='FAILED' (e.g. process crash or janitor reap).",
+      "2. Call submit_execution() tool from MCP client."
+    ],
+    "expected": "Returned JSON includes 'error_message' describing the worker failure.",
+    "actual": "JSON payload contains 'status': 'FAILED' but 'error_message' key is omitted.",
+    "repro_rate": "3/3",
+    "evidence_links": ["tests/audit/test_audit_t3_mcp.py"],
+    "suspected_cause": "core/gateway/mcp_server.py:206 only checks if ex['status'] in ('REJECTED', 'TIMEOUT', 'ABORTED').",
+    "suggested_direction": "Add 'FAILED' to the status tuple in line 206: if ex['status'] in ('REJECTED', 'TIMEOUT', 'ABORTED', 'FAILED'):.",
+    "related_defects": []
+  },
+  {
+    "id": "D-008",
+    "title": "Critical and Serious WCAG 2.1 AA accessibility violations across Dashboard, Tabs and MCP Modal",
+    "severity": "S2",
+    "type": "Accessibility",
+    "tags": ["Accessibility", "WCAG", "Frontend"],
+    "area": "frontend/src/components/",
+    "environment": "Next.js 14, Playwright Chromium, axe-core 4.14",
+    "steps_to_reproduce": [
+      "1. Navigate to http://localhost:3000.",
+      "2. Inject axe-core into page and execute axe.run().",
+      "3. Open MCP Setup modal and execute axe.run()."
+    ],
+    "expected": "Zero critical or serious WCAG 2.1 AA violations.",
+    "actual": "Select elements lack accessible name (select-name), MCP Modal tab references non-existent ID (aria-valid-attr-value), label mismatch.",
+    "repro_rate": "3/3",
+    "evidence_links": ["report/phase-5-audit/t6_ui_audit_evidence.json"],
+    "suspected_cause": "Filter <select> tags lack aria-label; tab-claude specifies aria-controls='tabpanel-claude' but element has no matching ID.",
+    "suggested_direction": "Add aria-label to all <select> elements, ensure aria-controls points to real DOM IDs, and align button aria-label with visible text.",
+    "related_defects": []
+  },
+  {
+    "id": "D-009",
+    "title": "GET /api/executions/page silently swallows malformed cursor and returns HTTP 200 first page",
+    "severity": "S3",
+    "type": "Robustness",
+    "tags": ["Input-handling", "API"],
+    "area": "core/storage/log_store.py",
+    "environment": "FastAPI REST API, Python 3.13",
+    "steps_to_reproduce": [
+      "1. Send GET /api/executions/page?cursor=INVALID_BASE64_GARBAGE."
+    ],
+    "expected": "Endpoint returns HTTP 400 Bad Request indicating invalid pagination cursor.",
+    "actual": "Endpoint suppresses exception with contextlib.suppress and returns HTTP 200 with the first page.",
+    "repro_rate": "3/3",
+    "evidence_links": ["report/phase-5-audit/t1_backend_evidence.json"],
+    "suspected_cause": "core/storage/log_store.py:131 uses with contextlib.suppress(Exception): around base64 decode.",
+    "suggested_direction": "Raise ValueError on cursor decode failure and handle in api_routes.py with HTTPException(400, 'Invalid pagination cursor').",
+    "related_defects": []
+  },
+  {
+    "id": "D-010",
+    "title": "mongodb_plugin is purely simulated mock but requirements.txt and docs imply real driver",
+    "severity": "S4",
+    "type": "Docs",
+    "tags": ["Docs", "KnownLimitation"],
+    "area": "plugins/mongodb_plugin/",
+    "environment": "Plugins directory",
+    "steps_to_reproduce": [
+      "1. Inspect plugins/mongodb_plugin/adapter.py.",
+      "2. Inspect plugins/mongodb_plugin/requirements.txt."
+    ],
+    "expected": "Plugin either implements live PyMongo connection pooling or documentation clearly identifies it as reference mock.",
+    "actual": "requirements.txt requires pymongo, but adapter.py never imports pymongo or connects to a real database.",
+    "repro_rate": "3/3",
+    "evidence_links": ["tests/audit/test_audit_t2_plugins_installer.py"],
+    "suspected_cause": "MongoDB plugin was authored as a reference mock architecture demonstrating document store schema extraction.",
+    "suggested_direction": "Update plugins/mongodb_plugin/README.md and docstrings to clearly state it is a simulated mock reference adapter.",
+    "related_defects": []
+  },
+  {
+    "id": "D-011",
+    "title": "is_unbounded_scan heuristic does not detect arithmetic inequality or LIKE tautologies",
+    "severity": "S3",
+    "type": "Functional",
+    "tags": ["Governance", "Security", "KnownLimitation"],
+    "area": "plugins/sql_inspector.py",
+    "environment": "sql_inspector.py",
+    "steps_to_reproduce": [
+      "1. Evaluate is_unbounded_scan('SELECT * FROM Users WHERE 1 < 2').",
+      "2. Evaluate is_unbounded_scan('SELECT * FROM Users WHERE \\'x\\' LIKE \\'x\\'')."
+    ],
+    "expected": "Queries with constant tautological predicates are classified as unbounded scans.",
+    "actual": "Both queries return is_unbounded_scan() == False and bypass the FORBID_TABLE_SCAN check.",
+    "repro_rate": "3/3",
+    "evidence_links": ["report/phase-5-audit/t1_sql_governance_catalog_results.json"],
+    "suspected_cause": "plugins/sql_inspector.py:317-326 only checks operators in ('=', '<=', '>=', '<>', '!=') with identical operand tokens.",
+    "suggested_direction": "Expand _is_tautology to evaluate basic numeric comparisons (e.g. 1 < 2) and identical string LIKE literals.",
+    "related_defects": []
+  },
+  {
+    "id": "D-012",
+    "title": "Inactive Navigation Tabs and Sidebar items fail WCAG AA color contrast in Light mode",
+    "severity": "S3",
+    "type": "Accessibility",
+    "tags": ["Accessibility", "WCAG", "Frontend"],
+    "area": "frontend/src/components/Sidebar.tsx",
+    "environment": "Next.js 14, Light Mode, Chrome",
+    "steps_to_reproduce": [
+      "1. Open dashboard in Light theme at http://localhost:3000.",
+      "2. Measure contrast ratio of inactive tab labels ('Pluggable Targets', 'Knowledge & Rules', 'Audit Logs').",
+      "3. Measure contrast ratio of target items in Sidebar."
+    ],
+    "expected": "Text contrast ratio against white background is >= 4.5:1.",
+    "actual": "Measured contrast ratios are 2.56:1 (#94a3b8 on white) and 1.23:1 (#e2e8f0 on white).",
+    "repro_rate": "3/3",
+    "evidence_links": ["report/phase-5-audit/t6_ui_audit_evidence.json"],
+    "suspected_cause": "Tailwind text-slate-400/500 and inverted light-mode slate tokens render washed out on #ffffff.",
+    "suggested_direction": "Update inactive tab and sidebar text classes in Light mode to text-slate-600 or text-slate-700 (>= 4.5:1 ratio).",
+    "related_defects": []
+  }
+]

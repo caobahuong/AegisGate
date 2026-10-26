@@ -1,0 +1,1502 @@
+[
+  {
+    "query": "SELECT * FROM Users -- WHERE id = 1",
+    "description": "Comment hiding WHERE clause",
+    "expected": {
+      "unbounded": true,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": true,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM Users /* inline comment */ WHERE id = 1",
+    "description": "C-style inline comment",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM Users /* multi-line\ncomment\nwith WHERE */ WHER...",
+    "description": "Multi-line comment",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM Users /* nested /* comment */ */ WHERE id = 1",
+    "description": "Nested comment",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM Users WHERE id = 1 -- comment at end",
+    "description": "Comment at query end",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "-- Leading comment\nSELECT * FROM Users WHERE id = 1",
+    "description": "Leading single-line comment",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "/* Leading block comment */ SELECT * FROM Users WHERE id = 1",
+    "description": "Leading block comment",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM Users WHERE id = 1 /* unterminated comment",
+    "description": "Unterminated block comment",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM Users WHERE id = 1 --\nAND status = 'active'",
+    "description": "Comment with newline continuation",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM Users WHERE id = 1 -- WHERE 1=1",
+    "description": "Comment containing fake filter",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT 'DROP TABLE users' FROM Users WHERE id = 1",
+    "description": "String literal containing WRITE keyword",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT '-- WHERE 1=1' FROM Users WHERE id = 1",
+    "description": "String literal containing comment syntax",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT 'O''Reilly' FROM Users WHERE id = 1",
+    "description": "Escaped single quote in literal",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT 'Users JOIN Orders' FROM Users WHERE id = 1",
+    "description": "String literal containing JOIN keywords",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT 'UPDATED_AT' FROM Users WHERE id = 1",
+    "description": "String containing column name with WRITE prefix",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT '' FROM Users WHERE id = 1",
+    "description": "Empty string literal",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT N'Unicode string' FROM Users WHERE id = 1",
+    "description": "N-prefix Unicode string literal",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT 'a', 'b', 'c' FROM Users WHERE id = 1",
+    "description": "Multiple comma-separated strings",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT 'SELECT * INTO new_table' FROM Users WHERE id = 1",
+    "description": "Literal containing SELECT INTO",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT '''' FROM Users WHERE id = 1",
+    "description": "String with single escaped quote",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM [Users] WHERE [id] = 1",
+    "description": "SQL Server bracketed table and column",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM \"Users\" WHERE \"id\" = 1",
+    "description": "ANSI double-quoted identifiers",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM `Users` WHERE `id` = 1",
+    "description": "MySQL/backtick identifiers",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM [Order Details] WHERE [Unit Price] > 10",
+    "description": "Bracketed identifiers with spaces",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM [dbo].[Users] WHERE id = 1",
+    "description": "Bracketed schema-qualified table",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM [Users] JOIN [Orders] ON [Users].id = [Orders]...",
+    "description": "Bracketed JOIN tables",
+    "expected": {
+      "unbounded": false,
+      "joins": true,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": true,
+      "joins": true,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT [select] FROM [from] WHERE [where] = 1",
+    "description": "Keywords as bracketed identifier names",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT [u.id] FROM [Users] u WHERE u.id = 1",
+    "description": "Identifier containing dots",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM [Users]]Escaped] WHERE id = 1",
+    "description": "Escaped closing bracket in table name",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM \"Users\"\"Escaped\" WHERE id = 1",
+    "description": "Escaped double quote in identifier",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "sElEcT * fRoM Users wHeRe id = 1",
+    "description": "Mixed case keywords",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT\t*\r\nFROM\r\nUsers\r\nWHERE\tid\t=\t1",
+    "description": "Tabs, CRLF, and extra whitespace",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT   *    FROM     Users      WHERE       id = 1",
+    "description": "Excessive spaces between tokens",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT\n*\nFROM\nUsers\nWHERE\nid\n=\n1",
+    "description": "Only newlines separating tokens",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM Users WHERE ID=1",
+    "description": "Zero spaces around operator",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM users join orders on users.id=orders.user_id",
+    "description": "Lower-case JOIN",
+    "expected": {
+      "unbounded": false,
+      "joins": true,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": true,
+      "joins": true,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM users, orders WHERE users.id=orders.user_id",
+    "description": "Comma join with no spaces around comma",
+    "expected": {
+      "unbounded": false,
+      "joins": true,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": true,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "   SELECT * FROM Users WHERE id = 1   ",
+    "description": "Leading and trailing whitespace",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM Users WHERE ( ( ( id = 1 ) ) )",
+    "description": "Deeply nested parentheses around WHERE",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM Users WHERE 1 = 1",
+    "description": "Tautology WHERE 1=1 (Unbounded scan)",
+    "expected": {
+      "unbounded": true,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": true,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM Users WHERE 'a' = 'a'",
+    "description": "String tautology 'a'='a'",
+    "expected": {
+      "unbounded": true,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": true,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM Users WHERE TRUE",
+    "description": "Boolean literal tautology TRUE",
+    "expected": {
+      "unbounded": true,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": true,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM Users WHERE NOT FALSE",
+    "description": "Boolean negated tautology NOT FALSE",
+    "expected": {
+      "unbounded": true,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": true,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM Users WHERE 0 = 0",
+    "description": "Zero equality tautology 0=0",
+    "expected": {
+      "unbounded": true,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": true,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM Users WHERE (1 = 1)",
+    "description": "Parenthesized tautology (1=1)",
+    "expected": {
+      "unbounded": true,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": true,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM Users WHERE 1 = 1 AND 2 = 2",
+    "description": "Compound AND tautology",
+    "expected": {
+      "unbounded": true,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": true,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM Users WHERE 1 = 1 OR id = 5",
+    "description": "Tautology with OR clause",
+    "expected": {
+      "unbounded": true,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": true,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM Users WHERE 1 < 2",
+    "description": "Inequality tautology 1 < 2 (bypasses naive tautology check)",
+    "expected": {
+      "unbounded": true,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": true,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM Users WHERE 'x' LIKE 'x'",
+    "description": "LIKE tautology 'x' LIKE 'x' (bypasses PUNCT check)",
+    "expected": {
+      "unbounded": true,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": true,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM Users WHERE 10 >= 10",
+    "description": "Greater-or-equal tautology 10 >= 10",
+    "expected": {
+      "unbounded": true,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": true,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "WITH cte AS (SELECT * FROM Users WHERE id = 1) SELECT * FROM...",
+    "description": "Simple CTE with filter",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": true,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "WITH cte AS (SELECT * FROM Users) SELECT * FROM cte JOIN Ord...",
+    "description": "CTE joined with table",
+    "expected": {
+      "unbounded": false,
+      "joins": true,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": true,
+      "joins": true,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM Users u, Orders o, Products p WHERE u.id = o.u...",
+    "description": "Three-table comma join",
+    "expected": {
+      "unbounded": false,
+      "joins": true,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": true,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM Users LEFT OUTER JOIN Orders ON Users.id = Ord...",
+    "description": "LEFT OUTER JOIN",
+    "expected": {
+      "unbounded": false,
+      "joins": true,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": true,
+      "joins": true,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM Users CROSS JOIN Orders",
+    "description": "CROSS JOIN",
+    "expected": {
+      "unbounded": false,
+      "joins": true,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": true,
+      "joins": true,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM Users FULL JOIN Orders ON Users.id = Orders.us...",
+    "description": "FULL JOIN",
+    "expected": {
+      "unbounded": false,
+      "joins": true,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": true,
+      "joins": true,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM Users NATURAL JOIN Orders",
+    "description": "NATURAL JOIN",
+    "expected": {
+      "unbounded": false,
+      "joins": true,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": true,
+      "joins": true,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM (SELECT * FROM Users WHERE id = 1) sub",
+    "description": "Derived table subquery with filter",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": true,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM (SELECT * FROM Users, Orders WHERE Users.id = ...",
+    "description": "Subquery with comma join",
+    "expected": {
+      "unbounded": false,
+      "joins": true,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": true,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": true,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM Users WHERE id IN (SELECT user_id FROM Orders)",
+    "description": "Subquery inside IN predicate",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT 1; DROP TABLE Users;",
+    "description": "Multi-statement injection with DROP TABLE",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "WRITE"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "WRITE",
+      "statements": 2
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT 1; SELECT 2;",
+    "description": "Multiple benign SELECT statements",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 2
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "INSERT INTO Users (name) VALUES ('Alice');",
+    "description": "Standard INSERT",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "WRITE"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "WRITE",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "UPDATE Users SET name = 'Bob' WHERE id = 1;",
+    "description": "Standard UPDATE",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "WRITE"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "WRITE",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "DELETE FROM Users WHERE id = 1;",
+    "description": "Standard DELETE",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "WRITE"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "WRITE",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "TRUNCATE TABLE Users;",
+    "description": "TRUNCATE statement",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "WRITE"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "WRITE",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "MERGE INTO Target USING Source ON Target.id = Source.id WHEN...",
+    "description": "MERGE statement",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "WRITE"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "WRITE",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "EXEC sp_who2;",
+    "description": "Stored procedure execution via EXEC",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "WRITE"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "WRITE",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "EXECUTE('SELECT 1');",
+    "description": "Dynamic SQL via EXECUTE",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "WRITE"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "WRITE",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * INTO NewUsers FROM Users WHERE id = 1;",
+    "description": "SELECT INTO write statement",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "WRITE"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "WRITE",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "",
+    "description": "Completely empty query",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "WRITE"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "WRITE",
+      "statements": 0
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "   ",
+    "description": "Whitespace only query",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "WRITE"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "WRITE",
+      "statements": 0
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA...",
+    "description": "Very long table identifier (128 chars)",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT col_0,col_1,col_2,col_3,col_4,col_5,col_6,col_7,col_8...",
+    "description": "Query with 100 columns",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  },
+  {
+    "query": "SELECT * FROM Users WHERE id = 1\n-- comment line\n-- comment ...",
+    "description": "Huge query with 500 comment lines (15 KB)",
+    "expected": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ"
+    },
+    "actual": {
+      "unbounded": false,
+      "joins": false,
+      "type": "READ",
+      "statements": 1
+    },
+    "anomalies": {
+      "bypassed_unbounded": false,
+      "bypassed_joins": false,
+      "bypassed_classification": false
+    }
+  }
+]

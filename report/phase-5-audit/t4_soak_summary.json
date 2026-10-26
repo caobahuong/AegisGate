@@ -1,0 +1,14 @@
+{
+  "duration_seconds": 45,
+  "concurrency": 8,
+  "total_submissions": 4504,
+  "total_errors": 0,
+  "throughput_rps": 100.09,
+  "latency_p50_sec": 0.0268,
+  "latency_p95_sec": 0.0525,
+  "latency_p99_sec": 0.0697,
+  "initial_rss_mb": 173.7,
+  "final_rss_mb": 179.06,
+  "rss_growth_mb": 5.36,
+  "csv_evidence": "report\\phase-5-audit\\t4_soak_metrics.csv"
+}
