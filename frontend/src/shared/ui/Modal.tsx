@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useId } from "react";
+import React, { useId, useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFocusTrap } from "@/shared/hooks/useFocusTrap";
@@ -28,6 +29,7 @@ export const Modal: React.FC<ModalProps> = ({
   className,
   closeOnBackdrop = true,
 }) => {
+  const [mounted, setMounted] = useState(false);
   const titleId = useId();
   const descriptionId = useId();
   const containerRef = useFocusTrap<HTMLDivElement>({
@@ -35,7 +37,11 @@ export const Modal: React.FC<ModalProps> = ({
     onClose,
   });
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!isOpen || !mounted) return null;
 
   const maxWidthStyles = {
     sm: "max-w-sm",
@@ -47,9 +53,9 @@ export const Modal: React.FC<ModalProps> = ({
     "4xl": "max-w-4xl",
   };
 
-  return (
+  const modalContent = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-black/70 backdrop-blur-xs animate-in fade-in duration-150"
+      className="fixed inset-0 m-0 z-[60] flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-black/70 backdrop-blur-xs animate-in fade-in duration-150"
       onClick={(e) => {
         if (closeOnBackdrop && e.target === e.currentTarget) {
           onClose();
@@ -73,35 +79,41 @@ export const Modal: React.FC<ModalProps> = ({
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40">
           <div className="flex items-center space-x-3 pr-4">
             {icon && (
-              <div className="text-indigo-600 dark:text-indigo-400 flex-shrink-0">{icon}</div>
+              <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                {icon}
+              </div>
             )}
             <div>
               <h2
                 id={titleId}
-                className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight"
+                className="text-base font-bold text-slate-900 dark:text-slate-100"
               >
                 {title}
               </h2>
               {subtitle && (
-                <p id={descriptionId} className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                <p
+                  id={descriptionId}
+                  className="text-xs text-slate-500 dark:text-slate-400 mt-0.5"
+                >
                   {subtitle}
                 </p>
               )}
             </div>
           </div>
           <button
-            type="button"
             onClick={onClose}
             aria-label="Close dialog"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+            className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
           >
-            <X className="h-4 w-4" />
+            <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Content */}
-        <div className="p-6 max-h-[calc(85vh-8rem)] overflow-y-auto">{children}</div>
+        {/* Body */}
+        <div className="px-6 py-5 max-h-[calc(85vh-120px)] overflow-y-auto">{children}</div>
       </div>
     </div>
   );
+
+  return typeof document !== "undefined" ? createPortal(modalContent, document.body) : null;
 };

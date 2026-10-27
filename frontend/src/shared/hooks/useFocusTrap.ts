@@ -16,6 +16,12 @@ const FOCUSABLE_SELECTOR = [
   "[contenteditable]",
 ].join(", ");
 
+const INPUT_SELECTOR = [
+  'input:not([disabled]):not([type="hidden"])',
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+].join(", ");
+
 interface UseFocusTrapOptions {
   isActive: boolean;
   onClose?: () => void;
@@ -29,34 +35,55 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>({
 }: UseFocusTrapOptions) {
   const containerRef = useRef<T>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  const hasFocusedRef = useRef(false);
 
   useEffect(() => {
-    if (!isActive) return;
+    if (!isActive) {
+      hasFocusedRef.current = false;
+      return;
+    }
 
-    // Save the element that triggered the modal/drawer
-    triggerRef.current = document.activeElement as HTMLElement | null;
+    // Save the element that triggered the modal/drawer before opening
+    if (!hasFocusedRef.current) {
+      triggerRef.current = document.activeElement as HTMLElement | null;
+    }
 
     // Lock body scroll
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
-    // Focus the initial element or the first focusable element
     const container = containerRef.current;
-    if (container) {
-      const focusable = container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
-      if (initialFocusRef?.current) {
-        initialFocusRef.current.focus();
-      } else if (focusable.length > 0) {
-        focusable[0].focus();
-      } else {
-        container.focus();
+    if (container && !hasFocusedRef.current) {
+      hasFocusedRef.current = true;
+
+      // Do not steal focus if focus is already within container
+      if (!container.contains(document.activeElement)) {
+        if (initialFocusRef?.current) {
+          initialFocusRef.current.focus();
+        } else {
+          // Prefer focusing the first interactive form input rather than the top close 'X' button
+          const firstInput = container.querySelector<HTMLElement>(INPUT_SELECTOR);
+          if (firstInput) {
+            firstInput.focus();
+          } else {
+            const focusables = container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+            if (focusables.length > 0) {
+              focusables[0].focus();
+            } else {
+              container.focus();
+            }
+          }
+        }
       }
     }
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
-        onClose?.();
+        onCloseRef.current?.();
         return;
       }
 
@@ -92,12 +119,12 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = originalOverflow;
-      // Restore focus to trigger
+      // Restore focus to trigger element only when closing
       if (triggerRef.current && typeof triggerRef.current.focus === "function") {
         triggerRef.current.focus();
       }
     };
-  }, [isActive, onClose, initialFocusRef]);
+  }, [isActive, initialFocusRef]);
 
   return containerRef;
 }

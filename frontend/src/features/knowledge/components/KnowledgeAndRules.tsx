@@ -30,6 +30,10 @@ export const KnowledgeAndRules: React.FC<KnowledgeAndRulesProps> = (props) => {
   const { chunks, rules, plugins = [] } = props;
   const state = useKnowledgeAndRules(props);
 
+  const handleCloseRuleModal = React.useCallback(() => {
+    state.setShowRuleModal(false);
+  }, [state.setShowRuleModal]);
+
   return (
     <div className="space-y-6">
       {/* Top Controls: Sub-tab Navigation + Target Scope Filter Dropdown */}
@@ -126,7 +130,7 @@ export const KnowledgeAndRules: React.FC<KnowledgeAndRulesProps> = (props) => {
       {/* Create / Edit Rule Modal */}
       <RuleModal
         isOpen={state.showRuleModal}
-        onClose={() => state.setShowRuleModal(false)}
+        onClose={handleCloseRuleModal}
         editingRule={state.editingRule}
         ruleId={state.ruleId}
         setRuleId={state.setRuleId}

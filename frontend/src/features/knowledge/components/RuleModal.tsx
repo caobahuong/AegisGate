@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Shield } from "lucide-react";
+import { Shield, HelpCircle, Info } from "lucide-react";
 import { PluginProfileResponse, RuleResponse, RuleSeverity, RuleType } from "@/types";
 import { Modal } from "@/shared/ui/Modal";
 import { Button } from "@/shared/ui/Button";
@@ -131,12 +131,12 @@ export const RuleModal: React.FC<RuleModalProps> = ({
               onChange={(e) => setRuleType(e.target.value as RuleType)}
               className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-500"
             >
-              <option value="FORBID_JOIN">FORBID_JOIN</option>
-              <option value="FORBID_TABLE_SCAN">FORBID_TABLE_SCAN</option>
-              <option value="MAX_EXECUTION_TIME">MAX_EXECUTION_TIME</option>
-              <option value="CUSTOM">CUSTOM</option>
-              <option value="REDACT_FIELD">REDACT_FIELD (blank output)</option>
-              <option value="REMOVE_FIELD">REMOVE_FIELD (delete output)</option>
+              <option value="FORBID_JOIN">FORBID_JOIN (Disallow table joins)</option>
+              <option value="FORBID_TABLE_SCAN">FORBID_TABLE_SCAN (Prevent full table scans)</option>
+              <option value="MAX_EXECUTION_TIME">MAX_EXECUTION_TIME (Execution time limit in ms)</option>
+              <option value="CUSTOM">CUSTOM (Regex pattern restriction)</option>
+              <option value="REDACT_FIELD">REDACT_FIELD (Mask field values in results)</option>
+              <option value="REMOVE_FIELD">REMOVE_FIELD (Omit fields from results)</option>
             </select>
           </div>
 
@@ -158,20 +158,122 @@ export const RuleModal: React.FC<RuleModalProps> = ({
         </div>
 
         <div>
-          <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider mb-1">
-            Expression Parameter
-          </label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider">
+              Expression Parameter
+            </label>
+            {ruleType === "CUSTOM" && (
+              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-indigo-600 dark:text-indigo-400">
+                <HelpCircle className="w-3.5 h-3.5" />
+                Regex Pattern Guide
+              </span>
+            )}
+            {ruleType === "FORBID_JOIN" && (
+              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-indigo-600 dark:text-indigo-400">
+                <HelpCircle className="w-3.5 h-3.5" />
+                Table Names Guide
+              </span>
+            )}
+          </div>
           <input
             type="text"
             value={expression}
             onChange={(e) => setExpression(e.target.value)}
             placeholder={
-              ruleType === "REDACT_FIELD" || ruleType === "REMOVE_FIELD"
+              ruleType === "CUSTOM"
+                ? "e.g. \\b(DROP|TRUNCATE)\\b (Regex pattern)"
+                : ruleType === "FORBID_JOIN"
+                ? "e.g. Orders,AuditLogs (at least two comma-separated tables)"
+                : ruleType === "REDACT_FIELD" || ruleType === "REMOVE_FIELD"
                 ? "e.g. Password,Salary,SSN (comma-separated field names)"
+                : ruleType === "MAX_EXECUTION_TIME"
+                ? "e.g. 5000 (ms)"
                 : "e.g. Orders,AuditLogs"
             }
             className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
           />
+
+          {/* Guide for FORBID_JOIN */}
+          {ruleType === "FORBID_JOIN" && (
+            <div className="mt-2 p-2.5 rounded-lg bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 text-[11px] space-y-2">
+              <div className="flex items-start gap-1.5 text-indigo-900 dark:text-indigo-200">
+                <Info className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-semibold text-indigo-950 dark:text-indigo-200">
+                    Disallow JOIN Between Tables:
+                  </p>
+                  <p className="text-slate-600 dark:text-slate-400 text-[10.5px] mt-0.5">
+                    Enter two or more table names separated by commas. The system inspects query AST and Explain Plans to block any queries that join these tables (including via subqueries or aliases).
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <span className="text-[10px] uppercase font-semibold text-slate-500 dark:text-slate-400 tracking-wider">
+                  Presets (click to apply):
+                </span>
+                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                  {[
+                    { label: "Disallow Orders & AuditLogs Join", val: "Orders,AuditLogs" },
+                    { label: "Disallow Users & Salaries Join", val: "Users,Salaries" },
+                    { label: "Disallow Customers & CreditCards Join", val: "Customers,CreditCards" },
+                  ].map((preset) => (
+                    <button
+                      type="button"
+                      key={preset.val}
+                      onClick={() => setExpression(preset.val)}
+                      className="inline-flex items-center px-2 py-0.5 rounded text-[10.5px] font-mono bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-colors cursor-pointer"
+                      title={`Click to populate: ${preset.val}`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Guide for CUSTOM */}
+          {ruleType === "CUSTOM" && (
+            <div className="mt-2 p-2.5 rounded-lg bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 text-[11px] space-y-2">
+              <div className="flex items-start gap-1.5 text-indigo-900 dark:text-indigo-200">
+                <Info className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-semibold text-indigo-950 dark:text-indigo-200">
+                    Custom Regular Expression (Regex) Syntax:
+                  </p>
+                  <p className="text-slate-600 dark:text-slate-400 text-[10.5px] mt-0.5">
+                    Any query matching this regex is rejected during dry-run inspection. Maximum 200 characters, no nested quantifiers (anti-ReDoS safety).
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <span className="text-[10px] uppercase font-semibold text-slate-500 dark:text-slate-400 tracking-wider">
+                  Presets (click to apply):
+                </span>
+                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                  {[
+                    { label: "Block DROP / TRUNCATE", val: "\\b(DROP|TRUNCATE)\\b" },
+                    { label: "Block Sensitive Tables", val: "\\b(secrets|api_tokens)\\b" },
+                    { label: "Block Admin GRANT", val: "\\bGRANT\\b\\s+ALL" },
+                    { label: "Block WHERE 1=1", val: "WHERE\\s+1\\s*=\\s*1" },
+                  ].map((preset) => (
+                    <button
+                      type="button"
+                      key={preset.val}
+                      onClick={() => setExpression(preset.val)}
+                      className="inline-flex items-center px-2 py-0.5 rounded text-[10.5px] font-mono bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-colors cursor-pointer"
+                      title={`Click to populate: ${preset.val}`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
           {(ruleType === "REDACT_FIELD" || ruleType === "REMOVE_FIELD") && (
             <p className="text-[10px] text-slate-500 mt-1">
               {ruleType === "REDACT_FIELD"

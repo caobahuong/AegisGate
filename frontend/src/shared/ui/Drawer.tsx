@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useId } from "react";
+import React, { useId, useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFocusTrap } from "@/shared/hooks/useFocusTrap";
@@ -26,6 +27,7 @@ export const Drawer: React.FC<DrawerProps> = ({
   width = "xl",
   className,
 }) => {
+  const [mounted, setMounted] = useState(false);
   const titleId = useId();
   const descriptionId = useId();
   const containerRef = useFocusTrap<HTMLDivElement>({
@@ -33,7 +35,11 @@ export const Drawer: React.FC<DrawerProps> = ({
     onClose,
   });
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!isOpen || !mounted) return null;
 
   const widthStyles = {
     md: "max-w-md",
@@ -43,9 +49,9 @@ export const Drawer: React.FC<DrawerProps> = ({
     "3xl": "max-w-3xl",
   };
 
-  return (
+  const drawerContent = (
     <div
-      className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-xs animate-in fade-in duration-150 flex justify-end"
+      className="fixed inset-0 m-0 z-[60] overflow-hidden bg-black/60 backdrop-blur-xs animate-in fade-in duration-150 flex justify-end"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           onClose();
@@ -66,38 +72,44 @@ export const Drawer: React.FC<DrawerProps> = ({
         )}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 flex-shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40">
           <div className="flex items-center space-x-3 pr-4">
             {icon && (
-              <div className="text-indigo-600 dark:text-indigo-400 flex-shrink-0">{icon}</div>
+              <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                {icon}
+              </div>
             )}
             <div>
               <h2
                 id={titleId}
-                className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight"
+                className="text-base font-bold text-slate-900 dark:text-slate-100"
               >
                 {title}
               </h2>
               {subtitle && (
-                <p id={descriptionId} className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                <p
+                  id={descriptionId}
+                  className="text-xs text-slate-500 dark:text-slate-400 mt-0.5"
+                >
                   {subtitle}
                 </p>
               )}
             </div>
           </div>
           <button
-            type="button"
             onClick={onClose}
-            aria-label="Close drawer"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+            aria-label="Close panel"
+            className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
           >
-            <X className="h-4 w-4" />
+            <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 flex-1 overflow-y-auto">{children}</div>
+        <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
       </div>
     </div>
   );
+
+  return typeof document !== "undefined" ? createPortal(drawerContent, document.body) : null;
 };
