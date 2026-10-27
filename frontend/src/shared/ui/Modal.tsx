@@ -84,17 +84,11 @@ export const Modal: React.FC<ModalProps> = ({
               </div>
             )}
             <div>
-              <h2
-                id={titleId}
-                className="text-base font-bold text-slate-900 dark:text-slate-100"
-              >
+              <h2 id={titleId} className="text-base font-bold text-slate-900 dark:text-slate-100">
                 {title}
               </h2>
               {subtitle && (
-                <p
-                  id={descriptionId}
-                  className="text-xs text-slate-500 dark:text-slate-400 mt-0.5"
-                >
+                <p id={descriptionId} className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   {subtitle}
                 </p>
               )}

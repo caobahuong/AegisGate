@@ -132,8 +132,12 @@ export const RuleModal: React.FC<RuleModalProps> = ({
               className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-500"
             >
               <option value="FORBID_JOIN">FORBID_JOIN (Disallow table joins)</option>
-              <option value="FORBID_TABLE_SCAN">FORBID_TABLE_SCAN (Prevent full table scans)</option>
-              <option value="MAX_EXECUTION_TIME">MAX_EXECUTION_TIME (Execution time limit in ms)</option>
+              <option value="FORBID_TABLE_SCAN">
+                FORBID_TABLE_SCAN (Prevent full table scans)
+              </option>
+              <option value="MAX_EXECUTION_TIME">
+                MAX_EXECUTION_TIME (Execution time limit in ms)
+              </option>
               <option value="CUSTOM">CUSTOM (Regex pattern restriction)</option>
               <option value="REDACT_FIELD">REDACT_FIELD (Mask field values in results)</option>
               <option value="REMOVE_FIELD">REMOVE_FIELD (Omit fields from results)</option>
@@ -183,12 +187,12 @@ export const RuleModal: React.FC<RuleModalProps> = ({
               ruleType === "CUSTOM"
                 ? "e.g. \\b(DROP|TRUNCATE)\\b (Regex pattern)"
                 : ruleType === "FORBID_JOIN"
-                ? "e.g. Orders,AuditLogs (at least two comma-separated tables)"
-                : ruleType === "REDACT_FIELD" || ruleType === "REMOVE_FIELD"
-                ? "e.g. Password,Salary,SSN (comma-separated field names)"
-                : ruleType === "MAX_EXECUTION_TIME"
-                ? "e.g. 5000 (ms)"
-                : "e.g. Orders,AuditLogs"
+                  ? "e.g. Orders,AuditLogs (at least two comma-separated tables)"
+                  : ruleType === "REDACT_FIELD" || ruleType === "REMOVE_FIELD"
+                    ? "e.g. Password,Salary,SSN (comma-separated field names)"
+                    : ruleType === "MAX_EXECUTION_TIME"
+                      ? "e.g. 5000 (ms)"
+                      : "e.g. Orders,AuditLogs"
             }
             className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
           />
@@ -203,7 +207,9 @@ export const RuleModal: React.FC<RuleModalProps> = ({
                     Disallow JOIN Between Tables:
                   </p>
                   <p className="text-slate-600 dark:text-slate-400 text-[10.5px] mt-0.5">
-                    Enter two or more table names separated by commas. The system inspects query AST and Explain Plans to block any queries that join these tables (including via subqueries or aliases).
+                    Enter two or more table names separated by commas. The system inspects query AST
+                    and Explain Plans to block any queries that join these tables (including via
+                    subqueries or aliases).
                   </p>
                 </div>
               </div>
@@ -216,7 +222,10 @@ export const RuleModal: React.FC<RuleModalProps> = ({
                   {[
                     { label: "Disallow Orders & AuditLogs Join", val: "Orders,AuditLogs" },
                     { label: "Disallow Users & Salaries Join", val: "Users,Salaries" },
-                    { label: "Disallow Customers & CreditCards Join", val: "Customers,CreditCards" },
+                    {
+                      label: "Disallow Customers & CreditCards Join",
+                      val: "Customers,CreditCards",
+                    },
                   ].map((preset) => (
                     <button
                       type="button"
@@ -243,7 +252,8 @@ export const RuleModal: React.FC<RuleModalProps> = ({
                     Custom Regular Expression (Regex) Syntax:
                   </p>
                   <p className="text-slate-600 dark:text-slate-400 text-[10.5px] mt-0.5">
-                    Any query matching this regex is rejected during dry-run inspection. Maximum 200 characters, no nested quantifiers (anti-ReDoS safety).
+                    Any query matching this regex is rejected during dry-run inspection. Maximum 200
+                    characters, no nested quantifiers (anti-ReDoS safety).
                   </p>
                 </div>
               </div>
