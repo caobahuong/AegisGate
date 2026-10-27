@@ -226,6 +226,7 @@ class PluginInstaller:
                 or name.startswith(("/", "\\"))
                 or re.match(r"^[A-Za-z]:", name)
                 or ":" in name  # NTFS alternate data streams
+                or "\\" in name  # backslash is not a separator on POSIX; treat as traversal risk
             ):
                 raise PluginInstallerError(f"Unsafe path in ZIP: {name!r}")
             if stat.S_ISLNK(info.external_attr >> 16):
