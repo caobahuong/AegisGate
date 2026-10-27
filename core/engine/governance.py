@@ -10,6 +10,7 @@ strings and quoted identifiers are ignored) instead of raw substring matching.
 
 import logging
 import re
+import unicodedata
 from typing import Any
 
 from core.database import Rule
@@ -73,11 +74,16 @@ class GovernanceEngine:
         Returns a list of violation messages. Empty list means passed.
         """
         violations: list[str] = []
+        norm_query = unicodedata.normalize("NFKC", query)
         plan_str = str(explain_plan) if explain_plan else ""
 
         # Built-in guard (always on): one statement per submission.
-        if statement_count(query) > 1:
+        if statement_count(norm_query) > 1:
             violations.append("Rule Violation [builtin]: Multiple SQL statements in one submission are not allowed.")
+
+        # Prepare comment-stripped version of query to foil comment tricks in regex
+        no_comments = re.sub(r"/\*.*?\*/|--[^\n]*", " ", norm_query, flags=re.DOTALL)
+        clean_spaces = re.sub(r"\s+", " ", no_comments).strip()
 
         for rule in rules:
             if not rule.is_active:
@@ -89,7 +95,7 @@ class GovernanceEngine:
                 # Expression format: "TableA,TableB"
                 tables = [t.strip().upper() for t in rule.expression.split(",") if t.strip()]
                 if len(tables) >= 2:
-                    in_query = joins_tables(query, tables)
+                    in_query = joins_tables(norm_query, tables)
                     in_plan = all(plan_mentions_table(plan_str, tbl) for tbl in tables) and "JOIN" in plan_str.upper()
                     if in_query or in_plan:
                         violations.append(
@@ -102,7 +108,7 @@ class GovernanceEngine:
                     violations.append(
                         f"Rule Violation [{rule.id}]: Full table scan detected in plan. {rule.description}"
                     )
-                elif is_unbounded_scan(query):
+                elif is_unbounded_scan(norm_query):
                     violations.append(
                         f"Rule Violation [{rule.id}]: Query performs unbounded scan without a meaningful WHERE clause."
                     )
@@ -116,7 +122,7 @@ class GovernanceEngine:
                     # Fail closed: a broken policy must not silently allow queries.
                     logger.error("CUSTOM rule %s is unusable: %s", rule.id, problem)
                     violations.append(f"Rule Violation [{rule.id}]: Rule pattern is unusable ({problem}).")
-                elif re.search(pattern, query, re.IGNORECASE):
+                elif re.search(pattern, norm_query, re.IGNORECASE) or re.search(pattern, clean_spaces, re.IGNORECASE):
                     violations.append(
                         f"Rule Violation [{rule.id}]: Matched forbidden pattern '{pattern}'. {rule.description}"
                     )

@@ -26,12 +26,12 @@ class PluginRegistry:
 
     def __init__(self, session: Session) -> None:
         self.session: Session = session
+        self._profiles_cache: dict[str, PluginProfile] = {}
+        self._profiles_list_cache: dict[bool, list[PluginProfile]] = {}
 
     def register_profile(self, profile: PluginProfile) -> PluginProfile:
         """Register or update a plugin profile."""
-        existing = self.session.exec(
-            select(PluginProfile).where(PluginProfile.id == profile.id)
-        ).first()
+        existing = self.session.exec(select(PluginProfile).where(PluginProfile.id == profile.id)).first()
 
         if existing:
             existing.name = profile.name
@@ -50,6 +50,8 @@ class PluginRegistry:
             self.session.add(existing)
             self.session.commit()
             self.session.refresh(existing)
+            self._profiles_cache.clear()
+            self._profiles_list_cache.clear()
             return existing
 
         profile.created_at = utc_now()
@@ -57,30 +59,38 @@ class PluginRegistry:
         self.session.add(profile)
         self.session.commit()
         self.session.refresh(profile)
+        self._profiles_cache.clear()
+        self._profiles_list_cache.clear()
         return profile
 
     def get_profile(self, plugin_id: str) -> PluginProfile:
         """Fetch plugin profile or raise PluginNotFoundError."""
-        profile = self.session.exec(
-            select(PluginProfile).where(PluginProfile.id == plugin_id)
-        ).first()
+        if plugin_id in self._profiles_cache:
+            return self._profiles_cache[plugin_id]
+
+        profile = self.session.exec(select(PluginProfile).where(PluginProfile.id == plugin_id)).first()
         if not profile:
             raise PluginNotFoundError(f"Plugin with ID '{plugin_id}' not found in registry.")
+
+        self._profiles_cache[plugin_id] = profile
         return profile
 
     def list_profiles(self, include_disabled: bool = False) -> list[PluginProfile]:
         """List registered plugin profiles."""
+        if include_disabled in self._profiles_list_cache:
+            return list(self._profiles_list_cache[include_disabled])
+
         if include_disabled:
-            return list(self.session.exec(select(PluginProfile)).all())
-        return list(
-            self.session.exec(
-                select(PluginProfile).where(PluginProfile.status != "disabled")
-            ).all()
-        )
+            profiles = list(self.session.exec(select(PluginProfile)).all())
+        else:
+            profiles = list(self.session.exec(select(PluginProfile).where(PluginProfile.status != "disabled")).all())
+
+        self._profiles_list_cache[include_disabled] = profiles
+        return list(profiles)
 
     def unregister_profile(self, plugin_id: str, hard_delete: bool = False) -> PluginProfile:
         """Unregister or deactivate a plugin profile.
-        
+
         If hard_delete is True, permanently deletes the record from DB.
         If False, sets status="disabled" to preserve history and prevent auto-discovery reactivation.
         """
@@ -88,6 +98,8 @@ class PluginRegistry:
         if hard_delete:
             self.session.delete(profile)
             self.session.commit()
+            self._profiles_cache.clear()
+            self._profiles_list_cache.clear()
             return profile
 
         profile.status = "disabled"
@@ -95,6 +107,8 @@ class PluginRegistry:
         self.session.add(profile)
         self.session.commit()
         self.session.refresh(profile)
+        self._profiles_cache.clear()
+        self._profiles_list_cache.clear()
         return profile
 
     def update_metrics(
@@ -116,6 +130,8 @@ class PluginRegistry:
         self.session.add(profile)
         self.session.commit()
         self.session.refresh(profile)
+        self._profiles_cache.clear()
+        self._profiles_list_cache.clear()
         return profile
 
     def get_client(self, plugin_id: str) -> PluginSubprocessClient:
@@ -150,9 +166,7 @@ class PluginRegistry:
                 default_config = manifest_data.get("default_config", {})
 
                 # Check if already in db to preserve user configuration and disabled status
-                existing = self.session.exec(
-                    select(PluginProfile).where(PluginProfile.id == plugin_id)
-                ).first()
+                existing = self.session.exec(select(PluginProfile).where(PluginProfile.id == plugin_id)).first()
 
                 if existing and existing.status == "disabled":
                     logger.info("Plugin '%s' is marked as disabled in DB; skipping auto-activation.", plugin_id)

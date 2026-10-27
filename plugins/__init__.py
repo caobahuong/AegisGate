@@ -1,2 +1,1 @@
 """AegisGate Plugins Package."""
-

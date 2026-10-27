@@ -1,0 +1,11 @@
+Method,Name,Error,Occurrences,First Seen,Last Seen
+GET,/api/executions/page,"ConnectionRefusedError(10061, '[WinError 10061] No connection could be made because the target machine actively refused it.')",84,2026-10-26T18:11:39Z,2026-10-26T18:11:45Z
+POST,/api/monitor/executions [async],"ConnectionRefusedError(10061, '[WinError 10061] No connection could be made because the target machine actively refused it.')",82,2026-10-26T18:11:39Z,2026-10-26T18:11:45Z
+GET,/api/mcp/config,"ConnectionRefusedError(10061, '[WinError 10061] No connection could be made because the target machine actively refused it.')",34,2026-10-26T18:11:39Z,2026-10-26T18:11:45Z
+POST,/api/monitor/executions [sync],CatchResponseError('Unexpected status: 0'),180,2026-10-26T18:11:39Z,2026-10-26T18:11:45Z
+GET,/api/plugins,"ConnectionRefusedError(10061, '[WinError 10061] No connection could be made because the target machine actively refused it.')",87,2026-10-26T18:11:39Z,2026-10-26T18:11:45Z
+GET,/api/knowledge,"ConnectionRefusedError(10061, '[WinError 10061] No connection could be made because the target machine actively refused it.')",41,2026-10-26T18:11:39Z,2026-10-26T18:11:45Z
+GET,/api/rules,"ConnectionRefusedError(10061, '[WinError 10061] No connection could be made because the target machine actively refused it.')",85,2026-10-26T18:11:39Z,2026-10-26T18:11:45Z
+GET,/api/monitor/executions,"ConnectionRefusedError(10061, '[WinError 10061] No connection could be made because the target machine actively refused it.')",139,2026-10-26T18:11:38Z,2026-10-26T18:11:45Z
+GET,/health,"ConnectionRefusedError(10061, '[WinError 10061] No connection could be made because the target machine actively refused it.')",39,2026-10-26T18:11:39Z,2026-10-26T18:11:45Z
+GET,/api/monitor/events [stream],CatchResponseError('SSE connect failed: 0'),42,2026-10-26T18:11:40Z,2026-10-26T18:11:45Z

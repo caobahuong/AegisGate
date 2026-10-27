@@ -10,30 +10,40 @@
   color-scheme: light;
 
   /* App Canvas & Card Surfaces */
-  --color-background: 248 250 252;  /* #f8fafc (slate-50 canvas) */
-  --color-surface: 255 255 255;     /* #ffffff (pure white card/sidebar) */
-  --color-border: 226 232 240;      /* #e2e8f0 (subtle card border) */
+  --color-background: 248 250 252; /* #f8fafc (slate-50 canvas) */
+  --color-surface: 255 255 255; /* #ffffff (pure white card/sidebar) */
+  --color-surface-muted: 241 245 249; /* #f1f5f9 */
+  --color-surface-elevated: 255 255 255; /* #ffffff */
+  --color-border: 226 232 240; /* #e2e8f0 (subtle card border) */
+  --color-border-muted: 241 245 249; /* #f1f5f9 */
+  --color-text-primary: 15 23 42; /* #0f172a */
+  --color-text-muted: 100 116 139; /* #64748b */
+  --color-accent: 79 70 229; /* #4f46e5 (indigo-600) */
+  --color-accent-muted: 224 231 255; /* #e0e7ff */
+  --color-success: 5 150 105; /* #059669 (emerald-600) */
+  --color-warning: 217 119 6; /* #d97706 (amber-600) */
+  --color-danger: 225 29 72; /* #e11d48 (rose-600) */
 
-  /* Slate Scale (Inverted for Light Mode) */
-  --color-slate-950: 248 250 252;   /* Main page background: #f8fafc */
-  --color-slate-900: 255 255 255;   /* Surface/Cards/Sidebar/Header: #ffffff */
-  --color-slate-850: 241 245 249;   /* Inner table row hover: #f1f5f9 */
-  --color-slate-800: 226 232 240;   /* Card & panel borders: #e2e8f0 */
-  --color-slate-750: 218 226 237;   /* Button hover: #dae2ed */
-  --color-slate-700: 203 213 225;   /* Input borders / secondary borders: #cbd5e1 */
-  --color-slate-600: 148 163 184;   /* Placeholder / disabled text: #94a3b8 */
-  --color-slate-500: 100 116 139;   /* Muted captions: #64748b */
-  --color-slate-400: 71 85 105;     /* Subtitle / secondary text: #475569 */
-  --color-slate-300: 51 65 85;      /* Body text: #334155 */
-  --color-slate-200: 30 41 59;      /* Prominent text & field labels: #1e293b */
-  --color-slate-100: 15 23 42;      /* Primary headings / brand title: #0f172a */
-  --color-slate-50: 2 6 23;         /* Deepest text: #020617 */
+  /* Slate Scale (Standard natural palette) */
+  --color-slate-50: 248 250 252; /* #f8fafc */
+  --color-slate-100: 241 245 249; /* #f1f5f9 */
+  --color-slate-200: 226 232 240; /* #e2e8f0 */
+  --color-slate-300: 203 213 225; /* #cbd5e1 */
+  --color-slate-400: 148 163 184; /* #94a3b8 */
+  --color-slate-500: 100 116 139; /* #64748b */
+  --color-slate-600: 71 85 105; /* #475569 */
+  --color-slate-700: 51 65 85; /* #334155 */
+  --color-slate-750: 40 53 74; /* #28354a */
+  --color-slate-800: 30 41 59; /* #1e293b */
+  --color-slate-850: 23 32 51; /* #172033 */
+  --color-slate-900: 15 23 42; /* #0f172a */
+  --color-slate-950: 2 6 23; /* #020617 */
 
   /* High-Contrast Colored Accents for Light Backgrounds */
-  --color-emerald-400: 5 150 105;   /* #059669 (emerald-600) */
-  --color-amber-400: 217 119 6;     /* #d97706 (amber-600) */
-  --color-rose-400: 225 29 72;      /* #e11d48 (rose-600) */
-  --color-indigo-400: 79 70 229;    /* #4f46e5 (indigo-600) */
+  --color-emerald-400: 5 150 105; /* #059669 (emerald-600) */
+  --color-amber-400: 217 119 6; /* #d97706 (amber-600) */
+  --color-rose-400: 225 29 72; /* #e11d48 (rose-600) */
+  --color-indigo-400: 79 70 229; /* #4f46e5 (indigo-600) */
 }
 
 /* =========================================================================
@@ -44,38 +54,56 @@
   color-scheme: dark;
 
   /* App Canvas & Card Surfaces */
-  --color-background: 2 6 23;       /* #020617 (slate-950) */
-  --color-surface: 15 23 42;        /* #0f172a (slate-900) */
-  --color-border: 30 41 59;         /* #1e293b (slate-800) */
+  --color-background: 2 6 23; /* #020617 (slate-950) */
+  --color-surface: 15 23 42; /* #0f172a (slate-900) */
+  --color-surface-muted: 23 32 51; /* #172033 */
+  --color-surface-elevated: 30 41 59; /* #1e293b */
+  --color-border: 30 41 59; /* #1e293b (slate-800) */
+  --color-border-muted: 23 32 51; /* #172033 */
+  --color-text-primary: 241 245 249; /* #f1f5f9 */
+  --color-text-muted: 148 163 184; /* #94a3b8 */
+  --color-accent: 129 140 248; /* #818cf8 */
+  --color-accent-muted: 49 46 129; /* #312e81 */
+  --color-success: 52 211 153; /* #34d399 */
+  --color-warning: 251 191 36; /* #fbbf24 */
+  --color-danger: 251 113 133; /* #fb7185 */
 
   /* Slate Scale (Native Dark Mode) */
-  --color-slate-950: 2 6 23;        /* #020617 */
-  --color-slate-900: 15 23 42;       /* #0f172a */
-  --color-slate-850: 23 32 51;       /* #172033 */
-  --color-slate-800: 30 41 59;       /* #1e293b */
-  --color-slate-750: 40 53 74;       /* #28354a */
-  --color-slate-700: 51 65 85;       /* #334155 */
-  --color-slate-600: 71 85 105;      /* #475569 */
-  --color-slate-500: 100 116 139;    /* #64748b */
-  --color-slate-400: 148 163 184;    /* #94a3b8 */
-  --color-slate-300: 203 213 225;    /* #cbd5e1 */
-  --color-slate-200: 226 232 240;    /* #e2e8f0 */
-  --color-slate-100: 241 245 249;    /* #f1f5f9 */
-  --color-slate-50: 248 250 252;     /* #f8fafc */
+  --color-slate-950: 2 6 23; /* #020617 */
+  --color-slate-900: 15 23 42; /* #0f172a */
+  --color-slate-850: 23 32 51; /* #172033 */
+  --color-slate-800: 30 41 59; /* #1e293b */
+  --color-slate-750: 40 53 74; /* #28354a */
+  --color-slate-700: 51 65 85; /* #334155 */
+  --color-slate-600: 71 85 105; /* #475569 */
+  --color-slate-500: 100 116 139; /* #64748b */
+  --color-slate-400: 148 163 184; /* #94a3b8 */
+  --color-slate-300: 203 213 225; /* #cbd5e1 */
+  --color-slate-200: 226 232 240; /* #e2e8f0 */
+  --color-slate-100: 241 245 249; /* #f1f5f9 */
+  --color-slate-50: 248 250 252; /* #f8fafc */
 
   /* Glowing Accent Colors for Dark Backgrounds */
-  --color-emerald-400: 52 211 153;   /* #34d399 */
-  --color-amber-400: 251 191 36;     /* #fbbf24 */
-  --color-rose-400: 251 113 133;     /* #fb7185 */
-  --color-indigo-400: 129 140 248;   /* #818cf8 */
+  --color-emerald-400: 52 211 153; /* #34d399 */
+  --color-amber-400: 251 191 36; /* #fbbf24 */
+  --color-rose-400: 251 113 133; /* #fb7185 */
+  --color-indigo-400: 129 140 248; /* #818cf8 */
 }
 
 body {
-  background-color: rgb(var(--color-slate-950));
-  color: rgb(var(--color-slate-100));
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: rgb(var(--color-background));
+  color: rgb(var(--color-text-primary));
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
   overflow-x: hidden;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
 }
 
 /* Custom scrollbars */
@@ -85,15 +113,27 @@ body {
 }
 
 ::-webkit-scrollbar-track {
+  background: rgb(var(--color-slate-100));
+}
+
+.dark ::-webkit-scrollbar-track {
   background: rgb(var(--color-slate-900));
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgb(var(--color-slate-700));
+  background: rgb(var(--color-slate-300));
   border-radius: 3px;
 }
 
+.dark ::-webkit-scrollbar-thumb {
+  background: rgb(var(--color-slate-700));
+}
+
 ::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--color-slate-400));
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
   background: rgb(var(--color-slate-600));
 }
 
@@ -104,124 +144,340 @@ body {
    here (light mode only) so buttons/badges stay clearly visible.
    ========================================================================= */
 
-:root:not(.dark) .bg-emerald-500\/10 { background-color: rgb(209 250 229); }
-:root:not(.dark) .bg-emerald-500\/15 { background-color: rgb(209 250 229); }
-:root:not(.dark) .bg-emerald-500\/20 { background-color: rgb(167 243 208); }
-:root:not(.dark) .bg-emerald-500\/25 { background-color: rgb(167 243 208); }
-:root:not(.dark) .bg-emerald-500\/30 { background-color: rgb(167 243 208); }
-:root:not(.dark) .border-emerald-500\/20 { border-color: rgb(110 231 183); }
-:root:not(.dark) .border-emerald-500\/30 { border-color: rgb(110 231 183); }
-:root:not(.dark) .border-emerald-500\/40 { border-color: rgb(52 211 153); }
-:root:not(.dark) .border-emerald-500\/50 { border-color: rgb(52 211 153); }
-:root:not(.dark) .hover\:bg-emerald-500\/15:hover { background-color: rgb(167 243 208); }
-:root:not(.dark) .hover\:bg-emerald-500\/20:hover { background-color: rgb(167 243 208); }
-:root:not(.dark) .hover\:bg-emerald-500\/25:hover { background-color: rgb(167 243 208); }
-:root:not(.dark) .text-emerald-400, :root:not(.dark) .text-emerald-300, :root:not(.dark) .text-emerald-200 { color: rgb(4 120 87); }
-:root:not(.dark) .hover\:text-emerald-300:hover { color: rgb(6 95 70); }
-:root:not(.dark) .bg-amber-500\/10 { background-color: rgb(254 243 199); }
-:root:not(.dark) .bg-amber-500\/15 { background-color: rgb(254 243 199); }
-:root:not(.dark) .bg-amber-500\/20 { background-color: rgb(253 230 138); }
-:root:not(.dark) .bg-amber-500\/25 { background-color: rgb(253 230 138); }
-:root:not(.dark) .bg-amber-500\/30 { background-color: rgb(253 230 138); }
-:root:not(.dark) .border-amber-500\/20 { border-color: rgb(252 211 77); }
-:root:not(.dark) .border-amber-500\/30 { border-color: rgb(252 211 77); }
-:root:not(.dark) .border-amber-500\/40 { border-color: rgb(245 158 11); }
-:root:not(.dark) .border-amber-500\/50 { border-color: rgb(245 158 11); }
-:root:not(.dark) .hover\:bg-amber-500\/15:hover { background-color: rgb(253 230 138); }
-:root:not(.dark) .hover\:bg-amber-500\/20:hover { background-color: rgb(253 230 138); }
-:root:not(.dark) .hover\:bg-amber-500\/25:hover { background-color: rgb(253 230 138); }
-:root:not(.dark) .text-amber-400, :root:not(.dark) .text-amber-300, :root:not(.dark) .text-amber-200 { color: rgb(180 83 9); }
-:root:not(.dark) .hover\:text-amber-300:hover { color: rgb(146 64 14); }
-:root:not(.dark) .bg-red-500\/10 { background-color: rgb(254 226 226); }
-:root:not(.dark) .bg-red-500\/15 { background-color: rgb(254 226 226); }
-:root:not(.dark) .bg-red-500\/20 { background-color: rgb(254 202 202); }
-:root:not(.dark) .bg-red-500\/25 { background-color: rgb(254 202 202); }
-:root:not(.dark) .bg-red-500\/30 { background-color: rgb(254 202 202); }
-:root:not(.dark) .border-red-500\/20 { border-color: rgb(252 165 165); }
-:root:not(.dark) .border-red-500\/30 { border-color: rgb(252 165 165); }
-:root:not(.dark) .border-red-500\/40 { border-color: rgb(248 113 113); }
-:root:not(.dark) .border-red-500\/50 { border-color: rgb(248 113 113); }
-:root:not(.dark) .hover\:bg-red-500\/15:hover { background-color: rgb(254 202 202); }
-:root:not(.dark) .hover\:bg-red-500\/20:hover { background-color: rgb(254 202 202); }
-:root:not(.dark) .hover\:bg-red-500\/25:hover { background-color: rgb(254 202 202); }
-:root:not(.dark) .text-red-400, :root:not(.dark) .text-red-300, :root:not(.dark) .text-red-200 { color: rgb(185 28 28); }
-:root:not(.dark) .hover\:text-red-300:hover { color: rgb(153 27 27); }
-:root:not(.dark) .bg-rose-500\/10 { background-color: rgb(255 228 230); }
-:root:not(.dark) .bg-rose-500\/15 { background-color: rgb(255 228 230); }
-:root:not(.dark) .bg-rose-500\/20 { background-color: rgb(254 205 211); }
-:root:not(.dark) .bg-rose-500\/25 { background-color: rgb(254 205 211); }
-:root:not(.dark) .bg-rose-500\/30 { background-color: rgb(254 205 211); }
-:root:not(.dark) .border-rose-500\/20 { border-color: rgb(253 164 175); }
-:root:not(.dark) .border-rose-500\/30 { border-color: rgb(253 164 175); }
-:root:not(.dark) .border-rose-500\/40 { border-color: rgb(251 113 133); }
-:root:not(.dark) .border-rose-500\/50 { border-color: rgb(251 113 133); }
-:root:not(.dark) .hover\:bg-rose-500\/15:hover { background-color: rgb(254 205 211); }
-:root:not(.dark) .hover\:bg-rose-500\/20:hover { background-color: rgb(254 205 211); }
-:root:not(.dark) .hover\:bg-rose-500\/25:hover { background-color: rgb(254 205 211); }
-:root:not(.dark) .text-rose-400, :root:not(.dark) .text-rose-300, :root:not(.dark) .text-rose-200 { color: rgb(190 18 60); }
-:root:not(.dark) .hover\:text-rose-300:hover { color: rgb(159 18 57); }
-:root:not(.dark) .bg-indigo-500\/10 { background-color: rgb(224 231 255); }
-:root:not(.dark) .bg-indigo-500\/15 { background-color: rgb(224 231 255); }
-:root:not(.dark) .bg-indigo-500\/20 { background-color: rgb(199 210 254); }
-:root:not(.dark) .bg-indigo-500\/25 { background-color: rgb(199 210 254); }
-:root:not(.dark) .bg-indigo-500\/30 { background-color: rgb(199 210 254); }
-:root:not(.dark) .border-indigo-500\/20 { border-color: rgb(165 180 252); }
-:root:not(.dark) .border-indigo-500\/30 { border-color: rgb(165 180 252); }
-:root:not(.dark) .border-indigo-500\/40 { border-color: rgb(129 140 248); }
-:root:not(.dark) .border-indigo-500\/50 { border-color: rgb(129 140 248); }
-:root:not(.dark) .hover\:bg-indigo-500\/15:hover { background-color: rgb(199 210 254); }
-:root:not(.dark) .hover\:bg-indigo-500\/20:hover { background-color: rgb(199 210 254); }
-:root:not(.dark) .hover\:bg-indigo-500\/25:hover { background-color: rgb(199 210 254); }
-:root:not(.dark) .bg-indigo-600\/10 { background-color: rgb(224 231 255); }
-:root:not(.dark) .bg-indigo-600\/15 { background-color: rgb(224 231 255); }
-:root:not(.dark) .bg-indigo-600\/20 { background-color: rgb(199 210 254); }
-:root:not(.dark) .bg-indigo-600\/25 { background-color: rgb(199 210 254); }
-:root:not(.dark) .bg-indigo-600\/30 { background-color: rgb(199 210 254); }
-:root:not(.dark) .border-indigo-600\/20 { border-color: rgb(165 180 252); }
-:root:not(.dark) .border-indigo-600\/30 { border-color: rgb(165 180 252); }
-:root:not(.dark) .border-indigo-600\/40 { border-color: rgb(129 140 248); }
-:root:not(.dark) .border-indigo-600\/50 { border-color: rgb(129 140 248); }
-:root:not(.dark) .hover\:bg-indigo-600\/15:hover { background-color: rgb(199 210 254); }
-:root:not(.dark) .hover\:bg-indigo-600\/20:hover { background-color: rgb(199 210 254); }
-:root:not(.dark) .hover\:bg-indigo-600\/25:hover { background-color: rgb(199 210 254); }
-:root:not(.dark) .text-indigo-400, :root:not(.dark) .text-indigo-300, :root:not(.dark) .text-indigo-200 { color: rgb(67 56 202); }
-:root:not(.dark) .hover\:text-indigo-300:hover { color: rgb(55 48 163); }
-:root:not(.dark) .bg-sky-500\/10 { background-color: rgb(224 242 254); }
-:root:not(.dark) .bg-sky-500\/15 { background-color: rgb(224 242 254); }
-:root:not(.dark) .bg-sky-500\/20 { background-color: rgb(186 230 253); }
-:root:not(.dark) .bg-sky-500\/25 { background-color: rgb(186 230 253); }
-:root:not(.dark) .bg-sky-500\/30 { background-color: rgb(186 230 253); }
-:root:not(.dark) .border-sky-500\/20 { border-color: rgb(125 211 252); }
-:root:not(.dark) .border-sky-500\/30 { border-color: rgb(125 211 252); }
-:root:not(.dark) .border-sky-500\/40 { border-color: rgb(56 189 248); }
-:root:not(.dark) .border-sky-500\/50 { border-color: rgb(56 189 248); }
-:root:not(.dark) .hover\:bg-sky-500\/15:hover { background-color: rgb(186 230 253); }
-:root:not(.dark) .hover\:bg-sky-500\/20:hover { background-color: rgb(186 230 253); }
-:root:not(.dark) .hover\:bg-sky-500\/25:hover { background-color: rgb(186 230 253); }
-:root:not(.dark) .text-sky-400, :root:not(.dark) .text-sky-300, :root:not(.dark) .text-sky-200 { color: rgb(3 105 161); }
-:root:not(.dark) .hover\:text-sky-300:hover { color: rgb(7 89 133); }
+:root:not(.dark) .bg-emerald-500\/10 {
+  background-color: rgb(209 250 229);
+}
+:root:not(.dark) .bg-emerald-500\/15 {
+  background-color: rgb(209 250 229);
+}
+:root:not(.dark) .bg-emerald-500\/20 {
+  background-color: rgb(167 243 208);
+}
+:root:not(.dark) .bg-emerald-500\/25 {
+  background-color: rgb(167 243 208);
+}
+:root:not(.dark) .bg-emerald-500\/30 {
+  background-color: rgb(167 243 208);
+}
+:root:not(.dark) .border-emerald-500\/20 {
+  border-color: rgb(110 231 183);
+}
+:root:not(.dark) .border-emerald-500\/30 {
+  border-color: rgb(110 231 183);
+}
+:root:not(.dark) .border-emerald-500\/40 {
+  border-color: rgb(52 211 153);
+}
+:root:not(.dark) .border-emerald-500\/50 {
+  border-color: rgb(52 211 153);
+}
+:root:not(.dark) .hover\:bg-emerald-500\/15:hover {
+  background-color: rgb(167 243 208);
+}
+:root:not(.dark) .hover\:bg-emerald-500\/20:hover {
+  background-color: rgb(167 243 208);
+}
+:root:not(.dark) .hover\:bg-emerald-500\/25:hover {
+  background-color: rgb(167 243 208);
+}
+:root:not(.dark) .text-emerald-400,
+:root:not(.dark) .text-emerald-300,
+:root:not(.dark) .text-emerald-200 {
+  color: rgb(4 120 87);
+}
+:root:not(.dark) .hover\:text-emerald-300:hover {
+  color: rgb(6 95 70);
+}
+:root:not(.dark) .bg-amber-500\/10 {
+  background-color: rgb(254 243 199);
+}
+:root:not(.dark) .bg-amber-500\/15 {
+  background-color: rgb(254 243 199);
+}
+:root:not(.dark) .bg-amber-500\/20 {
+  background-color: rgb(253 230 138);
+}
+:root:not(.dark) .bg-amber-500\/25 {
+  background-color: rgb(253 230 138);
+}
+:root:not(.dark) .bg-amber-500\/30 {
+  background-color: rgb(253 230 138);
+}
+:root:not(.dark) .border-amber-500\/20 {
+  border-color: rgb(252 211 77);
+}
+:root:not(.dark) .border-amber-500\/30 {
+  border-color: rgb(252 211 77);
+}
+:root:not(.dark) .border-amber-500\/40 {
+  border-color: rgb(245 158 11);
+}
+:root:not(.dark) .border-amber-500\/50 {
+  border-color: rgb(245 158 11);
+}
+:root:not(.dark) .hover\:bg-amber-500\/15:hover {
+  background-color: rgb(253 230 138);
+}
+:root:not(.dark) .hover\:bg-amber-500\/20:hover {
+  background-color: rgb(253 230 138);
+}
+:root:not(.dark) .hover\:bg-amber-500\/25:hover {
+  background-color: rgb(253 230 138);
+}
+:root:not(.dark) .text-amber-400,
+:root:not(.dark) .text-amber-300,
+:root:not(.dark) .text-amber-200 {
+  color: rgb(180 83 9);
+}
+:root:not(.dark) .hover\:text-amber-300:hover {
+  color: rgb(146 64 14);
+}
+:root:not(.dark) .bg-red-500\/10 {
+  background-color: rgb(254 226 226);
+}
+:root:not(.dark) .bg-red-500\/15 {
+  background-color: rgb(254 226 226);
+}
+:root:not(.dark) .bg-red-500\/20 {
+  background-color: rgb(254 202 202);
+}
+:root:not(.dark) .bg-red-500\/25 {
+  background-color: rgb(254 202 202);
+}
+:root:not(.dark) .bg-red-500\/30 {
+  background-color: rgb(254 202 202);
+}
+:root:not(.dark) .border-red-500\/20 {
+  border-color: rgb(252 165 165);
+}
+:root:not(.dark) .border-red-500\/30 {
+  border-color: rgb(252 165 165);
+}
+:root:not(.dark) .border-red-500\/40 {
+  border-color: rgb(248 113 113);
+}
+:root:not(.dark) .border-red-500\/50 {
+  border-color: rgb(248 113 113);
+}
+:root:not(.dark) .hover\:bg-red-500\/15:hover {
+  background-color: rgb(254 202 202);
+}
+:root:not(.dark) .hover\:bg-red-500\/20:hover {
+  background-color: rgb(254 202 202);
+}
+:root:not(.dark) .hover\:bg-red-500\/25:hover {
+  background-color: rgb(254 202 202);
+}
+:root:not(.dark) .text-red-400,
+:root:not(.dark) .text-red-300,
+:root:not(.dark) .text-red-200 {
+  color: rgb(185 28 28);
+}
+:root:not(.dark) .hover\:text-red-300:hover {
+  color: rgb(153 27 27);
+}
+:root:not(.dark) .bg-rose-500\/10 {
+  background-color: rgb(255 228 230);
+}
+:root:not(.dark) .bg-rose-500\/15 {
+  background-color: rgb(255 228 230);
+}
+:root:not(.dark) .bg-rose-500\/20 {
+  background-color: rgb(254 205 211);
+}
+:root:not(.dark) .bg-rose-500\/25 {
+  background-color: rgb(254 205 211);
+}
+:root:not(.dark) .bg-rose-500\/30 {
+  background-color: rgb(254 205 211);
+}
+:root:not(.dark) .border-rose-500\/20 {
+  border-color: rgb(253 164 175);
+}
+:root:not(.dark) .border-rose-500\/30 {
+  border-color: rgb(253 164 175);
+}
+:root:not(.dark) .border-rose-500\/40 {
+  border-color: rgb(251 113 133);
+}
+:root:not(.dark) .border-rose-500\/50 {
+  border-color: rgb(251 113 133);
+}
+:root:not(.dark) .hover\:bg-rose-500\/15:hover {
+  background-color: rgb(254 205 211);
+}
+:root:not(.dark) .hover\:bg-rose-500\/20:hover {
+  background-color: rgb(254 205 211);
+}
+:root:not(.dark) .hover\:bg-rose-500\/25:hover {
+  background-color: rgb(254 205 211);
+}
+:root:not(.dark) .text-rose-400,
+:root:not(.dark) .text-rose-300,
+:root:not(.dark) .text-rose-200 {
+  color: rgb(190 18 60);
+}
+:root:not(.dark) .hover\:text-rose-300:hover {
+  color: rgb(159 18 57);
+}
+:root:not(.dark) .bg-indigo-500\/10 {
+  background-color: rgb(224 231 255);
+}
+:root:not(.dark) .bg-indigo-500\/15 {
+  background-color: rgb(224 231 255);
+}
+:root:not(.dark) .bg-indigo-500\/20 {
+  background-color: rgb(199 210 254);
+}
+:root:not(.dark) .bg-indigo-500\/25 {
+  background-color: rgb(199 210 254);
+}
+:root:not(.dark) .bg-indigo-500\/30 {
+  background-color: rgb(199 210 254);
+}
+:root:not(.dark) .border-indigo-500\/20 {
+  border-color: rgb(165 180 252);
+}
+:root:not(.dark) .border-indigo-500\/30 {
+  border-color: rgb(165 180 252);
+}
+:root:not(.dark) .border-indigo-500\/40 {
+  border-color: rgb(129 140 248);
+}
+:root:not(.dark) .border-indigo-500\/50 {
+  border-color: rgb(129 140 248);
+}
+:root:not(.dark) .hover\:bg-indigo-500\/15:hover {
+  background-color: rgb(199 210 254);
+}
+:root:not(.dark) .hover\:bg-indigo-500\/20:hover {
+  background-color: rgb(199 210 254);
+}
+:root:not(.dark) .hover\:bg-indigo-500\/25:hover {
+  background-color: rgb(199 210 254);
+}
+:root:not(.dark) .bg-indigo-600\/10 {
+  background-color: rgb(224 231 255);
+}
+:root:not(.dark) .bg-indigo-600\/15 {
+  background-color: rgb(224 231 255);
+}
+:root:not(.dark) .bg-indigo-600\/20 {
+  background-color: rgb(199 210 254);
+}
+:root:not(.dark) .bg-indigo-600\/25 {
+  background-color: rgb(199 210 254);
+}
+:root:not(.dark) .bg-indigo-600\/30 {
+  background-color: rgb(199 210 254);
+}
+:root:not(.dark) .border-indigo-600\/20 {
+  border-color: rgb(165 180 252);
+}
+:root:not(.dark) .border-indigo-600\/30 {
+  border-color: rgb(165 180 252);
+}
+:root:not(.dark) .border-indigo-600\/40 {
+  border-color: rgb(129 140 248);
+}
+:root:not(.dark) .border-indigo-600\/50 {
+  border-color: rgb(129 140 248);
+}
+:root:not(.dark) .hover\:bg-indigo-600\/15:hover {
+  background-color: rgb(199 210 254);
+}
+:root:not(.dark) .hover\:bg-indigo-600\/20:hover {
+  background-color: rgb(199 210 254);
+}
+:root:not(.dark) .hover\:bg-indigo-600\/25:hover {
+  background-color: rgb(199 210 254);
+}
+:root:not(.dark) .text-indigo-400,
+:root:not(.dark) .text-indigo-300,
+:root:not(.dark) .text-indigo-200 {
+  color: rgb(67 56 202);
+}
+:root:not(.dark) .hover\:text-indigo-300:hover {
+  color: rgb(55 48 163);
+}
+:root:not(.dark) .bg-sky-500\/10 {
+  background-color: rgb(224 242 254);
+}
+:root:not(.dark) .bg-sky-500\/15 {
+  background-color: rgb(224 242 254);
+}
+:root:not(.dark) .bg-sky-500\/20 {
+  background-color: rgb(186 230 253);
+}
+:root:not(.dark) .bg-sky-500\/25 {
+  background-color: rgb(186 230 253);
+}
+:root:not(.dark) .bg-sky-500\/30 {
+  background-color: rgb(186 230 253);
+}
+:root:not(.dark) .border-sky-500\/20 {
+  border-color: rgb(125 211 252);
+}
+:root:not(.dark) .border-sky-500\/30 {
+  border-color: rgb(125 211 252);
+}
+:root:not(.dark) .border-sky-500\/40 {
+  border-color: rgb(56 189 248);
+}
+:root:not(.dark) .border-sky-500\/50 {
+  border-color: rgb(56 189 248);
+}
+:root:not(.dark) .hover\:bg-sky-500\/15:hover {
+  background-color: rgb(186 230 253);
+}
+:root:not(.dark) .hover\:bg-sky-500\/20:hover {
+  background-color: rgb(186 230 253);
+}
+:root:not(.dark) .hover\:bg-sky-500\/25:hover {
+  background-color: rgb(186 230 253);
+}
+:root:not(.dark) .text-sky-400,
+:root:not(.dark) .text-sky-300,
+:root:not(.dark) .text-sky-200 {
+  color: rgb(3 105 161);
+}
+:root:not(.dark) .hover\:text-sky-300:hover {
+  color: rgb(7 89 133);
+}
 
 /* Hover states that turned text white on a now-pale background */
-:root:not(.dark) .hover\:text-white:hover { color: rgb(55 48 163); }
-:root:not(.dark) .bg-indigo-600.hover\:text-white:hover, :root:not(.dark) .bg-red-600.hover\:text-white:hover { color: #fff; }
+:root:not(.dark) .hover\:text-white:hover {
+  color: rgb(55 48 163);
+}
+:root:not(.dark) .bg-indigo-600.hover\:text-white:hover,
+:root:not(.dark) .bg-red-600.hover\:text-white:hover {
+  color: #fff;
+}
 
 /* Neutral buttons: pale-grey fill + darker border so they stand out from white cards */
-:root:not(.dark) button.bg-slate-800, :root:not(.dark) a.bg-slate-800 {
+:root:not(.dark) button.bg-slate-800,
+:root:not(.dark) a.bg-slate-800 {
   background-color: rgb(226 232 240);
   border-color: rgb(148 163 184);
 }
-:root:not(.dark) button.bg-slate-800:hover, :root:not(.dark) button.hover\:bg-slate-750:hover, :root:not(.dark) button.hover\:bg-slate-700:hover {
+:root:not(.dark) button.bg-slate-800:hover,
+:root:not(.dark) button.hover\:bg-slate-750:hover,
+:root:not(.dark) button.hover\:bg-slate-700:hover {
   background-color: rgb(203 213 225);
 }
 
 /* Pastel indigo buttons */
-:root:not(.dark) button.bg-indigo-50, :root:not(.dark) a.bg-indigo-50 {
+:root:not(.dark) button.bg-indigo-50,
+:root:not(.dark) a.bg-indigo-50 {
   background-color: rgb(224 231 255);
   border-color: rgb(129 140 248);
   color: rgb(55 48 163);
 }
-:root:not(.dark) button.hover\:bg-indigo-100:hover { background-color: rgb(199 210 254); }
+:root:not(.dark) button.hover\:bg-indigo-100:hover {
+  background-color: rgb(199 210 254);
+}
 
 /* Selected/inactive tab pills in light mode */
-:root:not(.dark) .bg-slate-850.text-slate-400 { color: rgb(51 65 85); }
-
+:root:not(.dark) .bg-slate-850.text-slate-400 {
+  color: rgb(51 65 85);
+}

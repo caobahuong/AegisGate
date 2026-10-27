@@ -8,6 +8,7 @@ Adheres strictly to python_clean_code.md:
 """
 
 import asyncio
+import contextlib
 import json
 import logging
 import os
@@ -45,6 +46,29 @@ def _split_command(cmd: str) -> list[str]:
     return [p[1:-1] if len(p) >= 2 and p[0] == p[-1] and p[0] in ("'", '"') else p for p in parts]
 
 
+SAFE_ENV_KEYS: frozenset[str] = frozenset(
+    {
+        "PATH",
+        "SYSTEMROOT",
+        "SYSTEMDRIVE",
+        "TEMP",
+        "TMP",
+        "USERPROFILE",
+        "HOME",
+        "WINDIR",
+        "COMSPEC",
+        "PATHEXT",
+        "PYTHONPATH",
+        "PYTHONUNBUFFERED",
+        "PYTHONHOME",
+        "LD_LIBRARY_PATH",
+        "LANG",
+        "LC_ALL",
+        "TERM",
+    }
+)
+
+
 class _PersistentWorker:
     """One long-lived plugin process shared by every call for a plugin.
 
@@ -69,7 +93,8 @@ class _PersistentWorker:
         return self.proc is not None and self.proc.returncode is None
 
     async def _spawn(self) -> None:
-        sub_env = os.environ.copy()
+        # Sanitize environment: do not pass sensitive host secrets/tokens to untrusted plugin
+        sub_env = {k: v for k, v in os.environ.items() if k.upper() in SAFE_ENV_KEYS}
         sub_env["PYTHONPATH"] = str(settings.BASE_DIR)
         sub_env["PYTHONUNBUFFERED"] = "1"
         kwargs: dict[str, Any] = {
@@ -80,12 +105,13 @@ class _PersistentWorker:
             "env": sub_env,
             "limit": settings.PLUGIN_MAX_MESSAGE_BYTES,
         }
+        argv = _split_command(self.cmd)
+        if not argv:
+            raise PluginProcessError(f"Invalid empty plugin command: {self.cmd!r}")
         try:
-            argv = _split_command(self.cmd)
             self.proc = await asyncio.create_subprocess_exec(*argv, **kwargs)
-        except (ValueError, OSError):
-            logger.debug("Falling back to shell launch for %s", self.cmd)
-            self.proc = await asyncio.create_subprocess_shell(self.cmd, **kwargs)
+        except (ValueError, OSError) as exc:
+            raise PluginProcessError(f"Failed to spawn plugin process safely without shell: {exc}") from exc
         _active_processes.add(self.proc)
         self._tasks = [
             asyncio.create_task(self._read_loop(self.proc)),
@@ -139,14 +165,14 @@ class _PersistentWorker:
         rid = self._next_id
         fut: asyncio.Future[dict[str, Any]] = self.loop.create_future()
         self._pending[rid] = fut
-        payload = json.dumps({"jsonrpc": "2.0", "method": method, "params": params, "id": rid}) + "\n"
+        payload = json.dumps({"jsonrpc": "2.0", "method": method, "params": params, "id": rid}, default=str) + "\n"
         try:
             self.proc.stdin.write(payload.encode("utf-8"))
             await self.proc.stdin.drain()
             return await (asyncio.wait_for(fut, timeout) if timeout else fut)
         except (BrokenPipeError, ConnectionResetError) as exc:
             raise PluginProcessError("Plugin worker pipe is closed") from exc
-        except asyncio.TimeoutError as exc:
+        except TimeoutError as exc:
             # The worker is deliberately NOT killed: a slow call must stay abortable.
             raise PluginProcessError(f"Plugin call '{method}' timed out after {timeout}s") from exc
         finally:
@@ -202,10 +228,8 @@ async def _get_worker(key: str, cmd: str, working_dir: str) -> _PersistentWorker
         if worker.loop is loop:
             await worker.close()
         elif worker.proc is not None and worker.proc.returncode is None:
-            try:
+            with contextlib.suppress(ProcessLookupError):
                 worker.proc.kill()
-            except ProcessLookupError:
-                pass
         worker = None
     if worker is None:
         worker = _PersistentWorker(cmd, working_dir)
@@ -300,7 +324,7 @@ class PluginSubprocessClient:
         timeout: float | None = None,
     ) -> Any:
         """Execute a single JSON-RPC roundtrip with the plugin process.
-        
+
         Guarantees process termination via try...finally to eliminate orphan processes.
         """
         if self.persistent:
@@ -340,9 +364,7 @@ class PluginSubprocessClient:
                 stdout_data, stderr_data = await proc.communicate()
                 if proc.returncode != 0 and not stdout_data:
                     err_msg = stderr_data.decode("utf-8", errors="replace").strip()
-                    raise PluginProcessError(
-                        f"Plugin exited with code {proc.returncode}: {err_msg}"
-                    )
+                    raise PluginProcessError(f"Plugin exited with code {proc.returncode}: {err_msg}")
                 return stdout_data.decode("utf-8", errors="replace").strip()
 
             if timeout:
@@ -378,7 +400,7 @@ class PluginSubprocessClient:
 
             return rpc_resp.result
 
-        except asyncio.TimeoutError as exc:
+        except TimeoutError as exc:
             raise PluginProcessError(f"Plugin execution timed out after {timeout}s") from exc
 
         finally:
@@ -397,23 +419,23 @@ class PluginSubprocessClient:
 
     async def sync_knowledge(self, params: SyncKnowledgeParams) -> SyncKnowledgeResult:
         """Call plugin sync_knowledge method."""
-        raw = await self.send_rpc_command("sync_knowledge", params.model_dump(), timeout=30.0)
+        raw = await self.send_rpc_command("sync_knowledge", params.model_dump(mode="json"), timeout=30.0)
         return SyncKnowledgeResult.model_validate(raw)
 
     async def dry_run(self, params: DryRunParams) -> DryRunResult:
         """Call plugin dry_run method."""
-        raw = await self.send_rpc_command("dry_run", params.model_dump(), timeout=15.0)
+        raw = await self.send_rpc_command("dry_run", params.model_dump(mode="json"), timeout=15.0)
         return DryRunResult.model_validate(raw)
 
     async def execute(self, params: ExecuteParams, timeout: float | None = None) -> ExecuteResult:
         """Call plugin execute method."""
         call_timeout = timeout or params.timeout_seconds + 5.0
-        raw = await self.send_rpc_command("execute", params.model_dump(), timeout=call_timeout)
+        raw = await self.send_rpc_command("execute", params.model_dump(mode="json"), timeout=call_timeout)
         return ExecuteResult.model_validate(raw)
 
     async def abort(self, params: AbortParams) -> AbortResult:
         """Call plugin abort method."""
-        raw = await self.send_rpc_command("abort", params.model_dump(), timeout=10.0)
+        raw = await self.send_rpc_command("abort", params.model_dump(mode="json"), timeout=10.0)
         return AbortResult.model_validate(raw)
 
     async def reinit(self, params: ReinitParams, timeout: float | None = None) -> ReinitResult:

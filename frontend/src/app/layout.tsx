@@ -6,13 +6,9 @@ export const metadata: Metadata = {
   description: "Enterprise DevOps & AI Gatekeeper Platform",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="h-full">
+    <html lang="en" className="h-full" suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -31,7 +27,10 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="bg-slate-950 text-slate-100 h-full overflow-hidden antialiased">
+      <body
+        className="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 h-full overflow-hidden antialiased"
+        suppressHydrationWarning
+      >
         {children}
       </body>
     </html>

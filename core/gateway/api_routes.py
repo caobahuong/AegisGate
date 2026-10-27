@@ -7,18 +7,22 @@ Adheres strictly to python_clean_code.md:
 - Zero generic `except Exception:`, proper status codes
 """
 
+import re
+from datetime import datetime
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlmodel import Session
 
+from core.config import settings
 from core.database import get_session
 from core.exceptions import (
     ExecutionStateError,
     ExecutionTimeoutError,
     PluginExecutionError,
     PluginNotFoundError,
+    PluginQueueFullError,
     RuleViolationError,
 )
 from core.gateway.schemas import (
@@ -29,6 +33,7 @@ from core.gateway.schemas import (
     InstallGitPluginRequest,
     KnowledgeChunkResponse,
     McpConfigResponse,
+    PaginatedExecutionsResponse,
     PluginCertificationResponse,
     PluginProfileResponse,
     PluginSchemaResponse,
@@ -47,6 +52,19 @@ from core.gateway.sse_broadcaster import sse_broadcaster
 router = APIRouter(prefix="/api", tags=["AegisGate Gateway"])
 
 
+def _sanitize_error_detail(exc: Exception | str) -> str:
+    """Sanitize internal filesystem paths and credentials from exception messages in production."""
+    msg = str(exc)
+    if settings.DEBUG:
+        return msg
+    # Strip Windows drive paths and Unix paths
+    msg = re.sub(r"[A-Za-z]:\\[^ \"';\n\r]+", "[INTERNAL_PATH]", msg)
+    msg = re.sub(r"/(?:Users|home|root|var|etc)/[^ \"';\n\r]+", "[INTERNAL_PATH]", msg)
+    # Mask passwords, tokens, or secrets
+    msg = re.sub(r"(?i)\b(password|pwd|secret|token)\s*=\s*[^;\s]+", r"\1=[REDACTED]", msg)
+    return msg
+
+
 def get_service(session: Annotated[Session, Depends(get_session)]) -> GatewayService:
     """Dependency injection helper providing GatewayService."""
     return GatewayService(session)
@@ -54,17 +72,51 @@ def get_service(session: Annotated[Session, Depends(get_session)]) -> GatewaySer
 
 # --- Live Monitor & Execution Endpoints ---
 
+
 @router.get("/monitor/events")
-async def sse_events() -> StreamingResponse:
-    """Server-Sent Events endpoint streaming real-time execution states."""
+async def sse_events(
+    request: Request,
+    last_event_id: Annotated[int | None, Query(alias="last_event_id")] = None,
+) -> StreamingResponse:
+    """Server-Sent Events endpoint streaming real-time execution states with replay."""
+    header_last_id = request.headers.get("Last-Event-ID")
+    effective_last_id: int | None = None
+    if header_last_id and header_last_id.isdigit():
+        effective_last_id = int(header_last_id)
+    elif last_event_id is not None:
+        effective_last_id = last_event_id
+
     return StreamingResponse(
-        sse_broadcaster.subscribe(),
+        sse_broadcaster.subscribe(last_event_id=effective_last_id),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
             "X-Accel-Buffering": "no",
         },
+    )
+
+
+@router.get("/executions/page", response_model=PaginatedExecutionsResponse)
+def paginate_executions(
+    service: Annotated[GatewayService, Depends(get_service)],
+    cursor: str | None = Query(default=None, description="Opaque pagination cursor from previous page"),
+    limit: int = Query(default=50, ge=1, le=500),
+    status: str | None = Query(default=None, description="Status filter"),
+    target_id: str | None = Query(default=None, description="Plugin target ID filter"),
+    q: str | None = Query(default=None, description="Search term matching query, reasoning, or ID"),
+    from_date: datetime | None = Query(default=None, description="Earliest created_at timestamp"),
+    to_date: datetime | None = Query(default=None, description="Latest created_at timestamp"),
+) -> PaginatedExecutionsResponse:
+    """Cursor-paginated search endpoint for execution audit logs."""
+    return service.paginate_executions(
+        cursor=cursor,
+        limit=limit,
+        status=status,
+        target_id=target_id,
+        q=q,
+        from_date=from_date,
+        to_date=to_date,
     )
 
 
@@ -98,12 +150,17 @@ def get_execution(
 async def submit_execution(
     req: SubmitExecutionRequest,
     service: Annotated[GatewayService, Depends(get_service)],
+    wait: bool = Query(
+        default=True, description="Wait for execution to finish (true) or dispatch in background (false)"
+    ),
 ) -> ExecutionResponse:
     """Submit an AI query for Dry-Run and Execution lifecycle."""
     try:
-        return await service.submit_execution(req)
+        return await service.submit_execution(req, wait=wait)
     except PluginNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=exc.message) from exc
+    except PluginQueueFullError as exc:
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=exc.message) from exc
     except (RuleViolationError, ExecutionStateError) as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=exc.message) from exc
     except ExecutionTimeoutError as exc:
@@ -150,6 +207,7 @@ async def abort_execution(
 
 # --- Pluggable Targets (Plugin Management) Endpoints ---
 
+
 @router.get("/plugins", response_model=list[PluginProfileResponse])
 def list_plugins(
     service: Annotated[GatewayService, Depends(get_service)],
@@ -168,7 +226,6 @@ def register_plugin(
     return service.register_plugin(req)
 
 
-
 @router.post("/plugins/install-zip", response_model=PluginProfileResponse, status_code=status.HTTP_201_CREATED)
 async def install_plugin_zip(
     service: Annotated[GatewayService, Depends(get_service)],
@@ -179,7 +236,7 @@ async def install_plugin_zip(
         content = await file.read()
         return await service.install_plugin_zip(content, filename=file.filename)
     except Exception as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=_sanitize_error_detail(exc)) from exc
 
 
 @router.post("/plugins/install-git", response_model=PluginProfileResponse, status_code=status.HTTP_201_CREATED)
@@ -191,7 +248,7 @@ async def install_plugin_git(
     try:
         return await service.install_plugin_git(req)
     except Exception as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=_sanitize_error_detail(exc)) from exc
 
 
 @router.post("/plugins/{plugin_id}/verify", response_model=PluginCertificationResponse)
@@ -205,7 +262,10 @@ async def verify_plugin(
     except PluginNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=exc.message) from exc
     except Exception as exc:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=_sanitize_error_detail(exc)
+        ) from exc
+
 
 @router.get("/plugins/{plugin_id}/schema", response_model=PluginSchemaResponse)
 def get_plugin_schema(
@@ -231,7 +291,9 @@ async def update_plugin_config(
     except PluginNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=exc.message) from exc
     except Exception as exc:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=_sanitize_error_detail(exc)
+        ) from exc
 
 
 @router.delete("/plugins/{plugin_id}")
@@ -246,7 +308,9 @@ async def delete_plugin(
     except PluginNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=exc.message) from exc
     except Exception as exc:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=_sanitize_error_detail(exc)
+        ) from exc
 
 
 @router.get("/plugins/{plugin_id}/mcp-config", response_model=McpConfigResponse)
@@ -280,10 +344,13 @@ async def sync_plugin_catalog(
     except PluginNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=exc.message) from exc
     except PluginExecutionError as exc:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=exc.message) from exc
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=_sanitize_error_detail(exc.message)
+        ) from exc
 
 
 # --- Knowledge & Rules Endpoints ---
+
 
 @router.get("/knowledge", response_model=list[KnowledgeChunkResponse])
 def list_knowledge(
@@ -377,6 +444,7 @@ def delete_rule(
 
 # --- Settings & Auto Mode Endpoints ---
 
+
 @router.get("/settings/auto-mode", response_model=AutoModeResponse)
 def get_auto_mode(
     service: Annotated[GatewayService, Depends(get_service)],
@@ -396,6 +464,7 @@ def set_auto_mode(
 
 
 # --- Audit Logs Endpoint ---
+
 
 @router.get("/logs", response_model=list[ExecutionResponse])
 def list_logs(

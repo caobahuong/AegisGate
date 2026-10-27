@@ -38,18 +38,18 @@ class PluginServer:
         try:
             req = json.loads(line)
         except json.JSONDecodeError as exc:
-            return json.dumps({
-                "jsonrpc": "2.0",
-                "id": None,
-                "error": {"code": -32700, "message": f"Parse error: {exc!s}"}
-            })
+            return json.dumps(
+                {"jsonrpc": "2.0", "id": None, "error": {"code": -32700, "message": f"Parse error: {exc!s}"}}
+            )
 
         if not isinstance(req, dict) or req.get("jsonrpc") != "2.0" or "method" not in req:
-            return json.dumps({
-                "jsonrpc": "2.0",
-                "id": req.get("id") if isinstance(req, dict) else None,
-                "error": {"code": -32600, "message": "Invalid Request: must be JSON-RPC 2.0 object"}
-            })
+            return json.dumps(
+                {
+                    "jsonrpc": "2.0",
+                    "id": req.get("id") if isinstance(req, dict) else None,
+                    "error": {"code": -32600, "message": "Invalid Request: must be JSON-RPC 2.0 object"},
+                }
+            )
 
         req_id = req.get("id")
         method = str(req.get("method") or "")
@@ -59,11 +59,7 @@ class PluginServer:
 
         try:
             result = self._dispatch(method, params)
-            response: dict[str, Any] = {
-                "jsonrpc": "2.0",
-                "id": req_id,
-                "result": result
-            }
+            response: dict[str, Any] = {"jsonrpc": "2.0", "id": req_id, "result": result}
         except PluginException as exc:
             response = {
                 "jsonrpc": "2.0",
@@ -72,17 +68,14 @@ class PluginServer:
                     "code": exc.code,
                     "message": exc.message,
                     "data": exc.data,
-                }
+                },
             }
         except Exception as exc:
             logger.exception("Internal plugin error executing method '%s'", method)
             response = {
                 "jsonrpc": "2.0",
                 "id": req_id,
-                "error": {
-                    "code": -32603,
-                    "message": f"Internal plugin error: {exc!s}"
-                }
+                "error": {"code": -32603, "message": f"Internal plugin error: {exc!s}"},
             }
 
         return json.dumps(response)
@@ -105,10 +98,7 @@ class PluginServer:
         elif method == "ping":
             return self.plugin.ping(config)
         else:
-            raise PluginException(
-                message=f"Method '{method}' not found",
-                code=-32601
-            )
+            raise PluginException(message=f"Method '{method}' not found", code=-32601)
 
     def run(self) -> None:
         """Run the main Stdio loop reading from stdin until EOF."""
@@ -120,4 +110,3 @@ class PluginServer:
                     self.stdout.flush()
         except KeyboardInterrupt:
             pass
-

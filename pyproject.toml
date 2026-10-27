@@ -1,0 +1,145 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aegisgate"
+version = "1.0.0"
+description = "Enterprise AI Execution Proxy and Pluggable Harness Platform"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+    { name = "AegisGate contributors" }
+]
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "sqlmodel>=0.0.22",
+    "pydantic>=2.8.0",
+    "pydantic-settings>=2.4.0",
+    "mcp>=1.0.0",
+    "httpx>=0.27.0",
+    "python-multipart>=0.0.9",
+    "sse-starlette>=2.1.0",
+    "psutil>=5.9.0",
+    "alembic>=1.13.0",
+]
+
+[project.optional-dependencies]
+sqlserver = [
+    "pyodbc>=5.0.0",
+]
+postgres = [
+    "psycopg[binary]>=3.1.0",
+]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=5.0.0",
+    "ruff>=0.6.0,<0.18",
+    "mypy>=1.11.0",
+    "playwright>=1.46.0",
+    "httpx>=0.27.0",
+    "psutil>=5.9.0",
+]
+
+[tool.setuptools.package-dir]
+"" = "."
+aegisgate_sdk = "sdk/aegisgate_sdk"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["core*", "plugins*", "sdk*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+markers = [
+    "unit: Isolated fast unit tests",
+    "integration: Live database integration tests requiring external SQL Server",
+    "e2e: End-to-end browser and full workflow tests",
+    "load: Performance and stress tests",
+    "slow: Tests taking more than 5 seconds",
+    "audit: Full-system defect and audit verification tests",
+]
+addopts = "-q -m 'not integration and not e2e and not load' --cov=core --cov=plugins/sql_inspector --cov=plugins/plugin_contract --cov-report=term-missing --cov-fail-under=62"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+extend-exclude = ["docs/archive", "report", "data"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "W",   # pycodestyle warnings
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+    "SIM", # flake8-simplify
+    "C4",  # flake8-comprehensions
+    "PLC", # pylint convention
+    "PLE", # pylint error
+]
+ignore = [
+    "E501",   # Line length is handled by ruff format
+    "E711",   # Comparison to None: required by SQLAlchemy/SQLModel column expressions
+    "E712",   # Comparison to True/False: required by SQLModel boolean column expressions
+    "B008",   # Do not perform function call in argument defaults (FastAPI Depends/File/Query pattern)
+    "PLC0415",# Import not at top-level (used for lazy-loading optional drivers such as pyodbc)
+    "B905",   # zip() without explicit strict parameter (preserves Python 3.9 compatibility)
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Standalone plugin scripts that configure sys.path prior to imports
+"plugins/mongodb_plugin/adapter.py" = ["E402"]
+"plugins/sqlserver_plugin/adapter.py" = ["E402"]
+"plugins/templates/starter/tests/test_adapter.py" = ["E402"]
+"scripts/*" = ["E402"]
+"backend/*" = ["E402"]
+"tests/audit/*" = ["E402"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+
+[tool.mypy]
+python_version = "3.11"
+warn_unused_ignores = true
+warn_redundant_casts = true
+show_error_codes = true
+check_untyped_defs = true
+
+# Strict type checking on core engine, platform routes, and security inspectors
+[[tool.mypy.overrides]]
+module = [
+    "core.*",
+    "plugins.sql_inspector",
+    "plugins.plugin_contract",
+]
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+warn_unused_ignores = true
+
+# Relaxed overrides for external plugin drivers, third-party libraries, and test fixtures
+[[tool.mypy.overrides]]
+module = [
+    "plugins.sqlserver_plugin.*",
+    "plugins.mongodb_plugin.*",
+    "plugins.templates.*",
+    "sdk.*",
+    "tests.*",
+    "scripts.*",
+    "pyodbc.*",
+    "aegisgate_sdk.*",
+    "adapter.*",
+    "setuptools.*",
+]
+disallow_untyped_defs = false
+ignore_missing_imports = true

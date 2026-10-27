@@ -5,16 +5,49 @@ Adheres to python_clean_code.md:
 - Strict validation models
 """
 
-from typing import Any
+import re
+from typing import Any, Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from core.engine.governance import validate_rule_definition
 
+# --- Strongly-Typed Enums & Literals ---
+
+ExecutionStatus = Literal[
+    "DRY_RUN",
+    "QUEUED",
+    "PAUSED_FOR_REVIEW",
+    "EXECUTING",
+    "COMPLETED",
+    "REJECTED",
+    "TIMEOUT",
+    "ABORTED",
+    "PENDING",
+    "FAILED",
+]
+
+QueryType = Literal["READ", "WRITE"]
+
+RuleType = Literal[
+    "FORBID_JOIN",
+    "FORBID_TABLE_SCAN",
+    "MAX_EXECUTION_TIME",
+    "CUSTOM",
+    "REDACT_FIELD",
+    "REMOVE_FIELD",
+]
+
+RuleSeverity = Literal["CRITICAL", "HIGH", "MEDIUM", "LOW"]
+
+PluginStatus = Literal["active", "inactive", "error", "disabled"]
+
 # --- Monitor & Execution Schemas ---
+
 
 class SubmitExecutionRequest(BaseModel):
     """Payload for submitting an AI query for execution."""
+
     target_id: str = Field(description="Target plugin identifier")
     query: str = Field(description="SQL or command query string")
     reasoning: str = Field(default="", description="AI intent or chain of thought reasoning")
@@ -22,12 +55,13 @@ class SubmitExecutionRequest(BaseModel):
 
 class ExecutionResponse(BaseModel):
     """Response representing an execution's full state."""
+
     id: str
     target_id: str
     query: str
-    query_type: str
+    query_type: QueryType
     reasoning: str
-    status: str
+    status: ExecutionStatus
     explain_plan: Any | None = None
     violations: list[str] = Field(default_factory=list)
     execution_time_ms: float | None = None
@@ -40,21 +74,37 @@ class ExecutionResponse(BaseModel):
     finished_at: str | None = None
 
 
+class PaginatedExecutionsResponse(BaseModel):
+    """Cursor-paginated response for execution logs."""
+
+    items: list[ExecutionResponse]
+    next_cursor: str | None = None
+    total_count: int
+
+
 class ApproveExecutionRequest(BaseModel):
     """Payload for approving and resuming a paused execution."""
+
     approved_by: str = Field(default="Admin", description="User or approver identifier")
 
 
 class RejectExecutionRequest(BaseModel):
     """Payload for rejecting an execution."""
+
     rejected_by: str = Field(default="Admin")
     reason: str = Field(default="Rejected by admin review")
 
 
 # --- Plugin Schemas ---
 
+
+_SAFE_PLUGIN_ID = re.compile(r"^[a-zA-Z0-9_-]{1,64}$")
+_FORBIDDEN_SHELL_CHARS = re.compile(r"[;&|`$<>\r\n]")
+
+
 class RegisterPluginRequest(BaseModel):
     """Payload for registering a new plugin via Add Plugin Modal."""
+
     id: str = Field(description="Unique plugin key (e.g. sqlserver_prod)")
     name: str = Field(description="Display name")
     driver: str = Field(description="Driver identifier e.g. pyodbc/mssql")
@@ -65,9 +115,28 @@ class RegisterPluginRequest(BaseModel):
     ui_schema: list[dict[str, Any]] | None = None
     custom_card: dict[str, Any] | None = None
 
+    @field_validator("id")
+    @classmethod
+    def validate_plugin_id(cls, v: str) -> str:
+        val = v.strip()
+        if not _SAFE_PLUGIN_ID.fullmatch(val):
+            raise ValueError(
+                "Plugin ID must only contain alphanumeric characters, underscores, or hyphens (max 64 chars)."
+            )
+        return val
+
+    @field_validator("entrypoint", "abort_command")
+    @classmethod
+    def validate_command_safety(cls, v: str) -> str:
+        val = v.strip()
+        if _FORBIDDEN_SHELL_CHARS.search(val):
+            raise ValueError("Command contains forbidden shell metacharacters (; & | ` $ < > \\r \\n).")
+        return val
+
 
 class UpdatePluginConfigRequest(BaseModel):
     """Payload for updating a plugin's configuration via Edit Modal."""
+
     name: str | None = None
     config: dict[str, Any] = Field(description="Updated connection configuration")
     driver: str | None = None
@@ -75,9 +144,20 @@ class UpdatePluginConfigRequest(BaseModel):
     dry_run_command: str | None = None
     abort_command: str | None = None
 
+    @field_validator("entrypoint", "abort_command")
+    @classmethod
+    def validate_command_safety(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        val = v.strip()
+        if _FORBIDDEN_SHELL_CHARS.search(val):
+            raise ValueError("Command contains forbidden shell metacharacters (; & | ` $ < > \\r \\n).")
+        return val
+
 
 class PluginProfileResponse(BaseModel):
     """Plugin profile data for UI rendering."""
+
     id: str
     name: str
     driver: str
@@ -87,7 +167,7 @@ class PluginProfileResponse(BaseModel):
     config: dict[str, Any]
     ui_schema: list[dict[str, Any]] = Field(default_factory=list)
     custom_card: dict[str, Any] | None = None
-    status: str
+    status: PluginStatus
     latency_ms: float
     active_sessions_count: int
     is_certified: bool = False
@@ -96,10 +176,9 @@ class PluginProfileResponse(BaseModel):
     updated_at: str
 
 
-
-
 class InstallGitPluginRequest(BaseModel):
     """Payload for installing a plugin directly from a remote Git repository."""
+
     git_url: str = Field(description="Remote Git URL e.g. https://github.com/org/plugin.git")
     branch: str | None = Field(default=None, description="Optional branch or tag name")
     plugin_id: str | None = Field(default=None, description="Optional override for plugin ID")
@@ -107,6 +186,7 @@ class InstallGitPluginRequest(BaseModel):
 
 class PluginCertificationResponse(BaseModel):
     """Report from running 4-stage sanity linter against a plugin."""
+
     plugin_id: str
     certified: bool
     badge: str
@@ -114,8 +194,10 @@ class PluginCertificationResponse(BaseModel):
     verified_at: str
     error: str | None = None
 
+
 class PluginSchemaResponse(BaseModel):
     """Response containing plugin dynamic UI schema and current config."""
+
     plugin_id: str
     name: str
     driver: str
@@ -126,8 +208,10 @@ class PluginSchemaResponse(BaseModel):
 
 # --- Knowledge Schemas ---
 
+
 class KnowledgeChunkResponse(BaseModel):
     """Knowledge chunk metadata and doc references."""
+
     id: str
     target_id: str
     partition_key: str
@@ -141,23 +225,26 @@ class KnowledgeChunkResponse(BaseModel):
 
 class UpdateDocsRequest(BaseModel):
     """Payload for updating doc.md and skills.md markdown text."""
+
     doc_content: str | None = None
     skills_content: str | None = None
 
 
 # --- Rule Schemas ---
 
+
 class CreateRuleRequest(BaseModel):
     """Payload for creating a governance rule."""
+
     id: str
     name: str
     target_id: str | None = None
-    rule_type: str = Field(
+    rule_type: RuleType = Field(
         description="FORBID_JOIN | FORBID_TABLE_SCAN | MAX_EXECUTION_TIME | CUSTOM | REDACT_FIELD | REMOVE_FIELD"
     )
     expression: str
     description: str = ""
-    severity: str = "HIGH"
+    severity: RuleSeverity = "HIGH"
     is_active: bool = True
 
     @model_validator(mode="after")
@@ -170,44 +257,51 @@ class CreateRuleRequest(BaseModel):
 
 class UpdateRuleRequest(BaseModel):
     """Payload for updating an existing rule."""
+
     name: str | None = None
     target_id: str | None = None
-    rule_type: str | None = None
+    rule_type: RuleType | None = None
     expression: str | None = None
     description: str | None = None
-    severity: str | None = None
+    severity: RuleSeverity | None = None
     is_active: bool | None = None
 
 
 class RuleResponse(BaseModel):
     """Governance rule representation."""
+
     id: str
     name: str
     target_id: str | None = None
-    rule_type: str
+    rule_type: RuleType
     expression: str
     description: str
-    severity: str
+    severity: RuleSeverity
     is_active: bool
     created_at: str
 
 
 # --- System Settings Schemas ---
 
+
 class AutoModeResponse(BaseModel):
     """Auto approval mode status."""
+
     auto_approval_enabled: bool
 
 
 class SetAutoModeRequest(BaseModel):
     """Payload to toggle auto approval mode."""
+
     enabled: bool
 
 
 # --- MCP Configuration Schemas ---
 
+
 class McpServerDefinition(BaseModel):
     """Single MCP server command and environment definition."""
+
     command: str = "python"
     args: list[str] = Field(default_factory=list)
     env: dict[str, str] = Field(default_factory=dict)
@@ -215,6 +309,7 @@ class McpServerDefinition(BaseModel):
 
 class McpConfigResponse(BaseModel):
     """Response containing standard MCP JSON configuration for AI clients."""
+
     server_name: str
     plugin_id: str | None = None
     command: str = "python"
@@ -224,6 +319,5 @@ class McpConfigResponse(BaseModel):
         description="Standard JSON snippet ready for claude_desktop_config.json, .cursor/mcp.json, or cline"
     )
     client_configs: dict[str, Any] = Field(
-        default_factory=dict,
-        description="Target-specific JSON snippets formatted for Claude, Cursor, and Cline"
+        default_factory=dict, description="Target-specific JSON snippets formatted for Claude, Cursor, and Cline"
     )

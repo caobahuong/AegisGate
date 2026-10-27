@@ -2,6 +2,7 @@
 node_modules/
 .pnp/
 .pnp.js
+*.egg-info/
 
 # Testing and Cache
 .pytest_cache/
@@ -11,6 +12,7 @@ __pycache__/
 .coverage
 htmlcov/
 .vitest/
+coverage/
 *.tsbuildinfo
 
 # Next.js
@@ -28,9 +30,18 @@ dist/
 
 # Databases & Runtime Data
 *.sqlite3
+*.db
+data/*.db
 *.db-journal
 *.db-wal
 *.db-shm
+
+# Caches and Virtual Environments
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+report/tmp/
 
 # OS Files
 Thumbs.db

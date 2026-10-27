@@ -55,13 +55,7 @@ describe("Frontend Component Tests", () => {
       },
     ];
 
-    render(
-      <Sidebar
-        activeTab="monitor"
-        onTabChange={handleTabChange}
-        plugins={samplePlugins}
-      />
-    );
+    render(<Sidebar activeTab="monitor" onTabChange={handleTabChange} plugins={samplePlugins} />);
 
     expect(screen.getByText("Live Execution Monitor")).toBeDefined();
     expect(screen.getByText("Pluggable Targets")).toBeDefined();
@@ -143,7 +137,7 @@ describe("Frontend Component Tests", () => {
         result_summary: {
           data: [
             { ProductID: 101, Name: "Server Rack 42U", Price: 1299.99 },
-            { ProductID: 102, Name: "Switch 48-Port", Price: 549.50 },
+            { ProductID: 102, Name: "Switch 48-Port", Price: 549.5 },
           ],
           rows_affected: 2,
         },
@@ -418,13 +412,7 @@ describe("Frontend Component Tests", () => {
       },
     };
 
-    render(
-      <McpConfigModal
-        isOpen={true}
-        onClose={handleClose}
-        configData={sampleConfig}
-      />
-    );
+    render(<McpConfigModal isOpen={true} onClose={handleClose} configData={sampleConfig} />);
 
     // 1. Verify modal title and JSON snippet
     expect(screen.getByTestId("mcp-modal")).toBeDefined();
@@ -435,7 +423,9 @@ describe("Frontend Component Tests", () => {
 
     // 2. Click Cursor tab
     fireEvent.click(screen.getByText("Cursor (.cursor/mcp.json)"));
-    expect(screen.getByText(".cursor/mcp.json (Project root) or Cursor Settings > Features > MCP")).toBeDefined();
+    expect(
+      screen.getByText(".cursor/mcp.json (Project root) or Cursor Settings > Features > MCP")
+    ).toBeDefined();
 
     // 3. Click Copy to Clipboard
     const copyBtn = screen.getByTestId("copy-mcp-btn");
@@ -957,7 +947,11 @@ describe("Frontend Component Tests", () => {
           badge: "CERTIFIED_READY",
           checks: {
             handshake: { status: "PASSED", latency_ms: 5.2, details: "OK" },
-            sync_knowledge: { status: "PASSED", latency_ms: 12.0, details: "2 tables" },
+            sync_knowledge: {
+              status: "PASSED",
+              latency_ms: 12.0,
+              details: "2 tables",
+            },
             dry_run: { status: "PASSED", latency_ms: 15.1, details: "Plan OK" },
             abort: { status: "PASSED", latency_ms: 3.0, details: "Kill OK" },
           },
@@ -1025,5 +1019,4 @@ describe("Frontend Component Tests", () => {
     fireEvent.click(tabPreset);
     expect(screen.getByText("Target Architecture Preset")).toBeDefined();
   });
-
 });

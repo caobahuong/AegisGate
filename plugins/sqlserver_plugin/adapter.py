@@ -17,28 +17,33 @@ In ``--serve`` mode nothing runs until the Core pushed a configuration (``reinit
 can therefore never silently fall back to fake data.
 """
 
-from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass, field
-from datetime import date, datetime, time as dt_time, timezone
-from decimal import Decimal
+import contextlib
 import json
 import math
 import os
-from pathlib import Path
 import re
 import sys
 import threading
 import time
-from typing import Any, Optional
 import uuid
-import xml.etree.ElementTree as ET
+
+try:
+    from defusedxml.ElementTree import fromstring as safe_xml_fromstring
+except ImportError:
+    from xml.etree.ElementTree import fromstring as safe_xml_fromstring  # type: ignore[no-redef]  # nosec B314
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass, field
+from datetime import UTC, date, datetime
+from datetime import time as dt_time
+from decimal import Decimal
+from pathlib import Path
+from typing import Any, Literal
 
 # Ensure project root is in sys.path when executed as standalone subprocess
 _root_dir = str(Path(__file__).resolve().parent.parent.parent)
 if _root_dir not in sys.path:
     sys.path.insert(0, _root_dir)
 
-from plugins.sql_inspector import classify_query, is_unbounded_scan, joins_tables, statement_count
 from plugins.plugin_contract import (
     AbortParams,
     AbortResult,
@@ -47,8 +52,8 @@ from plugins.plugin_contract import (
     DryRunResult,
     ExecuteParams,
     ExecuteResult,
-    IPluginAdapter,
     IndexSchema,
+    IPluginAdapter,
     JsonRpcErrorPayload,
     JsonRpcRequest,
     JsonRpcResponse,
@@ -59,6 +64,7 @@ from plugins.plugin_contract import (
     SyncKnowledgeResult,
     TableSchema,
 )
+from plugins.sql_inspector import classify_query, is_unbounded_scan, joins_tables, statement_count
 
 DEFAULT_DRIVER = "ODBC Driver 18 for SQL Server"
 DEFAULT_MAX_ROWS = 1000
@@ -95,15 +101,15 @@ def _odbc_braced(value: str) -> str:
 
 def _jsonable(value: Any, max_chars: int = DEFAULT_MAX_CELL_CHARS) -> Any:
     """Convert a pyodbc cell into something json.dumps accepts."""
-    if value is None or isinstance(value, (bool, int, float)):
+    if value is None or isinstance(value, bool | int | float):
         return value
     if isinstance(value, str):
         return value if len(value) <= max_chars else value[:max_chars] + "...[truncated]"
     if isinstance(value, Decimal):
         return float(value)
-    if isinstance(value, (datetime, date, dt_time)):
+    if isinstance(value, datetime | date | dt_time):
         return value.isoformat()
-    if isinstance(value, (bytes, bytearray)):
+    if isinstance(value, bytes | bytearray):
         head = bytes(value[:64]).hex()
         return f"0x{head}" + ("..." if len(value) > 64 else "")
     if isinstance(value, uuid.UUID):
@@ -120,8 +126,8 @@ class _ActiveExecution:
     cancelled: bool = False
     conn: Any = None
     cursor: Any = None
-    spid: Optional[int] = None
-    login_time: Optional[str] = None
+    spid: int | None = None
+    login_time: str | None = None
 
 
 class SqlServerAdapter(IPluginAdapter):
@@ -129,14 +135,14 @@ class SqlServerAdapter(IPluginAdapter):
 
     def __init__(self, require_config: bool = False) -> None:
         # require_config=True (serve mode): refuse to work until the Core pushed a configuration.
-        self._config: Optional[dict[str, Any]] = None if require_config else {}
+        self._config: dict[str, Any] | None = None if require_config else {}
         self._lock = threading.Lock()
         self._active: dict[str, _ActiveExecution] = {}
         self._spid_counter: int = 50
 
     # ------------------------------------------------------------------ configuration
 
-    def _cfg(self, override: Optional[dict[str, Any]] = None) -> dict[str, Any]:
+    def _cfg(self, override: dict[str, Any] | None = None) -> dict[str, Any]:
         if self._config is None and not override:
             raise PluginError("Plugin is not configured yet (no configuration received from the Core).")
         cfg: dict[str, Any] = dict(self._config or {})
@@ -224,7 +230,7 @@ class SqlServerAdapter(IPluginAdapter):
         return SyncKnowledgeResult(
             partitions=partitions,
             target_id=str(cfg.get("target_id") or "sqlserver_prod"),
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
         )
 
     @staticmethod
@@ -402,10 +408,8 @@ class SqlServerAdapter(IPluginAdapter):
                     if not cur.nextset():
                         break
             finally:
-                try:
+                with contextlib.suppress(Exception):
                     cur.execute("SET SHOWPLAN_XML OFF")
-                except Exception:
-                    pass
         except Exception as exc:
             if isinstance(exc, PluginError):
                 raise
@@ -420,15 +424,15 @@ class SqlServerAdapter(IPluginAdapter):
     @staticmethod
     def _summarize_showplan(docs: list[str]) -> dict[str, Any]:
         total_cost = 0.0
-        est_rows: Optional[float] = None
+        est_rows: float | None = None
         stmt_type = "UNKNOWN"
         ops: list[dict[str, Any]] = []
         warnings: set[str] = set()
         missing_indexes = 0
         for doc in docs:
             try:
-                root = ET.fromstring(doc)
-            except ET.ParseError:
+                root = safe_xml_fromstring(doc)  # nosec B314
+            except Exception:
                 continue
             for stmt in root.iter(f"{SHOWPLAN_NS}StmtSimple"):
                 if stmt_type == "UNKNOWN":
@@ -639,6 +643,8 @@ class SqlServerAdapter(IPluginAdapter):
                 rec.spid,
                 rec.login_time,
             )
+            if rec.spid is None:
+                return "no session spid recorded"
             if cur.fetchone() is None:
                 return f"session {rec.spid} already gone"
             cur.execute(f"KILL {int(rec.spid)}")  # int() - never interpolate anything else
@@ -653,7 +659,9 @@ class SqlServerAdapter(IPluginAdapter):
         self._config = dict(params.config)
         cfg = self._config
         if self._is_simulation(cfg):
-            return ReinitResult(success=True, message="Simulation mode active (no database connection).", status="active")
+            return ReinitResult(
+                success=True, message="Simulation mode active (no database connection).", status="active"
+            )
         try:
             info = self._probe(cfg)
         except PluginError as exc:
@@ -676,7 +684,7 @@ class SqlServerAdapter(IPluginAdapter):
         finally:
             conn.close()
 
-    def ping(self, config: Optional[dict[str, Any]] = None) -> dict[str, Any]:
+    def ping(self, config: dict[str, Any] | None = None) -> dict[str, Any]:
         cfg = self._cfg(config or None)
         if self._is_simulation(cfg):
             return {"status": "ok", "mode": "simulation"}
@@ -768,15 +776,19 @@ class SqlServerAdapter(IPluginAdapter):
         )
         return SyncKnowledgeResult(
             partitions=[
-                PartitionSchema(partition_key="Sales", title="Sales & Orders Subsystem", tables=[orders_table, order_items_table]),
-                PartitionSchema(partition_key="Inventory", title="Warehouse & Inventory Subsystem", tables=[products_table]),
+                PartitionSchema(
+                    partition_key="Sales", title="Sales & Orders Subsystem", tables=[orders_table, order_items_table]
+                ),
+                PartitionSchema(
+                    partition_key="Inventory", title="Warehouse & Inventory Subsystem", tables=[products_table]
+                ),
                 PartitionSchema(partition_key="Finance", title="Finance & Audit Logs Subsystem", tables=[audit_table]),
             ],
             target_id="sqlserver_prod",
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
         )
 
-    def _sim_dry_run(self, query: str, query_type: str, violations: list[str]) -> DryRunResult:
+    def _sim_dry_run(self, query: str, query_type: Literal["READ", "WRITE"], violations: list[str]) -> DryRunResult:
         normalized = query.upper()
         is_safe = len(violations) == 0
         operators: list[dict[str, Any]] = []
@@ -818,10 +830,10 @@ class SqlServerAdapter(IPluginAdapter):
             rec.spid = self._spid_counter
 
         norm_q = params.query.upper()
-        if "WAITFOR DELAY" in norm_q or "SIMULATE_TIMEOUT" in norm_q:
-            # Interruptible: an abort wakes this wait immediately.
-            if rec.cancel_event.wait(params.timeout_seconds + 1.0):
-                raise PluginError(f"Execution '{params.execution_id}' was aborted.")
+        if ("WAITFOR DELAY" in norm_q or "SIMULATE_TIMEOUT" in norm_q) and rec.cancel_event.wait(
+            params.timeout_seconds + 1.0
+        ):
+            raise PluginError(f"Execution '{params.execution_id}' was aborted.")
 
         if rec.cancel_event.wait(0.05):  # simulated 50ms database roundtrip
             raise PluginError(f"Execution '{params.execution_id}' was aborted.")
@@ -829,21 +841,73 @@ class SqlServerAdapter(IPluginAdapter):
 
         if "PRODUCT" in norm_q:
             sample_rows = [
-                {"ProductID": 101, "SKU": "SRV-42U-PRO", "Name": "Enterprise Server Rack 42U", "Price": 1299.99, "CurrentStock": 18},
-                {"ProductID": 102, "SKU": "SW-48G-L3", "Name": "Managed Gigabit Switch 48-Port", "Price": 549.50, "CurrentStock": 45},
-                {"ProductID": 103, "SKU": "CBL-CAT6A-2M", "Name": "Cat6A Shielded Patch Cable 2m", "Price": 14.99, "CurrentStock": 350},
-                {"ProductID": 104, "SKU": "SFP-10G-SR", "Name": "10GBASE-SR SFP+ Optical Transceiver", "Price": 79.00, "CurrentStock": 120},
+                {
+                    "ProductID": 101,
+                    "SKU": "SRV-42U-PRO",
+                    "Name": "Enterprise Server Rack 42U",
+                    "Price": 1299.99,
+                    "CurrentStock": 18,
+                },
+                {
+                    "ProductID": 102,
+                    "SKU": "SW-48G-L3",
+                    "Name": "Managed Gigabit Switch 48-Port",
+                    "Price": 549.50,
+                    "CurrentStock": 45,
+                },
+                {
+                    "ProductID": 103,
+                    "SKU": "CBL-CAT6A-2M",
+                    "Name": "Cat6A Shielded Patch Cable 2m",
+                    "Price": 14.99,
+                    "CurrentStock": 350,
+                },
+                {
+                    "ProductID": 104,
+                    "SKU": "SFP-10G-SR",
+                    "Name": "10GBASE-SR SFP+ Optical Transceiver",
+                    "Price": 79.00,
+                    "CurrentStock": 120,
+                },
             ]
         elif "AUDIT" in norm_q:
             sample_rows = [
-                {"LogID": 9001, "EventTime": "2026-10-22T08:00:15", "Action": "LOGIN_SUCCESS", "RawPayload": "User sa logged in from 10.0.1.5"},
-                {"LogID": 9002, "EventTime": "2026-10-22T08:15:22", "Action": "SCHEMA_AUDIT", "RawPayload": "Table dbo.Products read by AI Agent"},
+                {
+                    "LogID": 9001,
+                    "EventTime": "2026-10-22T08:00:15",
+                    "Action": "LOGIN_SUCCESS",
+                    "RawPayload": "User sa logged in from 10.0.1.5",
+                },
+                {
+                    "LogID": 9002,
+                    "EventTime": "2026-10-22T08:15:22",
+                    "Action": "SCHEMA_AUDIT",
+                    "RawPayload": "Table dbo.Products read by AI Agent",
+                },
             ]
         else:
             sample_rows = [
-                {"OrderID": 1001, "CustomerID": 42, "OrderDate": "2026-10-21T09:30:00", "TotalAmount": 450.00, "Status": "Completed"},
-                {"OrderID": 1002, "CustomerID": 88, "OrderDate": "2026-10-21T10:15:00", "TotalAmount": 1280.50, "Status": "Completed"},
-                {"OrderID": 1003, "CustomerID": 15, "OrderDate": "2026-10-21T11:00:00", "TotalAmount": 89.99, "Status": "Pending"},
+                {
+                    "OrderID": 1001,
+                    "CustomerID": 42,
+                    "OrderDate": "2026-10-21T09:30:00",
+                    "TotalAmount": 450.00,
+                    "Status": "Completed",
+                },
+                {
+                    "OrderID": 1002,
+                    "CustomerID": 88,
+                    "OrderDate": "2026-10-21T10:15:00",
+                    "TotalAmount": 1280.50,
+                    "Status": "Completed",
+                },
+                {
+                    "OrderID": 1003,
+                    "CustomerID": 15,
+                    "OrderDate": "2026-10-21T11:00:00",
+                    "TotalAmount": 89.99,
+                    "Status": "Pending",
+                },
             ]
 
         return ExecuteResult(
@@ -855,6 +919,7 @@ class SqlServerAdapter(IPluginAdapter):
 
 
 # ---------------------------------------------------------------------- JSON-RPC plumbing
+
 
 def _dispatch(adapter: SqlServerAdapter, method: str, params: dict[str, Any]) -> Any:
     if method == "sync_knowledge":
@@ -885,7 +950,7 @@ def handle_stdio_jsonrpc() -> None:
     if not raw_input:
         return
 
-    req_id: Optional[Any] = None
+    req_id: Any | None = None
     try:
         req = JsonRpcRequest.model_validate(json.loads(raw_input))
         req_id = req.id
@@ -902,7 +967,9 @@ def serve_forever() -> None:
     out = sys.stdout
     sys.stdout = sys.stderr  # stray prints from libraries must never corrupt the RPC channel
     write_lock = threading.Lock()
-    pool = ThreadPoolExecutor(max_workers=_int_cfg(os.environ, "AEGISGATE_PLUGIN_THREADS", 16, 2, 128), thread_name_prefix="rpc")
+    pool = ThreadPoolExecutor(
+        max_workers=_int_cfg(os.environ, "AEGISGATE_PLUGIN_THREADS", 16, 2, 128), thread_name_prefix="rpc"
+    )
 
     def respond(resp: JsonRpcResponse) -> None:
         with write_lock:
@@ -910,7 +977,7 @@ def serve_forever() -> None:
             out.flush()
 
     def handle(line: str) -> None:
-        req_id: Optional[Any] = None
+        req_id: Any | None = None
         try:
             req = JsonRpcRequest.model_validate(json.loads(line))
             req_id = req.id

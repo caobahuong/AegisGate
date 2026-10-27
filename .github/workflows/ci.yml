@@ -1,0 +1,168 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend (${{ matrix.os }}, Py ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.11", "3.13"]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Ruff Lint & Format Check
+        run: |
+          python -m ruff check
+          python -m ruff format --check
+
+      - name: Mypy Type Check
+        run: |
+          python -m mypy core plugins/sql_inspector.py plugins/plugin_contract.py
+
+      - name: Run Backend Tests with Coverage
+        run: |
+          python -m pytest
+
+  frontend:
+    name: Frontend Quality Gates
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prettier Format Check
+        run: npm run format:check
+
+      - name: TypeScript Type Check
+        run: npm run typecheck
+
+      - name: ESLint Check
+        run: npm run lint
+
+      - name: Run Vitest with Coverage
+        run: npm run test:coverage
+
+      - name: Build Next.js
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: "http://127.0.0.1:8000"
+          NEXT_PUBLIC_SSE_URL: "http://127.0.0.1:8000/api/monitor/stream"
+
+  api-types:
+    name: API Types Drift Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+          cd frontend && npm ci
+
+      - name: Generate OpenAPI Spec and TypeScript Definitions
+        run: |
+          python scripts/gen_api_types.py
+          cd frontend && npm run gen:types
+
+      - name: Verify No Drift
+        run: |
+          git diff --exit-code frontend/src/types/api.generated.ts
+
+  docs:
+    name: Markdown Link Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check relative markdown links
+        run: |
+          python -c "
+          import os, re, sys
+          from pathlib import Path
+
+          root = Path('.')
+          broken = []
+          link_pattern = re.compile(r'\[([^\]]+)\]\(([^)]+)\)')
+
+          for md in root.rglob('*.md'):
+              if any(p in md.parts for p in ['node_modules', '.venv', 'build', 'dist', '.next']):
+                  continue
+              try:
+                  content = md.read_text(encoding='utf-8')
+              except Exception:
+                  continue
+              for match in link_pattern.finditer(content):
+                  target = match.group(2).strip()
+                  if target.startswith(('http://', 'https://', 'mailto:', '#', 'file://', 'conversation://')):
+                      continue
+                  clean_target = target.split('#')[0]
+                  if not clean_target:
+                      continue
+                  target_path = (md.parent / clean_target).resolve()
+                  if not target_path.exists():
+                      broken.append((str(md), target, str(target_path)))
+
+          if broken:
+              print(f'Found {len(broken)} broken relative markdown links:')
+              for src, tgt, resolved in broken:
+                  print(f'  {src} -> {tgt}')
+              sys.exit(1)
+          else:
+              print('All relative markdown links are valid!')
+          "

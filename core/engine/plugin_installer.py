@@ -76,9 +76,9 @@ def _rmtree(path: Path) -> None:
 class PluginInstaller:
     """Manages the lifecycle of installing, extracting, building, and registering plugins."""
 
-    def __init__(self, session: Session) -> None:
+    def __init__(self, session: Session, plugins_dir: Path | None = None) -> None:
         self.session = session
-        self.plugins_dir: Path = settings.BASE_DIR / "plugins"
+        self.plugins_dir: Path = plugins_dir or settings.PLUGINS_DIR
         self.plugins_dir.mkdir(parents=True, exist_ok=True)
 
     # ------------------------------------------------------------------ validation
@@ -88,7 +88,7 @@ class PluginInstaller:
         direct_manifest = root_dir / "manifest.json"
         if direct_manifest.is_file():
             try:
-                with open(direct_manifest, "r", encoding="utf-8") as f:
+                with open(direct_manifest, encoding="utf-8") as f:
                     return direct_manifest, json.load(f)
             except Exception as exc:
                 raise PluginInstallerError(f"Failed to read manifest.json: {exc!s}") from exc
@@ -99,7 +99,7 @@ class PluginInstaller:
             nested_manifest = subdirs[0] / "manifest.json"
             if nested_manifest.is_file():
                 try:
-                    with open(nested_manifest, "r", encoding="utf-8") as f:
+                    with open(nested_manifest, encoding="utf-8") as f:
                         return nested_manifest, json.load(f)
                 except Exception as exc:
                     raise PluginInstallerError(f"Failed to read nested manifest.json: {exc!s}") from exc
@@ -169,7 +169,14 @@ class PluginInstaller:
             if not line or line.startswith("#"):
                 continue
             has_option = any(tok.startswith("-") for tok in line.split())  # --index-url, -r, --install-option=...
-            if has_option or "://" in line or "@" in line or "/" in line or "\\" in line or not _REQ_LINE.fullmatch(line):
+            if (
+                has_option
+                or "://" in line
+                or "@" in line
+                or "/" in line
+                or "\\" in line
+                or not _REQ_LINE.fullmatch(line)
+            ):
                 raise PluginInstallerError(f"requirements.txt line not allowed: '{line}'")
 
     @staticmethod
@@ -219,6 +226,7 @@ class PluginInstaller:
                 or name.startswith(("/", "\\"))
                 or re.match(r"^[A-Za-z]:", name)
                 or ":" in name  # NTFS alternate data streams
+                or "\\" in name  # backslash is not a separator on POSIX; treat as traversal risk
             ):
                 raise PluginInstallerError(f"Unsafe path in ZIP: {name!r}")
             if stat.S_ISLNK(info.external_attr >> 16):
@@ -256,7 +264,11 @@ class PluginInstaller:
             return sys.executable
 
         try:
-            req_lines = [l.strip() for l in requirements_file.read_text(encoding="utf-8").splitlines() if l.strip() and not l.strip().startswith("#")]
+            req_lines = [
+                line.strip()
+                for line in requirements_file.read_text(encoding="utf-8").splitlines()
+                if line.strip() and not line.strip().startswith("#")
+            ]
             if not req_lines:
                 return sys.executable
         except (OSError, UnicodeDecodeError) as req_err:
@@ -335,7 +347,9 @@ class PluginInstaller:
             profile.abort_command = manifest.get("abort_command", profile.abort_command)
             profile.config_json = json.dumps(manifest.get("config", json.loads(profile.config_json or "{}")))
             profile.ui_schema_json = json.dumps(manifest.get("ui_schema", json.loads(profile.ui_schema_json or "[]")))
-            profile.custom_card_json = json.dumps(manifest.get("custom_card", json.loads(profile.custom_card_json or "{}")))
+            profile.custom_card_json = json.dumps(
+                manifest.get("custom_card", json.loads(profile.custom_card_json or "{}"))
+            )
             profile.status = "active"
             profile.updated_at = utc_now()
 
@@ -487,10 +501,17 @@ class PluginInstaller:
         # `--` stops option parsing, protocol.allow limits transports, prompts are disabled.
         cmd = [
             "git",
-            "-c", "protocol.allow=never",
-            "-c", "protocol.https.allow=always",
-            "-c", "core.symlinks=false",
-            "clone", "--depth", "1", "--no-tags", "--single-branch",
+            "-c",
+            "protocol.allow=never",
+            "-c",
+            "protocol.https.allow=always",
+            "-c",
+            "core.symlinks=false",
+            "clone",
+            "--depth",
+            "1",
+            "--no-tags",
+            "--single-branch",
         ]
         if branch:
             cmd.extend(["--branch", branch])

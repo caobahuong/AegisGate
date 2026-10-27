@@ -15,9 +15,9 @@ from typing import Any
 import httpx
 
 try:
-    from mcp.server.fastmcp import FastMCP
-except Exception:
-    from mcp.server.mcpserver import MCPServer as FastMCP  # type: ignore[no-redef]
+    from mcp.server.mcpserver import MCPServer as FastMCP
+except ImportError:
+    from mcp.server.fastmcp import FastMCP  # type: ignore[no-redef, attr-defined]
 from sqlmodel import Session
 
 from core.database import engine
@@ -42,7 +42,7 @@ mcp_app = FastMCP(name=server_name)
 @mcp_app.tool()
 def get_catalog(target_id: str | None = None, partition_key: str | None = None) -> str:
     """Retrieve database schema and structural catalog without touching the target system.
-    
+
     Returns table definitions, columns, data types, and indexes cached in AegisGate.
     Args:
         target_id: Identifier of the target plugin (e.g. 'sqlserver_prod'). Defaults to server's bound target if configured.
@@ -85,7 +85,7 @@ def get_catalog(target_id: str | None = None, partition_key: str | None = None) 
 @mcp_app.tool()
 def get_knowledge(target_id: str | None = None, partition_key: str | None = None) -> str:
     """Retrieve business documentation (doc.md), query skills, and active rules for a target.
-    
+
     Args:
         target_id: Identifier of the target plugin (e.g. 'sqlserver_prod'). Defaults to server's bound target if configured.
         partition_key: Optional partition name
@@ -144,7 +144,7 @@ def get_knowledge(target_id: str | None = None, partition_key: str | None = None
 @mcp_app.tool()
 async def submit_execution(query: str, target_id: str | None = None, reasoning: str = "") -> str:
     """Submit a SQL query or command to AegisGate for Dry-Run and Execution control.
-    
+
     If Auto Approval is ON, AegisGate executes automatically if valid.
     If Auto Approval is OFF, query transitions to PAUSED_FOR_REVIEW for human approval.
     Args:
@@ -211,7 +211,7 @@ async def submit_execution(query: str, target_id: str | None = None, reasoning: 
 @mcp_app.tool()
 def check_execution_status(execution_id: str) -> str:
     """Check the current status and results of a pending or finished execution.
-    
+
     Args:
         execution_id: The execution ID returned from submit_execution
     """
@@ -249,12 +249,11 @@ def check_execution_status(execution_id: str) -> str:
         return json.dumps(resp, indent=2)
 
 
-
 if __name__ == "__main__":
     # Remove --plugin <target> from sys.argv so MCPServer stdio runner is clean
     cleaned_argv = [sys.argv[0]]
     skip = False
-    for i, a in enumerate(sys.argv[1:], start=1):
+    for _i, a in enumerate(sys.argv[1:], start=1):
         if skip:
             skip = False
             continue

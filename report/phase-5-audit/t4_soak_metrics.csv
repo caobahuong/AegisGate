@@ -1,0 +1,6 @@
+timestamp_sec,proc_a_rss_mb,proc_b_rss_mb,total_rss_mb,proc_a_threads,proc_b_threads,total_threads,child_workers_count,db_size_kb,total_submissions,total_errors
+0.0,86.91,86.79,173.7,9,9,18,0,144.0,0,0
+10.0,89.49,89.26,178.75,13,13,26,2,1404.0,716,0
+20.1,89.58,89.34,178.92,13,13,26,2,3020.0,1643,0
+30.1,89.59,89.38,178.98,13,13,26,2,4640.0,2572,0
+40.2,89.65,89.41,179.06,13,13,26,2,6400.0,3542,0

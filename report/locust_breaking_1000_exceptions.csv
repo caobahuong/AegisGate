@@ -1,0 +1,17 @@
+Count,Message,Traceback,Nodes
+42,'NoneType' object has no attribute 'close',"  File ""G:\1-Personal\Projects\AegisGate\.venv\Lib\site-packages\locust\user\task.py"", line 363, in run
+    self.execute_next_task()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File ""G:\1-Personal\Projects\AegisGate\.venv\Lib\site-packages\locust\user\task.py"", line 396, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File ""G:\1-Personal\Projects\AegisGate\.venv\Lib\site-packages\locust\user\task.py"", line 513, in execute_task
+    task(self.user)
+    ~~~~^^^^^^^^^^^
+  File ""G:\1-Personal\Projects\AegisGate\tests\load\locustfile.py"", line 139, in sse_event_stream_connect
+    resp.close()
+    ~~~~~~~~~~^^
+  File ""G:\1-Personal\Projects\AegisGate\.venv\Lib\site-packages\requests\models.py"", line 1176, in close
+    self.raw.close()
+    ^^^^^^^^^^^^^^
+",local

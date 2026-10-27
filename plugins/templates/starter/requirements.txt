@@ -4,4 +4,3 @@
 # psycopg2-binary>=2.9.0
 # pymongo>=4.6.0
 # clickhouse-connect>=0.7.0
-

@@ -46,3 +46,6 @@ class StorageError(AegisGateBaseError):
 class JsonRpcProtocolError(AegisGateBaseError):
     """Raised when a JSON-RPC message is malformed or returns an RPC error response."""
 
+
+class PluginQueueFullError(AegisGateBaseError):
+    """Raised when the execution queue backlog for a plugin is full (concurrency limit reached)."""

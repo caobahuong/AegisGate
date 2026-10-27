@@ -85,6 +85,7 @@ To add a new plugin:
    ```python
    from plugins.plugin_contract import IPluginAdapter, SyncKnowledgeResult, DryRunResult, ExecuteResult, AbortResult
 
+
    class MongoAdapter(IPluginAdapter):
        def sync_knowledge(self, params): ...
        def dry_run(self, params): ...

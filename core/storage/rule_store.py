@@ -13,16 +13,18 @@ from core.database import Rule
 
 
 class RuleStore:
-    """Manages governance rules in SQLite."""
+    """Manages governance rules in SQLite with session-scoped caching."""
 
     def __init__(self, session: Session) -> None:
         self.session: Session = session
+        self._rules_cache: dict[tuple[str | None, bool, bool], list[Rule]] = {}
 
     def create_rule(self, rule: Rule) -> Rule:
         """Create and persist a new rule."""
         self.session.add(rule)
         self.session.commit()
         self.session.refresh(rule)
+        self._rules_cache.clear()
         return rule
 
     def get_rule(self, rule_id: str) -> Rule | None:
@@ -37,11 +39,15 @@ class RuleStore:
         exact_target: bool = False,
     ) -> list[Rule]:
         """List rules, optionally filtered by target and active status.
-        
+
         If target_id == 'global', matches rules where target_id is None.
         If exact_target is True, matches Rule.target_id == target_id strictly.
         Otherwise, target_id includes both target-specific and global rules.
         """
+        cache_key = (target_id, is_active_only, exact_target)
+        if cache_key in self._rules_cache:
+            return list(self._rules_cache[cache_key])
+
         statement = select(Rule)
         if target_id == "global":
             statement = statement.where(Rule.target_id == None)
@@ -53,7 +59,9 @@ class RuleStore:
         if is_active_only:
             statement = statement.where(Rule.is_active == True)
 
-        return list(self.session.exec(statement).all())
+        rules = list(self.session.exec(statement).all())
+        self._rules_cache[cache_key] = rules
+        return list(rules)
 
     def update_rule(self, rule_id: str, updates: dict[str, Any]) -> Rule | None:
         """Update existing rule fields."""
@@ -68,6 +76,7 @@ class RuleStore:
         self.session.add(rule)
         self.session.commit()
         self.session.refresh(rule)
+        self._rules_cache.clear()
         return rule
 
     def delete_rule(self, rule_id: str) -> bool:
@@ -77,5 +86,5 @@ class RuleStore:
             return False
         self.session.delete(rule)
         self.session.commit()
+        self._rules_cache.clear()
         return True
-

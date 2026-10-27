@@ -6,14 +6,16 @@ Adheres strictly to python_clean_code.md:
 - Clean custom exception handling
 """
 
+import asyncio
 import json
 import logging
-from typing import Any
+from datetime import datetime
+from typing import Any, cast
 
 from sqlmodel import Session
 
 from core.database import ExecutionLog, PluginProfile, Rule, utc_now
-from core.engine.governance import validate_rule_definition
+from core.engine.governance import GovernanceEngine, validate_rule_definition
 from core.engine.plugin_client import terminate_all_subprocesses
 from core.engine.plugin_installer import PluginInstaller
 from core.engine.plugin_linter import PluginLinter
@@ -24,15 +26,21 @@ from core.gateway.schemas import (
     ApproveExecutionRequest,
     CreateRuleRequest,
     ExecutionResponse,
+    ExecutionStatus,
     InstallGitPluginRequest,
     KnowledgeChunkResponse,
     McpConfigResponse,
+    PaginatedExecutionsResponse,
     PluginCertificationResponse,
     PluginProfileResponse,
     PluginSchemaResponse,
+    PluginStatus,
+    QueryType,
     RegisterPluginRequest,
     RejectExecutionRequest,
     RuleResponse,
+    RuleSeverity,
+    RuleType,
     SubmitExecutionRequest,
     UpdateDocsRequest,
     UpdatePluginConfigRequest,
@@ -48,35 +56,48 @@ logger = logging.getLogger(__name__)
 
 
 def format_execution_response(log: ExecutionLog) -> ExecutionResponse:
-    """Helper to convert ExecutionLog entity to ExecutionResponse schema."""
-    plan_data = None
+    """Helper to convert ExecutionLog entity to ExecutionResponse schema with fast JSON parsing."""
+    plan_data: Any = None
     if log.explain_plan_json:
-        try:
-            plan_data = json.loads(log.explain_plan_json)
-        except (json.JSONDecodeError, TypeError):
-            plan_data = log.explain_plan_json
+        if log.explain_plan_json == "{}" or log.explain_plan_json == '""':
+            plan_data = {}
+        elif log.explain_plan_json == "null":
+            plan_data = None
+        else:
+            try:
+                plan_data = json.loads(log.explain_plan_json)
+            except (json.JSONDecodeError, TypeError):
+                plan_data = log.explain_plan_json
 
-    violations = []
+    violations: list[str] = []
     if log.violations_json:
-        try:
-            violations = json.loads(log.violations_json)
-        except (json.JSONDecodeError, TypeError):
+        if log.violations_json == "[]" or log.violations_json == '""':
             violations = []
+        else:
+            try:
+                violations = json.loads(log.violations_json)
+            except (json.JSONDecodeError, TypeError):
+                violations = []
 
-    res_summary = None
+    res_summary: Any = None
     if log.result_summary:
-        try:
-            res_summary = json.loads(log.result_summary)
-        except (json.JSONDecodeError, TypeError):
-            res_summary = log.result_summary
+        if log.result_summary == "{}" or log.result_summary == '""':
+            res_summary = {}
+        elif log.result_summary == "null":
+            res_summary = None
+        else:
+            try:
+                res_summary = json.loads(log.result_summary)
+            except (json.JSONDecodeError, TypeError):
+                res_summary = log.result_summary
 
     return ExecutionResponse(
         id=log.id,
         target_id=log.target_id,
         query=log.query,
-        query_type=log.query_type,
+        query_type=cast(QueryType, log.query_type),
         reasoning=log.reasoning,
-        status=log.status,
+        status=cast(ExecutionStatus, log.status),
         explain_plan=plan_data,
         violations=violations,
         execution_time_ms=log.execution_time_ms,
@@ -104,8 +125,43 @@ class GatewayService:
 
     # --- Execution & Monitor Services ---
 
-    async def submit_execution(self, req: SubmitExecutionRequest) -> ExecutionResponse:
+    async def submit_execution(self, req: SubmitExecutionRequest, wait: bool = True) -> ExecutionResponse:
         """Submit an AI query for Dry-Run and Execution lifecycle."""
+        if not wait:
+            import uuid
+
+            execution_id = f"exec_{uuid.uuid4().hex[:8]}"
+
+            # Run pipeline in a background task
+            async def _run_bg() -> None:
+                from core.database import get_session
+
+                with next(get_session()) as bg_session:
+                    sm = ExecutionStateMachine(bg_session)
+                    try:
+                        await sm.initiate_execution(
+                            target_id=req.target_id,
+                            query=req.query,
+                            reasoning=req.reasoning,
+                            execution_id=execution_id,
+                        )
+                    except Exception as exc:
+                        logger.warning("Background execution failed for %s: %s", execution_id, exc)
+
+            query_type = GovernanceEngine.determine_query_type(req.query)
+            init_log = ExecutionLog(
+                id=execution_id,
+                target_id=req.target_id,
+                query=req.query,
+                query_type=query_type,
+                reasoning=req.reasoning,
+                status="DRY_RUN",
+                created_at=utc_now(),
+            )
+            self.log_store.create_log(init_log)
+            asyncio.create_task(_run_bg())
+            return format_execution_response(init_log)
+
         log = await self.state_machine.initiate_execution(
             target_id=req.target_id,
             query=req.query,
@@ -160,6 +216,32 @@ class GatewayService:
         )
         return [format_execution_response(log) for log in logs]
 
+    def paginate_executions(
+        self,
+        cursor: str | None = None,
+        limit: int = 50,
+        status: str | None = None,
+        target_id: str | None = None,
+        q: str | None = None,
+        from_date: datetime | None = None,
+        to_date: datetime | None = None,
+    ) -> PaginatedExecutionsResponse:
+        """Fetch cursor-paginated executions with search and filters."""
+        logs, next_cursor, total_count = self.log_store.paginate_logs(
+            cursor=cursor,
+            limit=limit,
+            status=status,
+            target_id=target_id,
+            query_search=q,
+            from_date=from_date,
+            to_date=to_date,
+        )
+        return PaginatedExecutionsResponse(
+            items=[format_execution_response(log) for log in logs],
+            next_cursor=next_cursor,
+            total_count=total_count,
+        )
+
     # --- Plugin Management Services ---
 
     def _format_plugin_profile_response(self, p: PluginProfile) -> PluginProfileResponse:
@@ -201,7 +283,7 @@ class GatewayService:
             config=cfg,
             ui_schema=ui_schema,
             custom_card=custom_card,
-            status=p.status,
+            status=cast(PluginStatus, p.status),
             latency_ms=p.latency_ms,
             active_sessions_count=p.active_sessions_count,
             is_certified=getattr(p, "is_certified", False),
@@ -296,6 +378,7 @@ class GatewayService:
             logger.warning("Plugin '%s' reinit command note: %s", plugin_id, exc)
 
         return self._format_plugin_profile_response(p)
+
     async def delete_plugin(self, plugin_id: str, hard_delete: bool = False) -> dict[str, Any]:
         """Uninstall or disable a plugin, disconnect active subprocesses, and abort running tasks."""
         # Check if profile exists (raises PluginNotFoundError if not found)
@@ -400,10 +483,10 @@ class GatewayService:
                 id=r.id,
                 name=r.name,
                 target_id=r.target_id,
-                rule_type=r.rule_type,
+                rule_type=cast(RuleType, r.rule_type),
                 expression=r.expression,
                 description=r.description,
-                severity=r.severity,
+                severity=cast(RuleSeverity, r.severity),
                 is_active=r.is_active,
                 created_at=r.created_at.isoformat(),
             )
@@ -445,10 +528,10 @@ class GatewayService:
             id=saved.id,
             name=saved.name,
             target_id=saved.target_id,
-            rule_type=saved.rule_type,
+            rule_type=cast(RuleType, saved.rule_type),
             expression=saved.expression,
             description=saved.description,
-            severity=saved.severity,
+            severity=cast(RuleSeverity, saved.severity),
             is_active=saved.is_active,
             created_at=saved.created_at.isoformat(),
         )
@@ -468,8 +551,8 @@ class GatewayService:
         if not existing:
             return None
         problem = validate_rule_definition(
-            updates.get("rule_type", existing.rule_type),
-            updates.get("expression", existing.expression),
+            str(updates.get("rule_type", existing.rule_type)),
+            str(updates.get("expression", existing.expression)),
         )
         if problem:
             raise ValueError(problem)
@@ -481,10 +564,10 @@ class GatewayService:
             id=updated.id,
             name=updated.name,
             target_id=updated.target_id,
-            rule_type=updated.rule_type,
+            rule_type=cast(RuleType, updated.rule_type),
             expression=updated.expression,
             description=updated.description,
-            severity=updated.severity,
+            severity=cast(RuleSeverity, updated.severity),
             is_active=updated.is_active,
             created_at=updated.created_at.isoformat(),
         )
@@ -540,7 +623,6 @@ class GatewayService:
                 "cline": {"mcpServers": servers},
             },
         )
-
 
     async def install_plugin_zip(self, file_content: bytes, filename: str | None = None) -> PluginProfileResponse:
         """Install, build, and certify an external plugin from an uploaded ZIP archive."""

@@ -1,18 +1,37 @@
 /**
  * AegisGate Shared Contract Types
- * 
+ *
  * Synchronized with Core Python Pydantic Models.
  * Strict Zero `any` Policy enforced per typescript_clean_code.md.
  */
 
+import type { components, paths } from "./api.generated";
+
+export type ApiPaths = paths;
+export type ApiSchemas = components["schemas"];
+
+export type GeneratedExecutionResponse = components["schemas"]["ExecutionResponse"];
+export type GeneratedPluginProfileResponse = components["schemas"]["PluginProfileResponse"];
+export type GeneratedRuleResponse = components["schemas"]["RuleResponse"];
+export type GeneratedKnowledgeChunkResponse = components["schemas"]["KnowledgeChunkResponse"];
+export type GeneratedCreateRuleRequest = components["schemas"]["CreateRuleRequest"];
+export type GeneratedSubmitExecutionRequest = components["schemas"]["SubmitExecutionRequest"];
+export type GeneratedAutoModeResponse = components["schemas"]["AutoModeResponse"];
+export type GeneratedPluginCertificationResponse =
+  components["schemas"]["PluginCertificationResponse"];
+export type GeneratedPluginSchemaResponse = components["schemas"]["PluginSchemaResponse"];
+export type GeneratedMcpConfigResponse = components["schemas"]["McpConfigResponse"];
+
 export type ExecutionStatus =
   | "DRY_RUN"
+  | "QUEUED"
   | "PAUSED_FOR_REVIEW"
   | "EXECUTING"
   | "COMPLETED"
   | "REJECTED"
   | "TIMEOUT"
-  | "ABORTED";
+  | "ABORTED"
+  | "FAILED";
 
 export type QueryType = "READ" | "WRITE";
 
@@ -43,6 +62,12 @@ export interface ExecutionResponse {
   spid: number | null;
   created_at: string;
   finished_at: string | null;
+}
+
+export interface PaginatedExecutionsResponse {
+  items: ExecutionResponse[];
+  next_cursor: string | null;
+  total_count: number;
 }
 
 export type UiFieldType = "text" | "password" | "number" | "select" | "boolean" | "textarea";
@@ -171,7 +196,6 @@ export interface UpdateRuleRequest {
   severity?: RuleSeverity;
   is_active?: boolean;
 }
-
 
 export interface SanityCheckItem {
   status: "PASSED" | "FAILED";

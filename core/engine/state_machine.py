@@ -6,6 +6,7 @@ Strictly adheres to python_clean_code.md:
 - Separation of Engine from Router
 """
 
+import asyncio
 import json
 import logging
 from typing import Any
@@ -13,7 +14,9 @@ from typing import Any
 from sqlmodel import Session
 
 from core.config import settings
-from core.database import ExecutionLog, utc_now
+from core.database import ExecutionControl, ExecutionLog, utc_now
+from core.engine.cluster import get_owner_id
+from core.engine.concurrency_limiter import limiter_registry
 from core.engine.governance import GovernanceEngine
 from core.engine.output_masker import OutputMasker
 from core.engine.plugin_registry import PluginRegistry
@@ -30,7 +33,7 @@ from plugins.plugin_contract import AbortParams, DryRunParams, ExecuteParams
 
 logger = logging.getLogger(__name__)
 
-ABORTABLE_STATUSES: tuple[str, ...] = ("EXECUTING", "PAUSED_FOR_REVIEW", "DRY_RUN")
+ABORTABLE_STATUSES: tuple[str, ...] = ("EXECUTING", "PAUSED_FOR_REVIEW", "DRY_RUN", "QUEUED")
 
 
 class ExecutionStateMachine:
@@ -53,20 +56,26 @@ class ExecutionStateMachine:
         """Step 1 & 2: Ingest query, perform Dry-Run, evaluate Rules, transition to Pause or Execute."""
         if not execution_id:
             import uuid
+
             execution_id = f"exec_{uuid.uuid4().hex[:8]}"
 
         query_type = GovernanceEngine.determine_query_type(query)
 
-        log = ExecutionLog(
-            id=execution_id,
-            target_id=target_id,
-            query=query,
-            query_type=query_type,
-            reasoning=reasoning,
-            status="DRY_RUN",
-            created_at=utc_now(),
-        )
-        self.log_store.create_log(log)
+        existing_log = self.log_store.get_log(execution_id) if execution_id else None
+        if existing_log:
+            log = existing_log
+            log.query_type = query_type
+        else:
+            log = ExecutionLog(
+                id=execution_id,
+                target_id=target_id,
+                query=query,
+                query_type=query_type,
+                reasoning=reasoning,
+                status="DRY_RUN",
+                created_at=utc_now(),
+            )
+            self.log_store.create_log(log)
 
         await sse_broadcaster.broadcast(
             "execution_created",
@@ -82,7 +91,7 @@ class ExecutionStateMachine:
 
         # 1. Fetch active rules
         active_rules = self.rule_store.list_rules(target_id=target_id, is_active_only=True)
-        rules_payload = [r.model_dump() for r in active_rules]
+        rules_payload = [r.model_dump(mode="json") for r in active_rules]
 
         # 2. Call Plugin Dry-Run via Subprocess Client
         client = self.registry.get_client(target_id)
@@ -90,9 +99,7 @@ class ExecutionStateMachine:
         explain_plan_dict: Any = {}
         dry_run_failed = False
         try:
-            dry_run_res = await client.dry_run(
-                DryRunParams(query=query, rules=rules_payload)
-            )
+            dry_run_res = await client.dry_run(DryRunParams(query=query, rules=rules_payload))
             explain_plan_dict = dry_run_res.explain_plan
             violations.extend(dry_run_res.violations)
             # A plugin may only make the classification stricter, never downgrade a WRITE.
@@ -150,12 +157,16 @@ class ExecutionStateMachine:
             log.auto_approved = True
             log.approved_by = "System (Auto Approval ON)"
             log.status = "EXECUTING"
+            log.owner_id = get_owner_id()
+            log.started_at = utc_now()
             self.log_store.update_log(
                 log.id,
                 {
                     "auto_approved": True,
                     "approved_by": log.approved_by,
                     "status": log.status,
+                    "owner_id": log.owner_id,
+                    "started_at": log.started_at,
                     "explain_plan_json": log.explain_plan_json,
                     "violations_json": log.violations_json,
                 },
@@ -188,9 +199,7 @@ class ExecutionStateMachine:
             )
             return log
 
-    async def approve_and_resume(
-        self, execution_id: str, approved_by: str = "Admin"
-    ) -> ExecutionLog:
+    async def approve_and_resume(self, execution_id: str, approved_by: str = "Admin") -> ExecutionLog:
         """User approves a PAUSED execution from Dashboard, resuming execution."""
         log = self.log_store.get_log(execution_id)
         if not log:
@@ -205,7 +214,12 @@ class ExecutionStateMachine:
         won = self.log_store.transition_status(
             log.id,
             ("PAUSED_FOR_REVIEW",),
-            {"status": "EXECUTING", "approved_by": approved_by},
+            {
+                "status": "EXECUTING",
+                "approved_by": approved_by,
+                "owner_id": get_owner_id(),
+                "started_at": utc_now(),
+            },
         )
         if not won:
             raise ExecutionStateError(
@@ -267,19 +281,42 @@ class ExecutionStateMachine:
         )
         self.session.refresh(log)
         if not won:
-            raise ExecutionStateError(f"Execution '{execution_id}' finished before it could be aborted (status '{log.status}').")
+            raise ExecutionStateError(
+                f"Execution '{execution_id}' finished before it could be aborted (status '{log.status}')."
+            )
 
-        # 2) Then really stop the query on the target (persistent worker: SQLCancel + KILL <spid>).
+        # 2) Dispatched abort locally or cross-process
         if was_executing:
-            try:
-                client = self.registry.get_client(log.target_id)
-                abort_res = await client.abort(AbortParams(execution_id=execution_id))
-                if not abort_res.success:
-                    message += f" WARNING: plugin could not confirm the kill ({abort_res.message})."
-            except Exception as exc:
-                logger.warning("Plugin abort failed for %s: %s", execution_id, exc)
-                message += f" WARNING: plugin abort failed ({exc}); the query may still be running on the target."
-            if "WARNING" in message:
+            ctl = ExecutionControl(execution_id=execution_id, command="ABORT")
+            self.session.add(ctl)
+            self.session.commit()
+
+            current_owner = get_owner_id()
+            if log.owner_id == current_owner or log.owner_id is None:
+                # Locally owned execution
+                try:
+                    client = self.registry.get_client(log.target_id)
+                    abort_res = await client.abort(AbortParams(execution_id=execution_id))
+                    if not abort_res.success:
+                        message += f" WARNING: plugin could not confirm the kill ({abort_res.message})."
+                except Exception as exc:
+                    logger.warning("Plugin abort failed for %s: %s", execution_id, exc)
+                    message += f" WARNING: plugin abort failed ({exc}); the query may still be running on the target."
+
+                ctl.handled_at = utc_now()
+                self.session.add(ctl)
+                self.session.commit()
+            else:
+                # Remote execution owned by another worker process
+                for _ in range(30):
+                    await asyncio.sleep(0.05)
+                    self.session.refresh(ctl)
+                    if ctl.handled_at is not None:
+                        break
+                if ctl.handled_at is None:
+                    message += f" (Dispatched remote abort to owner process '{log.owner_id}')"
+
+            if "WARNING" in message or "Dispatched" in message:
                 self.log_store.update_log(log.id, {"error_message": message})
                 self.session.refresh(log)
 
@@ -306,74 +343,93 @@ class ExecutionStateMachine:
         return log
 
     async def _execute_step(self, log: ExecutionLog) -> ExecutionLog:
-        """Internal execution under Timeout Guard (15s read / 30s write)."""
-        timeout_seconds = TimeoutGuard.get_timeout_for_query(log.query_type)
-        client = self.registry.get_client(log.target_id)
+        """Internal execution under Concurrency Limiter and Timeout Guard (15s read / 30s write)."""
+        limiter = await limiter_registry.get_limiter(log.target_id)
 
-        async def _abort_hook() -> None:
-            logger.warning("Timeout reached! Triggering emergency kill for %s", log.id)
-            abort_res = await client.abort(AbortParams(execution_id=log.id))
-            if not abort_res.success:
-                raise RuntimeError(abort_res.message)
+        async with limiter.acquire_slot(self.session, log):
+            self.session.refresh(log)
+            if log.status == "ABORTED":
+                return log
 
-        try:
-            execute_coro = client.execute(
-                ExecuteParams(
-                    execution_id=log.id,
-                    query=log.query,
-                    timeout_seconds=timeout_seconds,
-                    read_only=log.query_type != "WRITE",
+            timeout_seconds = TimeoutGuard.get_timeout_for_query(log.query_type)
+            client = self.registry.get_client(log.target_id)
+
+            async def _abort_hook() -> None:
+                logger.warning("Timeout reached! Triggering emergency kill for %s", log.id)
+                abort_res = await client.abort(AbortParams(execution_id=log.id))
+                if not abort_res.success:
+                    raise RuntimeError(abort_res.message)
+
+            try:
+                execute_coro = client.execute(
+                    ExecuteParams(
+                        execution_id=log.id,
+                        query=log.query,
+                        timeout_seconds=timeout_seconds,
+                        read_only=log.query_type != "WRITE",
+                    )
                 )
-            )
 
-            result = await TimeoutGuard.run_with_timeout(
-                coro=execute_coro,
-                timeout_seconds=timeout_seconds,
-                on_timeout_abort=_abort_hook,
-            )
+                result = await TimeoutGuard.run_with_timeout(
+                    coro=execute_coro,
+                    timeout_seconds=timeout_seconds,
+                    on_timeout_abort=_abort_hook,
+                )
 
-            # Output masking: blank/remove configured fields BEFORE anything is stored or sent.
-            output_rules = self.rule_store.list_rules(target_id=log.target_id, is_active_only=True)
-            masked_data, masked_fields = OutputMasker.apply(result.data, output_rules)
-            summary: dict[str, Any] = {"data": masked_data, "rows_affected": result.rows_affected}
-            if masked_fields:
-                summary["masked_fields"] = masked_fields
-            if result.truncated:
-                summary["truncated"] = True
+                # Output masking: blank/remove configured fields BEFORE anything is stored or sent.
+                output_rules = self.rule_store.list_rules(target_id=log.target_id, is_active_only=True)
+                masked_data, masked_fields = OutputMasker.apply(result.data, output_rules)
+                summary: dict[str, Any] = {"data": masked_data, "rows_affected": result.rows_affected}
+                if masked_fields:
+                    summary["masked_fields"] = masked_fields
+                if result.truncated:
+                    summary["truncated"] = True
 
-            result_summary = json.dumps(summary, default=str)
-            finished = await self._finish(
-                log,
-                {
-                    "status": "COMPLETED",
-                    "execution_time_ms": result.execution_time_ms,
-                    "spid": result.spid,
-                    "result_summary": result_summary,
-                },
-                "execution_completed",
-                {
-                    "status": "COMPLETED",
-                    "execution_time_ms": result.execution_time_ms,
-                    "rows_affected": result.rows_affected,
-                },
-            )
-            if finished.status == "COMPLETED":
-                # Update plugin latency metric
-                self.registry.update_metrics(log.target_id, latency_ms=result.execution_time_ms)
-            return finished
+                result_summary = json.dumps(summary, default=str)
+                # Size cap enforcement (RESULT_MAX_BYTES)
+                if len(result_summary.encode("utf-8")) > settings.RESULT_MAX_BYTES:
+                    original_bytes = len(result_summary.encode("utf-8"))
+                    result_summary = json.dumps(
+                        {
+                            "truncated": True,
+                            "original_bytes": original_bytes,
+                            "message": f"Result summary exceeded size limit ({settings.RESULT_MAX_BYTES} bytes)",
+                            "rows_affected": result.rows_affected,
+                        }
+                    )
 
-        except ExecutionTimeoutError as exc:
-            return await self._finish(
-                log,
-                {"status": "TIMEOUT", "error_message": str(exc)},
-                "execution_timeout",
-                {"error": str(exc)},
-            )
+                finished = await self._finish(
+                    log,
+                    {
+                        "status": "COMPLETED",
+                        "execution_time_ms": result.execution_time_ms,
+                        "spid": result.spid,
+                        "result_summary": result_summary,
+                    },
+                    "execution_completed",
+                    {
+                        "status": "COMPLETED",
+                        "execution_time_ms": result.execution_time_ms,
+                        "rows_affected": result.rows_affected,
+                    },
+                )
+                if finished.status == "COMPLETED":
+                    # Update plugin latency metric
+                    self.registry.update_metrics(log.target_id, latency_ms=result.execution_time_ms)
+                return finished
 
-        except Exception as exc:
-            return await self._finish(
-                log,
-                {"status": "REJECTED", "error_message": f"Execution failed: {exc}"},
-                "execution_failed",
-                {"error": str(exc)},
-            )
+            except ExecutionTimeoutError as exc:
+                return await self._finish(
+                    log,
+                    {"status": "TIMEOUT", "error_message": str(exc)},
+                    "execution_timeout",
+                    {"error": str(exc)},
+                )
+
+            except Exception as exc:
+                return await self._finish(
+                    log,
+                    {"status": "FAILED", "error_message": f"Execution failed: {exc}"},
+                    "execution_failed",
+                    {"error": str(exc), "status": "FAILED"},
+                )
